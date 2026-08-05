@@ -36,10 +36,19 @@ jobs:
           cargo clippy -p sim -p sim-wasm --all-targets -- -D warnings
           cargo fmt --check -p sim -p sim-wasm
 
+      # rdkafka-sys compiles librdkafka from source via cmake, and that build
+      # wants curl, ssl, sasl and zlib headers. macOS has them in the SDK, so
+      # this only shows up on Linux.
+      - name: system libraries for librdkafka
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            libcurl4-openssl-dev libssl-dev libsasl2-dev zlib1g-dev
+
       # The I/O shell is checked separately and only with `cargo check`: it
-      # drags in librdkafka, which cmake compiles from source and which
-      # dominates the job's runtime. Type-checking it is enough to catch the
-      # breakage that matters — the proto contracts drifting from the code.
+      # drags in librdkafka, whose from-source build dominates the job's
+      # runtime. Type-checking is enough to catch the breakage that matters —
+      # the proto contracts drifting from the code.
       - name: check the server
         working-directory: services/sim-core
         run: |
