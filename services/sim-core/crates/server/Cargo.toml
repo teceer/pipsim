@@ -34,3 +34,6 @@ anyhow = "1"
 
 [build-dependencies]
 tonic-prost-build = "0.14"
+# Vendored protoc plus its well-known-type includes, so the build does not
+# depend on what happens to be installed on the host.
+protoc-bin-vendored = "3.2"

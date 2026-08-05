@@ -8,6 +8,17 @@
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let proto_root = "../../../../proto";
 
+    // Use a vendored protoc rather than whatever is on PATH.
+    //
+    // prost-build shells out to protoc and does not bundle it, so the build
+    // otherwise depends on the host: absent on a CI runner, and present but
+    // unable to resolve google/protobuf/*.proto when installed from Debian's
+    // protobuf-compiler. Vendoring both the binary and its well-known-type
+    // includes makes this build identical on a laptop, in CI and in Docker.
+    let protoc = protoc_bin_vendored::protoc_bin_path()?;
+    let wkt_include = protoc_bin_vendored::include_path()?;
+    std::env::set_var("PROTOC", &protoc);
+
     tonic_prost_build::configure()
         .build_server(true)
         .build_client(false)
@@ -22,7 +33,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 format!("{proto_root}/pips/workplace/v1/workplace.proto"),
                 format!("{proto_root}/pips/events/v1/events.proto"),
             ],
-            &[proto_root.to_string()],
+            &[
+                proto_root.to_string(),
+                wkt_include.to_string_lossy().into_owned(),
+            ],
         )?;
 
     println!("cargo:rerun-if-changed={proto_root}");
