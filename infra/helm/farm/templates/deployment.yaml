@@ -35,6 +35,10 @@ spec:
               value: "{{ .Values.workplace.y }}"
             - name: AMQP_URL
               value: "amqp://pipsim:pipsim@rabbitmq.{{ .Values.platformNamespace }}.svc.cluster.local:5672/pipsim"
+            # Shift state, shared by every replica. Without this each replica
+            # keeps its own and only one of them may run.
+            - name: REDIS_URL
+              value: "redis://redis.{{ .Values.platformNamespace }}.svc.cluster.local:6379/0"
           readinessProbe:
             httpGet:
               path: /healthz

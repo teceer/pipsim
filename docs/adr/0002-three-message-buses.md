@@ -47,11 +47,24 @@ one replica. With allocation on a queue the broker arbitrates instead, and that
 was measured working: two farm replicas took 27 and 111 offers with no
 double-hires.
 
-It also exposed the next problem honestly. Allocation distributes cleanly, but
-everything *after* the hire does not: shift state lives in each replica's
-memory while `Work` and `EndShift` are ordinary RPCs that the Service
-load-balances, so a pip hired by one replica is unknown to the other. That is a
-shared-state problem, not a messaging one, and no amount of queueing fixes it.
+It also exposed the next problem honestly, and the distinction is the point of
+this ADR. Allocation distributed cleanly, but everything *after* the hire did
+not: shift state lived in each replica's memory while `Work` and `EndShift` are
+ordinary RPCs that the Service load-balances, so a pip hired by one replica was
+unknown to the other. Two replicas held 24 and 13 shifts while the gateway
+believed in 24.
+
+That was a shared-state problem, not a messaging one, and no amount of queueing
+would have fixed it — a fourth bus would only have moved the disagreement. The
+fix was Redis: one hash per workplace, and two Lua scripts so reap-check-claim
+and renew-and-price are each a single atomic operation. Capacity became a
+property of the workplace rather than a property of a pod. Measured at two
+replicas: 28 claims accepted by each, never more than the 24-position limit held
+at once, and the gateway's headcount agreeing with `HLEN` exactly.
+
+Note which bus that is *not*. Redis is on the list for BullMQ's delayed jobs;
+this use is plain shared state with a lease, and calling it a message bus would
+be the same category error the table above exists to prevent.
 
 ## Consequences
 

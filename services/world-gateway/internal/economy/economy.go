@@ -100,7 +100,14 @@ func (d *Driver) Run(ctx context.Context, interval time.Duration) {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			if err := d.cycle(ctx); err != nil {
+			// A deadline per cycle, so one unresponsive peer costs a round
+			// rather than the loop. Cutting a cycle short is cheap: Work pays
+			// for elapsed ticks, so a pip skipped now is paid in full next
+			// time.
+			cycleCtx, cancel := context.WithTimeout(ctx, 4*interval)
+			err := d.cycle(cycleCtx)
+			cancel()
+			if err != nil {
 				// The world keeps turning without us; log and retry next tick
 				// rather than tearing the gateway down.
 				slog.Warn("economy cycle failed", "err", err)

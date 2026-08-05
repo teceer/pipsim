@@ -11,12 +11,15 @@
 // applies those need deltas — clamped, because a workplace is a separate
 // service that may be wrong — and it is sim-core that owns whether the pip
 // lives or dies.
+//
+// Where the shifts are *kept* is a Store (see store.go). That indirection is
+// not architecture for its own sake: with the state in each replica's memory,
+// two replicas held 24 and 13 shifts while the gateway believed in 24.
 package farm
 
 import (
 	"context"
 	"log/slog"
-	"sync"
 	"time"
 
 	"connectrpc.com/connect"
@@ -57,7 +60,7 @@ const (
 
 	// One Work call is never credited for more than this, so a driver that
 	// stalls and resumes cannot hand out a windfall.
-	maxTicksPerWork = 40
+	MaxTicksPerWork = 40
 
 	// A shift nobody has asked to Work for this long is reaped.
 	//
@@ -69,78 +72,63 @@ const (
 	// A lease rather than a reconciliation RPC, because the workplace should not
 	// have to ask sim-core about pips — it is not the workplace's business who
 	// exists. If the shift stops being exercised, it stops being real.
-	shiftLease = 15 * time.Second
+	ShiftLease = 15 * time.Second
 )
 
-type shift struct {
-	startedTick  uint64
-	lastWorkTick uint64
-	lastWork     time.Time
-}
-
-// Service tracks who is on shift. Not persisted: pips belong to sim-core.
+// Service answers the workplace contract. Shift state lives in the Store.
 type Service struct {
-	mu       sync.RWMutex
-	onShift  map[uint64]*shift
+	store    Store
 	id       uint64
 	position *simv1.Vec2
-	now      func() time.Time
 }
 
+// New builds a farm holding its shifts in memory — correct at one replica.
 func New(workplaceID uint64, x, y int32) *Service {
+	return NewWithStore(
+		newMemStore(MaxWorkers, ShiftLease, MaxTicksPerWork, time.Now),
+		workplaceID, x, y,
+	)
+}
+
+func NewWithStore(store Store, workplaceID uint64, x, y int32) *Service {
 	return &Service{
-		onShift:  make(map[uint64]*shift),
+		store:    store,
 		id:       workplaceID,
 		position: &simv1.Vec2{XMilli: x, YMilli: y},
-		now:      time.Now,
-	}
-}
-
-// reap drops shifts whose lease has expired. Callers must hold the write lock.
-func (s *Service) reapLocked() {
-	for pip, sh := range s.onShift {
-		if s.now().Sub(sh.lastWork) > shiftLease {
-			delete(s.onShift, pip)
-			slog.Info("shift lease expired", "pip", pip, "workers", len(s.onShift))
-		}
 	}
 }
 
 func (s *Service) Describe(
-	_ context.Context,
+	ctx context.Context,
 	_ *connect.Request[workplacev1.DescribeRequest],
 ) (*connect.Response[workplacev1.DescribeResponse], error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
+	workers, err := s.store.Count(ctx)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeUnavailable, err)
+	}
 
 	return connect.NewResponse(&workplacev1.DescribeResponse{
 		WorkplaceId:    s.id,
 		Kind:           "farm",
 		DisplayName:    "Farm",
 		MaxWorkers:     MaxWorkers,
-		CurrentWorkers: int32(len(s.onShift)),
+		CurrentWorkers: int32(workers),
 		Position:       s.position,
 		Produces:       []workplacev1.ResourceKind{workplacev1.ResourceKind_RESOURCE_KIND_GRAIN},
 	}), nil
 }
 
+// CanEmploy is advisory and always has been: it reports headroom, and the
+// position is only actually taken by StartShift or ConsiderOffer.
 func (s *Service) CanEmploy(
-	_ context.Context,
-	req *connect.Request[workplacev1.CanEmployRequest],
+	ctx context.Context,
+	_ *connect.Request[workplacev1.CanEmployRequest],
 ) (*connect.Response[workplacev1.CanEmployResponse], error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	// Reap first: a full-looking workplace may be full of expired leases.
-	s.reapLocked()
-
-	if _, already := s.onShift[req.Msg.GetPipId()]; already {
-		return connect.NewResponse(&workplacev1.CanEmployResponse{
-			Allowed: false,
-			Reason:  "already on shift here",
-		}), nil
+	workers, err := s.store.Count(ctx)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeUnavailable, err)
 	}
-	if len(s.onShift) >= MaxWorkers {
+	if workers >= MaxWorkers {
 		return connect.NewResponse(&workplacev1.CanEmployResponse{
 			Allowed: false,
 			Reason:  "no free positions",
@@ -150,53 +138,36 @@ func (s *Service) CanEmploy(
 }
 
 func (s *Service) StartShift(
-	_ context.Context,
+	ctx context.Context,
 	req *connect.Request[workplacev1.StartShiftRequest],
 ) (*connect.Response[workplacev1.StartShiftResponse], error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.reapLocked()
-
-	// Re-checked under the write lock. CanEmploy is advisory: between that call
-	// and this one another caller may have taken the last position.
-	if len(s.onShift) >= MaxWorkers {
+	accepted, reason, err := s.store.Claim(ctx, req.Msg.GetPipId(), req.Msg.GetTick())
+	if err != nil {
+		return nil, connect.NewError(connect.CodeUnavailable, err)
+	}
+	if !accepted {
 		return connect.NewResponse(&workplacev1.StartShiftResponse{
 			Accepted: false,
-			Reason:   "no free positions",
+			Reason:   reason,
 		}), nil
 	}
 
-	s.onShift[req.Msg.GetPipId()] = &shift{
-		startedTick:  req.Msg.GetTick(),
-		lastWorkTick: req.Msg.GetTick(),
-		lastWork:     s.now(),
-	}
-	slog.Info("shift started",
-		"pip", req.Msg.GetPipId(),
-		"tick", req.Msg.GetTick(),
-		"workers", len(s.onShift))
-
+	slog.Info("shift started", "pip", req.Msg.GetPipId(), "tick", req.Msg.GetTick())
 	return connect.NewResponse(&workplacev1.StartShiftResponse{Accepted: true}), nil
 }
 
 func (s *Service) Work(
-	_ context.Context,
+	ctx context.Context,
 	req *connect.Request[workplacev1.WorkRequest],
 ) (*connect.Response[workplacev1.WorkResponse], error) {
 	// Work renews the lease, which is what makes an abandoned shift expire.
-	tick := req.Msg.GetTick()
-
-	s.mu.Lock()
-	sh, working := s.onShift[req.Msg.GetPipId()]
-	var elapsed int32
-	if working {
-		if tick > sh.lastWorkTick {
-			elapsed = int32(min(tick-sh.lastWorkTick, maxTicksPerWork))
-		}
-		sh.lastWorkTick = tick
-		sh.lastWork = s.now()
+	elapsed, working, err := s.store.Touch(ctx, req.Msg.GetPipId(), req.Msg.GetTick())
+	if err != nil {
+		// Deliberately an error rather than shift_should_end. A store blip is
+		// not evidence the pip has left, and answering "end the shift" would
+		// have every worker fired the moment Redis hiccups.
+		return nil, connect.NewError(connect.CodeUnavailable, err)
 	}
-	s.mu.Unlock()
 
 	if !working {
 		// Not an error: sim-core may have decided the pip is dead or has left,
@@ -223,53 +194,46 @@ func (s *Service) Work(
 }
 
 func (s *Service) EndShift(
-	_ context.Context,
+	ctx context.Context,
 	req *connect.Request[workplacev1.EndShiftRequest],
 ) (*connect.Response[workplacev1.EndShiftResponse], error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if sh, ok := s.onShift[req.Msg.GetPipId()]; ok {
-		delete(s.onShift, req.Msg.GetPipId())
+	started, found, err := s.store.Release(ctx, req.Msg.GetPipId(), req.Msg.GetTick())
+	if err != nil {
+		return nil, connect.NewError(connect.CodeUnavailable, err)
+	}
+	if found {
 		slog.Info("shift ended",
 			"pip", req.Msg.GetPipId(),
 			"reason", req.Msg.GetReason(),
-			"ticks_worked", req.Msg.GetTick()-sh.startedTick,
-			"workers", len(s.onShift))
+			"ticks_worked", req.Msg.GetTick()-started)
 	}
 	return connect.NewResponse(&workplacev1.EndShiftResponse{}), nil
 }
 
 // ConsiderOffer answers a work offer taken off the queue.
 //
-// Capacity check and shift start happen under one lock rather than as separate
-// CanEmploy/StartShift calls: an offer is claimed by exactly one consumer, so
-// there is no window for another caller to take the position in between, and
-// pretending otherwise would just be a slower version of the same answer.
-func (s *Service) ConsiderOffer(_ context.Context, pipID, tick uint64) (bool, string) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.reapLocked()
-
-	if _, already := s.onShift[pipID]; already {
-		return false, "already on shift here"
+// Capacity check and shift start are one atomic operation in the store rather
+// than separate CanEmploy/StartShift calls. That matters more now than it did
+// in memory: with several replicas sharing one store, "is there room" and "take
+// the room" have to be indivisible or two consumers race for the last position.
+func (s *Service) ConsiderOffer(ctx context.Context, pipID, tick uint64) (bool, string) {
+	accepted, reason, err := s.store.Claim(ctx, pipID, tick)
+	if err != nil {
+		// Requeued by the consumer: a store failure is not a rejection.
+		slog.Warn("could not claim a position", "pip", pipID, "err", err)
+		return false, "store unavailable"
 	}
-	if len(s.onShift) >= MaxWorkers {
-		return false, "no free positions"
+	if accepted {
+		slog.Info("offer accepted", "pip", pipID, "tick", tick)
 	}
-
-	s.onShift[pipID] = &shift{
-		startedTick:  tick,
-		lastWorkTick: tick,
-		lastWork:     s.now(),
-	}
-	slog.Info("offer accepted", "pip", pipID, "tick", tick, "workers", len(s.onShift))
-	return true, ""
+	return accepted, reason
 }
 
 // Workers reports the current headcount, for the health endpoint.
 func (s *Service) Workers() int {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	return len(s.onShift)
+	n, err := s.store.Count(context.Background())
+	if err != nil {
+		return -1
+	}
+	return n
 }

@@ -10,6 +10,12 @@ import (
 	workplacev1 "github.com/teceer/pipsim/gen/go/pips/workplace/v1"
 )
 
+// newAt builds a farm whose lease reaping is driven by a clock the test owns,
+// so "fifteen seconds pass" costs nothing.
+func newAt(clock func() time.Time) *Service {
+	return NewWithStore(newMemStore(MaxWorkers, ShiftLease, MaxTicksPerWork, clock), 1, 0, 0)
+}
+
 func hire(t *testing.T, s *Service, pip uint64) bool {
 	t.Helper()
 	res, err := s.StartShift(context.Background(),
@@ -37,8 +43,7 @@ func TestCapacityIsEnforced(t *testing.T) {
 // longer existed, so nobody could ever be hired again.
 func TestAbandonedShiftsExpireAndFreeTheirPositions(t *testing.T) {
 	now := time.Now()
-	s := New(1, 0, 0)
-	s.now = func() time.Time { return now }
+	s := newAt(func() time.Time { return now })
 
 	for i := 1; i <= MaxWorkers; i++ {
 		hire(t, s, uint64(i))
@@ -48,7 +53,7 @@ func TestAbandonedShiftsExpireAndFreeTheirPositions(t *testing.T) {
 	}
 
 	// Nobody works these shifts; time simply passes.
-	now = now.Add(shiftLease + time.Second)
+	now = now.Add(ShiftLease + time.Second)
 
 	if !hire(t, s, 9999) {
 		t.Fatal("expired shifts did not free their positions")
@@ -60,14 +65,13 @@ func TestAbandonedShiftsExpireAndFreeTheirPositions(t *testing.T) {
 
 func TestWorkingRenewsTheLease(t *testing.T) {
 	now := time.Now()
-	s := New(1, 0, 0)
-	s.now = func() time.Time { return now }
+	s := newAt(func() time.Time { return now })
 
 	hire(t, s, 7)
 
 	// Keep working across a span far longer than the lease.
 	for i := 0; i < 5; i++ {
-		now = now.Add(shiftLease - time.Second)
+		now = now.Add(ShiftLease - time.Second)
 		res, err := s.Work(context.Background(),
 			connect.NewRequest(&workplacev1.WorkRequest{PipId: 7, Tick: uint64(i)}))
 		if err != nil {
@@ -140,7 +144,7 @@ func TestWorkIsCappedAfterALongGap(t *testing.T) {
 
 	res, _ := s.Work(context.Background(),
 		connect.NewRequest(&workplacev1.WorkRequest{PipId: 5, Tick: 100_000}))
-	if got := res.Msg.GetNeedDeltas()[needFood]; got != foodPerTick*maxTicksPerWork {
-		t.Fatalf("food after a long gap = %d, want the cap %d", got, foodPerTick*maxTicksPerWork)
+	if got := res.Msg.GetNeedDeltas()[needFood]; got != foodPerTick*MaxTicksPerWork {
+		t.Fatalf("food after a long gap = %d, want the cap %d", got, foodPerTick*MaxTicksPerWork)
 	}
 }

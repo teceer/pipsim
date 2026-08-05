@@ -52,6 +52,18 @@ func h2cClient() *http.Client {
 	return &http.Client{
 		Transport: &http2.Transport{
 			AllowHTTP: true,
+
+			// Health-check idle connections, because in a cluster the peer
+			// disappears without closing anything.
+			//
+			// This cost a stalled gateway: rolling the farm terminated every pod
+			// it was connected to, and the transport went on writing requests
+			// into a connection nobody was reading. No error, no timeout, no log
+			// — the economy driver simply blocked forever inside one Work call.
+			// A pod is not a server that says goodbye.
+			ReadIdleTimeout: 10 * time.Second,
+			PingTimeout:     5 * time.Second,
+
 			DialTLSContext: func(ctx context.Context, network, addr string, _ *tls.Config) (net.Conn, error) {
 				var d net.Dialer
 				return d.DialContext(ctx, network, addr)
