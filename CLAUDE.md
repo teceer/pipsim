@@ -68,7 +68,11 @@ iterating on code.
 
 - `gen/` is committed on purpose — read the generated types from there instead of
   running `buf generate`. After changing a `.proto`, run `make gen` from the root.
-- Rust has nothing in `gen/` — `tonic-build` reads `proto/` directly from `build.rs`.
+- Two languages are absent from `gen/`: **Rust** (`tonic-build` reads `proto/`
+  directly from `build.rs`) and **Elixir** (no hosted plugin, and the local
+  escript's output paths do not compose with buf). See `gen/README.md`.
+- `make proto-lint` runs `buf breaking` — renaming or renumbering a field fails
+  it. Contracts change by adding, not by editing.
 - Every service has its own `CLAUDE.md` with that language's idioms. Read it
   before editing the service.
 - Architectural decisions and their rationale live in `docs/adr/`.

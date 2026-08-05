@@ -33,8 +33,10 @@ build:
 # --- contracts --------------------------------------------------------------
 
 ## gen: generate code from proto/ into gen/ (Rust generates itself via build.rs)
+# Elixir needs `mix escript.install hex protobuf` on PATH; Go and TS use
+# hosted plugins and need nothing installed.
 gen:
-	cd proto && buf generate --template buf.gen.yaml -o ..
+	buf generate --template proto/buf.gen.yaml -o . proto
 
 ## gen-check: verify gen/ is up to date (used in CI)
 gen-check: gen

@@ -1,5 +1,7 @@
-# Generates into gen/. Rust is absent on purpose — tonic-build reads proto/
-# directly from build.rs, which does not fit buf's plugin model.
+# Generates into gen/, which is committed. Two languages are absent on purpose:
+# Rust (tonic-build reads proto/ from build.rs) and Elixir (no hosted plugin,
+# and the local escript's output paths do not compose with buf). Both are
+# explained in gen/README.md.
 version: v2
 
 managed:
@@ -26,7 +28,14 @@ plugins:
     out: gen/ts
     opt: target=ts
 
-  # Elixir: services/broadcast and services/workplaces/tavern.
-  - local: protoc-gen-elixir
-    out: gen/elixir
-    opt: plugins=grpc
+  # Elixir is deliberately absent for now — see gen/README.md.
+  #
+  # The BSR hosts no Elixir plugin, so it would have to be the local
+  # `protoc-gen-elixir` escript, and that escript writes the full package path
+  # itself while buf also nests output per source directory. The result is
+  # gen/elixir/pips/sim/v1/pips/sim/v1/sim.pb.ex, and `strategy: all` does not
+  # change it.
+  #
+  # Since no Elixir service consumes a contract yet, generating dead code behind
+  # a path-rewriting hack is not worth it. Add this back — with the paths sorted
+  # out — when services/broadcast actually reads a proto.

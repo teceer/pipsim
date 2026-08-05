@@ -14,7 +14,7 @@ service SimService {
   rpc Snapshot(SnapshotRequest) returns (SnapshotResponse);
 
   // Streams deltas as they are produced. This is what the render path uses.
-  rpc WatchDeltas(WatchDeltasRequest) returns (stream WorldDelta);
+  rpc WatchDeltas(WatchDeltasRequest) returns (stream WatchDeltasResponse);
 
   // Queues an intent for the next tick. Never applied immediately — applying
   // mid-tick would break determinism.
@@ -106,6 +106,14 @@ message SnapshotResponse {
 message WatchDeltasRequest {
   // Resume from this tick. 0 means "from now".
   uint64 from_tick = 1;
+}
+
+// A thin envelope around WorldDelta rather than streaming the delta directly.
+// WorldDelta is a domain type that also appears inside StepResponse, so giving
+// the stream its own response message leaves room to add stream-specific
+// fields — server timestamps, resync hints — without disturbing it.
+message WatchDeltasResponse {
+  WorldDelta delta = 1;
 }
 
 message SubmitIntentRequest {

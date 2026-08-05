@@ -17,7 +17,7 @@ service WorldService {
   // Server-streamed deltas. The server is authoritative at a low tick rate
   // (10 Hz); the client interpolates and predicts between ticks using the same
   // sim code compiled to WASM.
-  rpc StreamWorld(StreamWorldRequest) returns (stream WorldUpdate);
+  rpc StreamWorld(StreamWorldRequest) returns (stream StreamWorldResponse);
 
   // Player actions. Forwarded to sim-core as intents applied on the next tick.
   rpc BuildWorkplace(BuildWorkplaceRequest) returns (BuildWorkplaceResponse);
@@ -42,7 +42,7 @@ message StreamWorldRequest {
   uint64 from_tick = 2;
 }
 
-message WorldUpdate {
+message StreamWorldResponse {
   pips.sim.v1.WorldDelta delta = 1;
   repeated pips.workplace.v1.DescribeResponse changed_workplaces = 2;
 }
