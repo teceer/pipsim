@@ -99,8 +99,18 @@ agents but are the fastest orientation for humans too.
 
 ## Status
 
-Early. The simulation core is real and tested; most services are contracts plus
-skeletons. The proto definitions are the part worth reading first.
+Early, but not vapour. What is actually verified in CI:
+
+- the simulation core, with tests including the determinism invariant
+- native/WASM parity, by comparing state hashes
+- contract lint and backward-compatibility, plus `gen/` being current
+- all three Terraform layers validating against real provider schemas
+- every Go module vetting and building, which also proves `gen/go` compiles
+- the web client typechecking against the generated WASM bindings
+
+Not yet real: the services themselves are contracts plus skeletons, and nothing
+has been applied to an actual cluster. The proto definitions are the part worth
+reading first.
 
 ## License
 

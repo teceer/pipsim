@@ -105,9 +105,9 @@ module "topics" {
   source   = "../modules/kafka-topic"
   for_each = local.topics
 
-  name              = each.key
-  partitions        = each.value.partitions
-  retention_ms      = each.value.retention_ms
+  name               = each.key
+  partitions         = each.value.partitions
+  retention_ms       = each.value.retention_ms
   replication_factor = 1
 }
 

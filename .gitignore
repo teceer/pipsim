@@ -9,9 +9,9 @@ node_modules/
 web/src/sim-wasm/
 
 # terraform: local state is deliberate (see infra/terraform/00-cluster/main.tf),
-# but it must never be committed
+# but it must never be committed. Lock files are the opposite — they pin
+# provider versions, so they belong in the repo.
 **/.terraform/
-**/.terraform.lock.hcl
 *.tfstate
 *.tfstate.*
 *.tfvars

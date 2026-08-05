@@ -1,0 +1,9 @@
+// Ties the Go modules in this monorepo together so services build against the
+// checked-in contracts in gen/go without replace directives or a publish step.
+go 1.23
+
+use (
+	./gen/go
+	./services/workplaces/farm
+	./services/world-gateway
+)

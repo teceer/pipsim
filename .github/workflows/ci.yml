@@ -94,6 +94,60 @@ jobs:
           git diff --exit-code gen/ \
             || (echo "::error::gen/ is stale — run 'make gen' and commit"; exit 1)
 
+  go:
+    name: go services
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+
+      # `go vet ./...` from a workspace root fails — the root is not itself a
+      # module — so iterate the modules go.work lists. This also proves the
+      # checked-in bindings in gen/go compile, not merely that buf emitted them.
+      - name: vet and build every module
+        run: |
+          set -e
+          out=$(mktemp -d)
+          for m in $(go work edit -json | jq -r '.Use[].DiskPath'); do
+            echo "==> $m"
+            cd "$m"
+            # vet typechecks everything, libraries included.
+            go vet ./...
+            # Link the binaries too, into a temp dir: `go build ./...` drops the
+            # compiled binary next to the sources, and gen/go has no main
+            # package at all, which makes an unconditional -o an error.
+            mains=$(go list -f '{{if eq .Name "main"}}{{.ImportPath}}{{end}}' ./...)
+            if [ -n "$mains" ]; then go build -o "$out/" $mains; fi
+            cd - >/dev/null
+          done
+
+  terraform:
+    name: terraform
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      - name: fmt
+        run: terraform fmt -recursive -check -diff infra/terraform
+
+      # -backend=false because there is no cluster here; this checks the
+      # configuration and provider schemas, which is what actually rots.
+      - name: validate each layer
+        run: |
+          for d in infra/terraform/*/; do
+            [ -f "$d/main.tf" ] || continue
+            echo "==> $d"
+            terraform -chdir="$d" init -backend=false -input=false
+            terraform -chdir="$d" validate
+          done
+
   web:
     name: web client
     runs-on: ubuntu-latest

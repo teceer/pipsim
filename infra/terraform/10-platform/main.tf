@@ -46,6 +46,42 @@ provider "kubernetes" {
   config_context = var.kube_context
 }
 
+# Namespaces live here rather than in layer 00 because a provider configured
+# from an attribute of a resource created in the same apply is not reliably
+# resolvable at plan time. By this layer the cluster already exists.
+#
+# Application and platform namespaces are separate so `make infra-down` can drop
+# the platform without touching running services, and so quotas can differ.
+resource "kubernetes_namespace" "pipsim" {
+  metadata {
+    name   = "pipsim"
+    labels = { "app.kubernetes.io/part-of" = "pipsim" }
+  }
+}
+
+resource "kubernetes_namespace" "platform" {
+  metadata {
+    name   = var.namespace
+    labels = { "app.kubernetes.io/part-of" = "pipsim" }
+  }
+}
+
+# A quota, because the point of running this locally is to feel the constraints.
+# Without one, a runaway service just eats the laptop.
+resource "kubernetes_resource_quota" "pipsim" {
+  metadata {
+    name      = "pipsim-quota"
+    namespace = kubernetes_namespace.pipsim.metadata[0].name
+  }
+  spec {
+    hard = {
+      "requests.cpu"    = "4"
+      "requests.memory" = "8Gi"
+      "pods"            = "40"
+    }
+  }
+}
+
 # Redpanda rather than Kafka: same wire protocol, single binary, no ZooKeeper
 # and no KRaft ceremony, and roughly an order of magnitude lighter on a laptop.
 # Everything speaks to it with ordinary Kafka clients.
@@ -54,7 +90,7 @@ resource "helm_release" "redpanda" {
   repository = "https://charts.redpanda.com"
   chart      = "redpanda"
   version    = "5.9.5"
-  namespace  = var.namespace
+  namespace  = kubernetes_namespace.platform.metadata[0].name
 
   set {
     name  = "statefulset.replicas"
@@ -85,7 +121,7 @@ resource "helm_release" "rabbitmq" {
   repository = "https://charts.bitnami.com/bitnami"
   chart      = "rabbitmq"
   version    = "15.0.5"
-  namespace  = var.namespace
+  namespace  = kubernetes_namespace.platform.metadata[0].name
 
   set {
     name  = "auth.username"
@@ -106,7 +142,7 @@ resource "helm_release" "redis" {
   repository = "https://charts.bitnami.com/bitnami"
   chart      = "redis"
   version    = "20.2.1"
-  namespace  = var.namespace
+  namespace  = kubernetes_namespace.platform.metadata[0].name
 
   set {
     name  = "architecture"
@@ -123,7 +159,7 @@ resource "helm_release" "postgres" {
   repository = "https://charts.bitnami.com/bitnami"
   chart      = "postgresql"
   version    = "16.2.1"
-  namespace  = var.namespace
+  namespace  = kubernetes_namespace.platform.metadata[0].name
 
   set {
     name  = "auth.postgresPassword"
@@ -143,7 +179,7 @@ resource "helm_release" "otel_collector" {
   repository = "https://open-telemetry.github.io/opentelemetry-helm-charts"
   chart      = "opentelemetry-collector"
   version    = "0.108.0"
-  namespace  = var.namespace
+  namespace  = kubernetes_namespace.platform.metadata[0].name
 
   set {
     name  = "mode"
@@ -160,7 +196,7 @@ resource "helm_release" "jaeger" {
   repository = "https://jaegertracing.github.io/helm-charts"
   chart      = "jaeger"
   version    = "3.3.1"
-  namespace  = var.namespace
+  namespace  = kubernetes_namespace.platform.metadata[0].name
 
   set {
     name  = "allInOne.enabled"

@@ -4,6 +4,10 @@
 # and RabbitMQ providers in layer 20 need those brokers *running* in order to
 # initialize. A single `terraform apply` cannot express that, so the ordering is
 # enforced by the root Makefile instead.
+#
+# This layer creates the cluster and nothing else. Namespaces and quotas live in
+# layer 10, because a `kubernetes` provider configured from an attribute of a
+# resource created in the same apply is not reliably resolvable at plan time.
 
 terraform {
   required_version = ">= 1.9"
@@ -11,11 +15,7 @@ terraform {
   required_providers {
     k3d = {
       source  = "SneakyBugs/k3d"
-      version = "~> 0.0.6"
-    }
-    kubernetes = {
-      source  = "hashicorp/kubernetes"
-      version = "~> 2.33"
+      version = "~> 1.0"
     }
   }
 
@@ -38,62 +38,44 @@ variable "agent_count" {
   default     = 2
 }
 
+variable "registry_port" {
+  description = "Host port for the in-cluster registry Tilt pushes images to."
+  type        = number
+  default     = 5050
+}
+
+# The provider takes k3d's own config format rather than exposing individual
+# arguments, so this is the same YAML you would hand to `k3d cluster create
+# --config`. Awkward for validation — Terraform cannot check inside the string —
+# but it does mean the file stays in step with k3d's documentation.
 resource "k3d_cluster" "pipsim" {
-  name    = var.cluster_name
-  servers = 1
-  agents  = var.agent_count
+  name = var.cluster_name
 
-  # The registry lets Tilt push images without a round trip to a remote one.
-  registry_create {
-    name      = "pipsim-registry"
-    host_port = 5050
-  }
+  k3d_config = yamlencode({
+    apiVersion = "k3d.io/v1alpha5"
+    kind       = "Simple"
+    metadata   = { name = var.cluster_name }
 
-  port {
-    host_port      = 8080
-    container_port = 80
-    node_filters   = ["loadbalancer"]
-  }
-}
+    servers = 1
+    agents  = var.agent_count
 
-provider "kubernetes" {
-  config_path    = "~/.kube/config"
-  config_context = "k3d-${var.cluster_name}"
-}
-
-# Application namespace and platform namespace are separate so that
-# `make infra-down` can drop the platform without touching running services,
-# and so quotas can differ.
-resource "kubernetes_namespace" "pipsim" {
-  depends_on = [k3d_cluster.pipsim]
-  metadata {
-    name   = "pipsim"
-    labels = { "app.kubernetes.io/part-of" = "pipsim" }
-  }
-}
-
-resource "kubernetes_namespace" "platform" {
-  depends_on = [k3d_cluster.pipsim]
-  metadata {
-    name   = "pipsim-platform"
-    labels = { "app.kubernetes.io/part-of" = "pipsim" }
-  }
-}
-
-# A quota, because the whole point of running this locally is to feel the
-# constraints. Without one, a runaway service just eats the laptop.
-resource "kubernetes_resource_quota" "pipsim" {
-  metadata {
-    name      = "pipsim-quota"
-    namespace = kubernetes_namespace.pipsim.metadata[0].name
-  }
-  spec {
-    hard = {
-      "requests.cpu"    = "4"
-      "requests.memory" = "8Gi"
-      "pods"            = "40"
+    # A local registry so Tilt can push images without a round trip to a
+    # remote one — that round trip is most of the edit-loop latency otherwise.
+    registries = {
+      create = {
+        name     = "${var.cluster_name}-registry"
+        host     = "0.0.0.0"
+        hostPort = tostring(var.registry_port)
+      }
     }
-  }
+
+    ports = [
+      {
+        port        = "8080:80"
+        nodeFilters = ["loadbalancer"]
+      },
+    ]
+  })
 }
 
 output "cluster_name" {
@@ -105,5 +87,16 @@ output "kube_context" {
 }
 
 output "registry" {
-  value = "localhost:5050"
+  value = "localhost:${var.registry_port}"
+}
+
+# Consumed by layer 10 if you would rather wire the providers from state than
+# from ~/.kube/config.
+output "kubeconfig" {
+  value     = k3d_cluster.pipsim.kubeconfig
+  sensitive = true
+}
+
+output "host" {
+  value = k3d_cluster.pipsim.host
 }
