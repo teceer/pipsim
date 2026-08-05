@@ -21,7 +21,9 @@ impl Rng {
             x = (x ^ (x >> 27)).wrapping_mul(0x94d049bb133111eb);
             x ^ (x >> 31)
         };
-        Rng { s: [next(), next(), next(), next()] }
+        Rng {
+            s: [next(), next(), next(), next()],
+        }
     }
 
     pub fn next_u64(&mut self) -> u64 {

@@ -1,0 +1,121 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# CI runs only what can actually be verified without a cluster. The rule from
+# CLAUDE.md — every service is testable without Kubernetes — is what makes that
+# possible, and this workflow is where it stops being aspirational.
+jobs:
+  sim-core:
+    name: simulation core
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+          components: clippy, rustfmt
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: services/sim-core
+
+      # The core has zero dependencies, so this is fast and cannot be broken by
+      # the ecosystem.
+      - name: test
+        working-directory: services/sim-core
+        run: cargo test -p sim
+
+      - name: lint
+        working-directory: services/sim-core
+        run: |
+          cargo clippy -p sim -p sim-wasm --all-targets -- -D warnings
+          cargo fmt --check -p sim -p sim-wasm
+
+  parity:
+    name: native/wasm parity
+    runs-on: ubuntu-latest
+    # The claim this project is built around: the browser predicts using the
+    # server's own code. If native and WASM ever disagree, that claim is false
+    # and client prediction is silently wrong.
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: services/sim-core
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: install wasm-bindgen-cli
+        run: cargo install wasm-bindgen-cli --version 0.2.126
+
+      - name: native vs wasm
+        run: ./tools/parity/run.sh
+
+  contracts:
+    name: proto
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: bufbuild/buf-action@v1
+        with:
+          setup_only: true
+
+      - name: lint
+        run: buf lint proto
+
+      # The config in buf.yaml enforces nothing on its own — this step is what
+      # makes it real. Renaming a field or dropping one without `reserved` fails
+      # here instead of quietly breaking consumers that replay an older Kafka log.
+      #
+      # Skipped on main, where there is no earlier revision to compare against.
+      - name: no breaking contract changes
+        if: github.event_name == 'pull_request'
+        run: buf breaking proto --against '.git#branch=main,subdir=proto'
+
+      # gen/ is committed on purpose; this is what stops it going stale.
+      - name: generated code is current
+        run: |
+          make gen
+          git diff --exit-code gen/ \
+            || (echo "::error::gen/ is stale — run 'make gen' and commit"; exit 1)
+
+  web:
+    name: web client
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: install wasm-bindgen-cli
+        run: cargo install wasm-bindgen-cli --version 0.2.126
+
+      # The client cannot typecheck without the WASM bindings, which is the
+      # point — the contract between them is checked, not assumed.
+      - name: build wasm bindings
+        run: make -C services/sim-core wasm
+
+      - name: typecheck
+        working-directory: web
+        run: |
+          bun install
+          ./node_modules/.bin/tsc --noEmit

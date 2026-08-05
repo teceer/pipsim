@@ -5,8 +5,11 @@ modules:
 lint:
   use:
     - STANDARD
-  except:
-    - PACKAGE_VERSION_SUFFIX
+
 breaking:
+  # FILE rather than WIRE on purpose. WIRE only catches changes that break the
+  # bytes on the wire; FILE also catches renamed fields and messages moved
+  # between files. Those are wire-compatible but break compiled code in Go, TS
+  # and Elixir — and since gen/ is committed, that breakage lands in the repo.
   use:
     - FILE

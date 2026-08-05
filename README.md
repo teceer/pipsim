@@ -16,6 +16,9 @@ its event log.
 - **Deterministic replay.** Same seed plus same intents rebuilds the same world
   byte for byte. You can rewind to tick 4,700 and watch exactly why everyone
   starved. Guarded by a test, not by hope.
+- **The prediction claim is checked, not asserted.** `make parity` runs the same
+  scenario through the native and the WASM build and compares state hashes. If
+  they ever diverge, client prediction has started lying — CI fails on it.
 - **A workplace is a microservice.** Farm, workshop and tavern each implement one
   shared `.proto` contract, in three different languages. Adding a building type
   touches neither the core nor the gateway.
@@ -63,10 +66,19 @@ tilt up              # hot reload
 make infra-down
 ```
 
-Start here if you want to see the interesting part immediately:
+See the client running against the WASM core — 300 pips, simulation at 10 Hz
+interpolated to display rate:
 
 ```bash
-cd services/sim-core && make determinism
+make -C services/sim-core wasm     # build the prediction module
+cd web && bun install && bun run dev
+```
+
+And the two checks worth running first:
+
+```bash
+make -C services/sim-core determinism   # same seed -> same world
+make parity                             # native and WASM agree byte for byte
 ```
 
 ## Repository layout

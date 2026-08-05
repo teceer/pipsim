@@ -42,8 +42,11 @@ gen-check: gen
 	  (echo "gen/ is stale — run 'make gen' and commit the result"; exit 1)
 
 ## proto-lint: lint contracts and check backward compatibility
+# Run from the repo root, not from proto/: buf resolves the `.git` input
+# relative to the working directory, and .git lives here.
 proto-lint:
-	cd proto && buf lint && buf breaking --against '.git#branch=main,subdir=proto'
+	buf lint proto
+	buf breaking proto --against '.git#branch=main,subdir=proto'
 
 # --- development loop -------------------------------------------------------
 
@@ -87,9 +90,13 @@ e2e:
 	$(MAKE) dev-platform
 	go run ./tools/loadgen -duration 60s -pips 500 -assert
 
+## parity: prove native and WASM simulation cores agree byte for byte
+parity:
+	./tools/parity/run.sh
+
 ## replay: rebuild the world from the Kafka event log
 replay:
 	go run ./tools/replay -from-beginning
 
 .PHONY: help test lint build gen gen-check proto-lint dev dev-platform \
-        infra-up infra-down infra-plan e2e replay
+        infra-up infra-down infra-plan e2e parity replay

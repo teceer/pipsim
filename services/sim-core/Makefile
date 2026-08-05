@@ -27,10 +27,16 @@ gen:
 
 ## wasm: build the browser prediction module consumed by web/
 wasm:
-	wasm-pack build crates/wasm --target web --out-dir ../../../../web/src/sim-wasm
+	cargo build -p sim-wasm --target wasm32-unknown-unknown --release
+	wasm-bindgen target/wasm32-unknown-unknown/release/sim_wasm.wasm \
+	  --target web --out-dir ../../web/src/sim-wasm
 
 ## determinism: run the replay invariant on its own, loudly
 determinism:
 	cargo test -p sim same_seed_and_intents_produce_identical_worlds -- --nocapture
 
-.PHONY: run test test-all lint build gen wasm determinism
+## parity: prove the native and WASM builds produce byte-identical worlds
+parity:
+	../../tools/parity/run.sh
+
+.PHONY: run test test-all lint build gen wasm determinism parity

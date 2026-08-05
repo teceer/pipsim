@@ -41,7 +41,10 @@ impl Vec2 {
     pub fn step_towards(self, target: Vec2, speed: Milli) -> Vec2 {
         let dx = (target.x - self.x).clamp(-speed, speed);
         let dy = (target.y - self.y).clamp(-speed, speed);
-        Vec2 { x: self.x + dx, y: self.y + dy }
+        Vec2 {
+            x: self.x + dx,
+            y: self.y + dy,
+        }
     }
 }
 
@@ -63,7 +66,11 @@ pub struct Needs {
 
 impl Needs {
     pub fn full() -> Self {
-        Needs { food: NEED_MAX, rest: NEED_MAX, social: NEED_MAX }
+        Needs {
+            food: NEED_MAX,
+            rest: NEED_MAX,
+            social: NEED_MAX,
+        }
     }
 }
 
@@ -84,10 +91,23 @@ pub type WorkplaceId = u64;
 /// them up and writes them to Kafka.
 #[derive(Clone, Debug, PartialEq)]
 pub enum DomainEvent {
-    PipSpawned { pip: PipId, name: String, position: Vec2 },
-    PipStartedWork { pip: PipId, workplace: WorkplaceId },
-    PipGotHungry { pip: PipId, food_level: i32 },
-    PipDied { pip: PipId, cause: &'static str },
+    PipSpawned {
+        pip: PipId,
+        name: String,
+        position: Vec2,
+    },
+    PipStartedWork {
+        pip: PipId,
+        workplace: WorkplaceId,
+    },
+    PipGotHungry {
+        pip: PipId,
+        food_level: i32,
+    },
+    PipDied {
+        pip: PipId,
+        cause: &'static str,
+    },
 }
 
 /// Structure-of-arrays world state.
@@ -169,7 +189,10 @@ impl World {
                     // Jitter starting needs so a freshly spawned cohort does not
                     // move in lockstep forever. Seeded, so still reproducible.
                     let jitter = self.rng.next_range(0, 200);
-                    self.needs.push(Needs { food: NEED_MAX - jitter, ..Needs::full() });
+                    self.needs.push(Needs {
+                        food: NEED_MAX - jitter,
+                        ..Needs::full()
+                    });
                     self.employers.push(None);
 
                     events.push(DomainEvent::PipSpawned {
@@ -226,7 +249,10 @@ impl World {
         // would be faster but reorders the arrays, and stable ordering is worth
         // more here than the constant factor.
         for &i in died.iter().rev() {
-            events.push(DomainEvent::PipDied { pip: self.ids[i], cause: "starvation" });
+            events.push(DomainEvent::PipDied {
+                pip: self.ids[i],
+                cause: "starvation",
+            });
             self.remove_at(i);
         }
     }
@@ -245,7 +271,9 @@ impl World {
         const SPEED: Milli = 50;
 
         for i in 0..self.positions.len() {
-            let Some(dest) = self.destinations[i] else { continue };
+            let Some(dest) = self.destinations[i] else {
+                continue;
+            };
 
             self.positions[i] = self.positions[i].step_towards(dest, SPEED);
             if self.positions[i] == dest {
@@ -284,7 +312,10 @@ mod tests {
         (0..n)
             .map(|i| Intent::Spawn {
                 name: format!("pip-{i}"),
-                position: Vec2 { x: i as Milli * 100, y: 0 },
+                position: Vec2 {
+                    x: i as Milli * 100,
+                    y: 0,
+                },
             })
             .collect()
     }
@@ -297,7 +328,10 @@ mod tests {
             w.step(&spawn(50));
             for t in 0..500 {
                 let intents = if t % 25 == 0 {
-                    vec![Intent::Move { pip: (t / 25 + 1) as PipId, destination: Vec2 { x: 9000, y: 9000 } }]
+                    vec![Intent::Move {
+                        pip: (t / 25 + 1) as PipId,
+                        destination: Vec2 { x: 9000, y: 9000 },
+                    }]
                 } else {
                     vec![]
                 };
@@ -340,7 +374,10 @@ mod tests {
             }
         }
 
-        assert_eq!(hungry, 3, "each pip crosses the hunger threshold exactly once");
+        assert_eq!(
+            hungry, 3,
+            "each pip crosses the hunger threshold exactly once"
+        );
         assert_eq!(died, 3);
         assert!(w.is_empty());
     }
@@ -350,7 +387,10 @@ mod tests {
         let mut w = World::new(3);
         w.step(&spawn(1));
         let dest = Vec2 { x: 500, y: 500 };
-        w.step(&[Intent::Move { pip: 1, destination: dest }]);
+        w.step(&[Intent::Move {
+            pip: 1,
+            destination: dest,
+        }]);
 
         for _ in 0..100 {
             w.step(&[]);
@@ -365,9 +405,15 @@ mod tests {
     fn hiring_emits_started_work() {
         let mut w = World::new(9);
         w.step(&spawn(1));
-        let events = w.step(&[Intent::Hire { pip: 1, workplace: 77 }]);
+        let events = w.step(&[Intent::Hire {
+            pip: 1,
+            workplace: 77,
+        }]);
 
-        assert!(events.contains(&DomainEvent::PipStartedWork { pip: 1, workplace: 77 }));
+        assert!(events.contains(&DomainEvent::PipStartedWork {
+            pip: 1,
+            workplace: 77
+        }));
         assert_eq!(w.employers[0], Some(77));
     }
 }
