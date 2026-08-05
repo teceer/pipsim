@@ -457,12 +457,24 @@ mod tests {
             w.step(&[]);
         }
 
-        let walking = w.activities.iter().filter(|a| **a == Activity::Walking).count();
+        let walking = w
+            .activities
+            .iter()
+            .filter(|a| **a == Activity::Walking)
+            .count();
         assert!(walking > 0, "nobody ever set off");
 
         for p in &w.positions {
-            assert!((0..=WORLD_W_MILLI).contains(&p.x), "x out of bounds: {}", p.x);
-            assert!((0..=WORLD_H_MILLI).contains(&p.y), "y out of bounds: {}", p.y);
+            assert!(
+                (0..=WORLD_W_MILLI).contains(&p.x),
+                "x out of bounds: {}",
+                p.x
+            );
+            assert!(
+                (0..=WORLD_H_MILLI).contains(&p.y),
+                "y out of bounds: {}",
+                p.y
+            );
         }
     }
 
