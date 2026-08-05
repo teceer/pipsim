@@ -26,23 +26,29 @@ local_resource(
 # proto/ directly from build.rs, and the TypeScript and Go services consume the
 # checked-in bindings in gen/ — none of which live under services/<name>.
 
-docker_build(
-    'pipsim/sim-core',
-    context='.',
-    dockerfile='services/sim-core/Dockerfile',
-    only=['proto', 'services/sim-core'],
-    ignore=['services/sim-core/target', 'services/sim-core/Dockerfile.dockerignore'],
-)
+def service(name, dockerfile, port_forwards=[], deps=[]):
+    docker_build(
+        'pipsim/' + name,
+        context='.',
+        dockerfile=dockerfile,
+        only=['proto', 'gen', 'go.work', 'services'],
+        ignore=['services/sim-core/target', '**/node_modules'],
+    )
+    k8s_yaml(helm('infra/helm/' + name, name=name, namespace='pipsim'))
+    k8s_resource(
+        name,
+        port_forwards=port_forwards,
+        resource_deps=['proto-gen'] + deps,
+        labels=['services'],
+    )
 
-k8s_yaml(helm('infra/helm/sim-core', name='sim-core', namespace='pipsim'))
-k8s_resource(
-    'sim-core',
-    resource_deps=['proto-gen'],
-    labels=['services'],
-)
+service('sim-core', 'services/sim-core/Dockerfile', '50051:50051')
+service('farm', 'services/workplaces/farm/Dockerfile', '8090:8090')
+service('world-gateway', 'services/world-gateway/Dockerfile', '8081:8081',
+        ['sim-core', 'farm'])
 
-# TODO: world-gateway, broadcast, bff, pathfinder and the workplaces land here
-# as each grows a Dockerfile and a chart. sim-core is the template.
+# TODO: broadcast, bff, pathfinder and the remaining workplaces land here as
+# each grows a Dockerfile and a chart. farm is the template for a workplace.
 
 # --- client -----------------------------------------------------------------
 #

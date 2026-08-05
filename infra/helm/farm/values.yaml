@@ -1,0 +1,24 @@
+image:
+  repository: pipsim-registry:5000/pipsim/farm
+  tag: dev
+  # Always, not IfNotPresent: `dev` is overwritten on every push, so a node that
+  # already has it would keep running a stale binary through a rollout that
+  # reports success.
+  pullPolicy: Always
+
+workplace:
+  id: 1
+  # Milli-tiles, inside the world bounds sim declares.
+  x: 12000
+  y: 8000
+
+# One replica. Shift state is in memory and is the workplace's own authority;
+# a second replica would hand out the same positions twice.
+replicaCount: 1
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    memory: 128Mi

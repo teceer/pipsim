@@ -121,6 +121,7 @@ message SubmitIntentRequest {
     HireIntent hire = 1;
     MoveIntent move = 2;
     SpawnPipIntent spawn = 3;
+    ApplyNeedsIntent apply_needs = 4;
   }
 }
 
@@ -144,4 +145,15 @@ message MoveIntent {
 message SpawnPipIntent {
   string name = 1;
   Vec2 position = 2;
+}
+
+// The effect of work on a pip, handed back by a workplace.
+//
+// Workplaces decide what a shift costs and what it gives; sim-core decides what
+// that means for the pip. This is the seam that keeps a building's rules inside
+// the building's service without letting it write to the world directly.
+message ApplyNeedsIntent {
+  uint64 pip_id = 1;
+  // Keyed by Need. Signed: work drains rest and a meal restores food.
+  map<int32, int32> need_deltas = 2;
 }

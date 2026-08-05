@@ -142,6 +142,7 @@ jobs:
             cd "$m"
             # vet typechecks everything, libraries included.
             go vet ./...
+            go test ./...
             # Link the binaries too, into a temp dir: `go build ./...` drops the
             # compiled binary next to the sources, and gen/go has no main
             # package at all, which makes an unconditional -o an error.

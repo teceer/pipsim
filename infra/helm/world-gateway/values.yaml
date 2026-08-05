@@ -16,7 +16,16 @@ sim:
   tickHz: 10
   address: sim-core:50051
 
-replicaCount: 2
+# The workplace the economy driver fills. Empty disables the driver entirely,
+# which is how the gateway runs before any workplace is deployed.
+farm:
+  address: farm:8090
+  workplaceId: 1
+
+# One replica while the economy driver lives here: two would both try to fill
+# the same positions. Splitting the driver into its own deployment is what
+# makes the gateway horizontally scalable again.
+replicaCount: 1
 
 resources:
   requests:

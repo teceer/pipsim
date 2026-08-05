@@ -114,11 +114,15 @@ What is actually verified in CI:
 - every Go module vetting and building, which also proves `gen/go` compiles
 - the web client typechecking against the generated WASM bindings
 
-Not yet real: the workplaces, broadcast and the BFF are contracts plus
-skeletons. Nothing produces food, so pips starve and the world is kept
-populated by a temporary trickle of arrivals in sim-core's I/O shell — closing
-that loop is what the farm is for. The proto definitions are the part worth
-reading first.
+The economy closes: the farm employs 24 of roughly 70 pips, and employment is
+the difference between living and starving. In the cluster the workers sit at
+988 food and nobody dies on shift, while the unemployed drift down and
+eventually do. Scarcity is emergent — nothing in the gateway decides who
+deserves work, it just fills the positions the farm advertises.
+
+Not yet real: broadcast, the BFF, pathfinding and the other two workplaces are
+contracts plus skeletons. The proto definitions are the part worth reading
+first.
 
 ## License
 

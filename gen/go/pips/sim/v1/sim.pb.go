@@ -701,6 +701,7 @@ type SubmitIntentRequest struct {
 	//	*SubmitIntentRequest_Hire
 	//	*SubmitIntentRequest_Move
 	//	*SubmitIntentRequest_Spawn
+	//	*SubmitIntentRequest_ApplyNeeds
 	Intent        isSubmitIntentRequest_Intent `protobuf_oneof:"intent"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -770,6 +771,15 @@ func (x *SubmitIntentRequest) GetSpawn() *SpawnPipIntent {
 	return nil
 }
 
+func (x *SubmitIntentRequest) GetApplyNeeds() *ApplyNeedsIntent {
+	if x != nil {
+		if x, ok := x.Intent.(*SubmitIntentRequest_ApplyNeeds); ok {
+			return x.ApplyNeeds
+		}
+	}
+	return nil
+}
+
 type isSubmitIntentRequest_Intent interface {
 	isSubmitIntentRequest_Intent()
 }
@@ -786,11 +796,17 @@ type SubmitIntentRequest_Spawn struct {
 	Spawn *SpawnPipIntent `protobuf:"bytes,3,opt,name=spawn,proto3,oneof"`
 }
 
+type SubmitIntentRequest_ApplyNeeds struct {
+	ApplyNeeds *ApplyNeedsIntent `protobuf:"bytes,4,opt,name=apply_needs,json=applyNeeds,proto3,oneof"`
+}
+
 func (*SubmitIntentRequest_Hire) isSubmitIntentRequest_Intent() {}
 
 func (*SubmitIntentRequest_Move) isSubmitIntentRequest_Intent() {}
 
 func (*SubmitIntentRequest_Spawn) isSubmitIntentRequest_Intent() {}
+
+func (*SubmitIntentRequest_ApplyNeeds) isSubmitIntentRequest_Intent() {}
 
 type SubmitIntentResponse struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
@@ -1009,6 +1025,64 @@ func (x *SpawnPipIntent) GetPosition() *Vec2 {
 	return nil
 }
 
+// The effect of work on a pip, handed back by a workplace.
+//
+// Workplaces decide what a shift costs and what it gives; sim-core decides what
+// that means for the pip. This is the seam that keeps a building's rules inside
+// the building's service without letting it write to the world directly.
+type ApplyNeedsIntent struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	PipId uint64                 `protobuf:"varint,1,opt,name=pip_id,json=pipId,proto3" json:"pip_id,omitempty"`
+	// Keyed by Need. Signed: work drains rest and a meal restores food.
+	NeedDeltas    map[int32]int32 `protobuf:"bytes,2,rep,name=need_deltas,json=needDeltas,proto3" json:"need_deltas,omitempty" protobuf_key:"varint,1,opt,name=key" protobuf_val:"varint,2,opt,name=value"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ApplyNeedsIntent) Reset() {
+	*x = ApplyNeedsIntent{}
+	mi := &file_pips_sim_v1_sim_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ApplyNeedsIntent) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ApplyNeedsIntent) ProtoMessage() {}
+
+func (x *ApplyNeedsIntent) ProtoReflect() protoreflect.Message {
+	mi := &file_pips_sim_v1_sim_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ApplyNeedsIntent.ProtoReflect.Descriptor instead.
+func (*ApplyNeedsIntent) Descriptor() ([]byte, []int) {
+	return file_pips_sim_v1_sim_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *ApplyNeedsIntent) GetPipId() uint64 {
+	if x != nil {
+		return x.PipId
+	}
+	return 0
+}
+
+func (x *ApplyNeedsIntent) GetNeedDeltas() map[int32]int32 {
+	if x != nil {
+		return x.NeedDeltas
+	}
+	return nil
+}
+
 var File_pips_sim_v1_sim_proto protoreflect.FileDescriptor
 
 const file_pips_sim_v1_sim_proto_rawDesc = "" +
@@ -1060,11 +1134,13 @@ const file_pips_sim_v1_sim_proto_rawDesc = "" +
 	"\x12WatchDeltasRequest\x12\x1b\n" +
 	"\tfrom_tick\x18\x01 \x01(\x04R\bfromTick\"D\n" +
 	"\x13WatchDeltasResponse\x12-\n" +
-	"\x05delta\x18\x01 \x01(\v2\x17.pips.sim.v1.WorldDeltaR\x05delta\"\xb2\x01\n" +
+	"\x05delta\x18\x01 \x01(\v2\x17.pips.sim.v1.WorldDeltaR\x05delta\"\xf4\x01\n" +
 	"\x13SubmitIntentRequest\x12-\n" +
 	"\x04hire\x18\x01 \x01(\v2\x17.pips.sim.v1.HireIntentH\x00R\x04hire\x12-\n" +
 	"\x04move\x18\x02 \x01(\v2\x17.pips.sim.v1.MoveIntentH\x00R\x04move\x123\n" +
-	"\x05spawn\x18\x03 \x01(\v2\x1b.pips.sim.v1.SpawnPipIntentH\x00R\x05spawnB\b\n" +
+	"\x05spawn\x18\x03 \x01(\v2\x1b.pips.sim.v1.SpawnPipIntentH\x00R\x05spawn\x12@\n" +
+	"\vapply_needs\x18\x04 \x01(\v2\x1d.pips.sim.v1.ApplyNeedsIntentH\x00R\n" +
+	"applyNeedsB\b\n" +
 	"\x06intent\"\x84\x01\n" +
 	"\x14SubmitIntentResponse\x12\x1a\n" +
 	"\baccepted\x18\x01 \x01(\bR\baccepted\x12)\n" +
@@ -1080,7 +1156,14 @@ const file_pips_sim_v1_sim_proto_rawDesc = "" +
 	"\vdestination\x18\x02 \x01(\v2\x11.pips.sim.v1.Vec2R\vdestination\"S\n" +
 	"\x0eSpawnPipIntent\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12-\n" +
-	"\bposition\x18\x02 \x01(\v2\x11.pips.sim.v1.Vec2R\bposition*K\n" +
+	"\bposition\x18\x02 \x01(\v2\x11.pips.sim.v1.Vec2R\bposition\"\xb8\x01\n" +
+	"\x10ApplyNeedsIntent\x12\x15\n" +
+	"\x06pip_id\x18\x01 \x01(\x04R\x05pipId\x12N\n" +
+	"\vneed_deltas\x18\x02 \x03(\v2-.pips.sim.v1.ApplyNeedsIntent.NeedDeltasEntryR\n" +
+	"needDeltas\x1a=\n" +
+	"\x0fNeedDeltasEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\x05R\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\x05R\x05value:\x028\x01*K\n" +
 	"\x04Need\x12\x14\n" +
 	"\x10NEED_UNSPECIFIED\x10\x00\x12\r\n" +
 	"\tNEED_FOOD\x10\x01\x12\r\n" +
@@ -1114,7 +1197,7 @@ func file_pips_sim_v1_sim_proto_rawDescGZIP() []byte {
 }
 
 var file_pips_sim_v1_sim_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_pips_sim_v1_sim_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
+var file_pips_sim_v1_sim_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
 var file_pips_sim_v1_sim_proto_goTypes = []any{
 	(Need)(0),                    // 0: pips.sim.v1.Need
 	(PipActivity)(0),             // 1: pips.sim.v1.PipActivity
@@ -1133,38 +1216,42 @@ var file_pips_sim_v1_sim_proto_goTypes = []any{
 	(*HireIntent)(nil),           // 14: pips.sim.v1.HireIntent
 	(*MoveIntent)(nil),           // 15: pips.sim.v1.MoveIntent
 	(*SpawnPipIntent)(nil),       // 16: pips.sim.v1.SpawnPipIntent
-	nil,                          // 17: pips.sim.v1.Pip.NeedsEntry
-	nil,                          // 18: pips.sim.v1.PipDelta.NeedsEntry
+	(*ApplyNeedsIntent)(nil),     // 17: pips.sim.v1.ApplyNeedsIntent
+	nil,                          // 18: pips.sim.v1.Pip.NeedsEntry
+	nil,                          // 19: pips.sim.v1.PipDelta.NeedsEntry
+	nil,                          // 20: pips.sim.v1.ApplyNeedsIntent.NeedDeltasEntry
 }
 var file_pips_sim_v1_sim_proto_depIdxs = []int32{
 	2,  // 0: pips.sim.v1.Pip.position:type_name -> pips.sim.v1.Vec2
 	1,  // 1: pips.sim.v1.Pip.activity:type_name -> pips.sim.v1.PipActivity
-	17, // 2: pips.sim.v1.Pip.needs:type_name -> pips.sim.v1.Pip.NeedsEntry
+	18, // 2: pips.sim.v1.Pip.needs:type_name -> pips.sim.v1.Pip.NeedsEntry
 	6,  // 3: pips.sim.v1.StepResponse.delta:type_name -> pips.sim.v1.WorldDelta
 	7,  // 4: pips.sim.v1.WorldDelta.pips:type_name -> pips.sim.v1.PipDelta
 	2,  // 5: pips.sim.v1.PipDelta.position:type_name -> pips.sim.v1.Vec2
 	1,  // 6: pips.sim.v1.PipDelta.activity:type_name -> pips.sim.v1.PipActivity
-	18, // 7: pips.sim.v1.PipDelta.needs:type_name -> pips.sim.v1.PipDelta.NeedsEntry
+	19, // 7: pips.sim.v1.PipDelta.needs:type_name -> pips.sim.v1.PipDelta.NeedsEntry
 	3,  // 8: pips.sim.v1.SnapshotResponse.pips:type_name -> pips.sim.v1.Pip
 	6,  // 9: pips.sim.v1.WatchDeltasResponse.delta:type_name -> pips.sim.v1.WorldDelta
 	14, // 10: pips.sim.v1.SubmitIntentRequest.hire:type_name -> pips.sim.v1.HireIntent
 	15, // 11: pips.sim.v1.SubmitIntentRequest.move:type_name -> pips.sim.v1.MoveIntent
 	16, // 12: pips.sim.v1.SubmitIntentRequest.spawn:type_name -> pips.sim.v1.SpawnPipIntent
-	2,  // 13: pips.sim.v1.MoveIntent.destination:type_name -> pips.sim.v1.Vec2
-	2,  // 14: pips.sim.v1.SpawnPipIntent.position:type_name -> pips.sim.v1.Vec2
-	4,  // 15: pips.sim.v1.SimService.Step:input_type -> pips.sim.v1.StepRequest
-	8,  // 16: pips.sim.v1.SimService.Snapshot:input_type -> pips.sim.v1.SnapshotRequest
-	10, // 17: pips.sim.v1.SimService.WatchDeltas:input_type -> pips.sim.v1.WatchDeltasRequest
-	12, // 18: pips.sim.v1.SimService.SubmitIntent:input_type -> pips.sim.v1.SubmitIntentRequest
-	5,  // 19: pips.sim.v1.SimService.Step:output_type -> pips.sim.v1.StepResponse
-	9,  // 20: pips.sim.v1.SimService.Snapshot:output_type -> pips.sim.v1.SnapshotResponse
-	11, // 21: pips.sim.v1.SimService.WatchDeltas:output_type -> pips.sim.v1.WatchDeltasResponse
-	13, // 22: pips.sim.v1.SimService.SubmitIntent:output_type -> pips.sim.v1.SubmitIntentResponse
-	19, // [19:23] is the sub-list for method output_type
-	15, // [15:19] is the sub-list for method input_type
-	15, // [15:15] is the sub-list for extension type_name
-	15, // [15:15] is the sub-list for extension extendee
-	0,  // [0:15] is the sub-list for field type_name
+	17, // 13: pips.sim.v1.SubmitIntentRequest.apply_needs:type_name -> pips.sim.v1.ApplyNeedsIntent
+	2,  // 14: pips.sim.v1.MoveIntent.destination:type_name -> pips.sim.v1.Vec2
+	2,  // 15: pips.sim.v1.SpawnPipIntent.position:type_name -> pips.sim.v1.Vec2
+	20, // 16: pips.sim.v1.ApplyNeedsIntent.need_deltas:type_name -> pips.sim.v1.ApplyNeedsIntent.NeedDeltasEntry
+	4,  // 17: pips.sim.v1.SimService.Step:input_type -> pips.sim.v1.StepRequest
+	8,  // 18: pips.sim.v1.SimService.Snapshot:input_type -> pips.sim.v1.SnapshotRequest
+	10, // 19: pips.sim.v1.SimService.WatchDeltas:input_type -> pips.sim.v1.WatchDeltasRequest
+	12, // 20: pips.sim.v1.SimService.SubmitIntent:input_type -> pips.sim.v1.SubmitIntentRequest
+	5,  // 21: pips.sim.v1.SimService.Step:output_type -> pips.sim.v1.StepResponse
+	9,  // 22: pips.sim.v1.SimService.Snapshot:output_type -> pips.sim.v1.SnapshotResponse
+	11, // 23: pips.sim.v1.SimService.WatchDeltas:output_type -> pips.sim.v1.WatchDeltasResponse
+	13, // 24: pips.sim.v1.SimService.SubmitIntent:output_type -> pips.sim.v1.SubmitIntentResponse
+	21, // [21:25] is the sub-list for method output_type
+	17, // [17:21] is the sub-list for method input_type
+	17, // [17:17] is the sub-list for extension type_name
+	17, // [17:17] is the sub-list for extension extendee
+	0,  // [0:17] is the sub-list for field type_name
 }
 
 func init() { file_pips_sim_v1_sim_proto_init() }
@@ -1178,6 +1265,7 @@ func file_pips_sim_v1_sim_proto_init() {
 		(*SubmitIntentRequest_Hire)(nil),
 		(*SubmitIntentRequest_Move)(nil),
 		(*SubmitIntentRequest_Spawn)(nil),
+		(*SubmitIntentRequest_ApplyNeeds)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -1185,7 +1273,7 @@ func file_pips_sim_v1_sim_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pips_sim_v1_sim_proto_rawDesc), len(file_pips_sim_v1_sim_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   17,
+			NumMessages:   19,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

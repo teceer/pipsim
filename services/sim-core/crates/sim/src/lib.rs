@@ -90,9 +90,29 @@ impl Needs {
 /// timing, which is exactly what determinism forbids.
 #[derive(Clone, Debug)]
 pub enum Intent {
-    Spawn { name: String, position: Vec2 },
-    Move { pip: PipId, destination: Vec2 },
-    Hire { pip: PipId, workplace: WorkplaceId },
+    Spawn {
+        name: String,
+        position: Vec2,
+    },
+    Move {
+        pip: PipId,
+        destination: Vec2,
+    },
+    Hire {
+        pip: PipId,
+        workplace: WorkplaceId,
+    },
+    /// The effect of a shift, handed back by a workplace service.
+    ///
+    /// Workplaces decide what work costs and gives; the core decides what that
+    /// means for the pip. Deltas are clamped here, so a buggy or hostile
+    /// workplace cannot push a need outside its range or resurrect the dead.
+    ApplyNeeds {
+        pip: PipId,
+        food: i32,
+        rest: i32,
+        social: i32,
+    },
 }
 
 pub type PipId = u64;
@@ -250,10 +270,28 @@ impl World {
                 Intent::Hire { pip, workplace } => {
                     if let Some(i) = self.index_of(*pip) {
                         self.employers[i] = Some(*workplace);
+                        self.activities[i] = Activity::Working;
+                        self.destinations[i] = None;
                         events.push(DomainEvent::PipStartedWork {
                             pip: *pip,
                             workplace: *workplace,
                         });
+                    }
+                }
+                Intent::ApplyNeeds {
+                    pip,
+                    food,
+                    rest,
+                    social,
+                } => {
+                    if let Some(i) = self.index_of(*pip) {
+                        let n = &mut self.needs[i];
+                        // Clamped, not trusted. A workplace is a separate
+                        // service and may be wrong; the core owns the invariant
+                        // that needs stay in range.
+                        n.food = (n.food + food).clamp(0, NEED_MAX);
+                        n.rest = (n.rest + rest).clamp(0, NEED_MAX);
+                        n.social = (n.social + social).clamp(0, NEED_MAX);
                     }
                 }
             }
@@ -490,6 +528,63 @@ mod tests {
             w
         };
         assert_eq!(run().state_hash(), run().state_hash());
+    }
+
+    #[test]
+    fn work_effects_are_clamped_to_the_needs_range() {
+        let mut w = World::new(5);
+        w.step(&spawn(1));
+
+        // A workplace handing back an absurd number must not push a need out of
+        // range. The core owns this invariant precisely because the workplace is
+        // a separate service that may be wrong.
+        //
+        // Note the need is checked after a full step, so the per-tick drain has
+        // already been applied — the invariant is the ceiling, not equality.
+        w.step(&[Intent::ApplyNeeds {
+            pip: 1,
+            food: 999_999,
+            rest: 0,
+            social: 0,
+        }]);
+        assert!(w.needs[0].food <= NEED_MAX);
+        assert!(
+            w.needs[0].food > NEED_MAX - 10,
+            "the meal should have landed"
+        );
+
+        // Draining below zero is starvation, and starvation is fatal — the
+        // clamp keeps the number in range, it does not keep the pip alive.
+        w.step(&[Intent::ApplyNeeds {
+            pip: 1,
+            food: -999_999,
+            rest: 0,
+            social: 0,
+        }]);
+        assert!(w.is_empty(), "a pip drained to nothing should have died");
+    }
+
+    /// The loop the farm exists to close: a starving pip fed by work survives.
+    #[test]
+    fn being_fed_prevents_starvation() {
+        let mut w = World::new(6);
+        w.step(&spawn(1));
+
+        for t in 0..3000 {
+            let intents = if t % 100 == 0 {
+                vec![Intent::ApplyNeeds {
+                    pip: 1,
+                    food: 300,
+                    rest: 0,
+                    social: 0,
+                }]
+            } else {
+                vec![]
+            };
+            w.step(&intents);
+        }
+
+        assert_eq!(w.len(), 1, "a regularly fed pip should still be alive");
     }
 
     #[test]

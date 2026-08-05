@@ -183,6 +183,12 @@ impl SimService for SimServiceImpl {
                 pip: h.pip_id,
                 workplace: h.workplace_id,
             },
+            pb::submit_intent_request::Intent::ApplyNeeds(a) => Intent::ApplyNeeds {
+                pip: a.pip_id,
+                food: a.need_deltas.get(&NEED_FOOD).copied().unwrap_or(0),
+                rest: a.need_deltas.get(&NEED_REST).copied().unwrap_or(0),
+                social: a.need_deltas.get(&NEED_SOCIAL).copied().unwrap_or(0),
+            },
         };
 
         // Queued, never applied here. Applying mid-tick would make the outcome

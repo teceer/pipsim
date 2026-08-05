@@ -23,7 +23,9 @@ import (
 	"golang.org/x/net/http2/h2c"
 
 	"github.com/teceer/pipsim/gen/go/pips/sim/v1/simv1connect"
+	"github.com/teceer/pipsim/gen/go/pips/workplace/v1/workplacev1connect"
 	"github.com/teceer/pipsim/gen/go/pips/world/v1/worldv1connect"
+	"github.com/teceer/pipsim/services/world-gateway/internal/economy"
 	"github.com/teceer/pipsim/services/world-gateway/internal/gateway"
 )
 
@@ -99,6 +101,23 @@ func main() {
 	)
 
 	svc := gateway.New(simClient, seed, int32(tickHz))
+
+	// The economy loop: fill the farm's positions and forward what a shift does
+	// to the workers. Mechanics only — see internal/economy for why the policy
+	// deliberately lives elsewhere.
+	if farmAddr := os.Getenv("FARM_ADDR"); farmAddr != "" {
+		driver := economy.NewDriver(
+			simClient,
+			workplacev1connect.NewWorkplaceServiceClient(h2cClient(), "http://"+farmAddr),
+			envUint("FARM_WORKPLACE_ID", 1),
+		)
+		ctx, cancelEconomy := context.WithCancel(context.Background())
+		defer cancelEconomy()
+		go driver.Run(ctx, time.Second)
+		slog.Info("economy driver started", "farm", farmAddr)
+	} else {
+		slog.Info("no FARM_ADDR set; running without an economy")
+	}
 
 	mux := http.NewServeMux()
 	mux.Handle(worldv1connect.NewWorldServiceHandler(svc))

@@ -38,6 +38,24 @@ in any language and touches neither sim-core nor the gateway.
   shift right now
 - decide anything about needs beyond returning `need_deltas` from `Work`
 
+## What the farm established
+
+It is the template, and two of its choices are worth copying:
+
+**Shifts are held on a lease.** A shift nobody asks to `Work` for fifteen
+seconds expires by itself. This is not defensive coding — it fixes a failure
+seen in the cluster, where sim-core restarted with a fresh world and the farm
+went on holding every position for pips that no longer existed, so nobody could
+be hired again. A lease beats a reconciliation RPC because a workplace should
+not have to ask anyone who still exists.
+
+**`Work` pays for elapsed ticks, not per call.** The driver batches — it calls
+`Work` once a second while the world ticks ten times. Flat per-call amounts made
+employment a *slower death* than idling, because a working pip drains food every
+tick and was paid once. Scaling by `tick - lastWorkTick` makes the contract
+independent of whatever cadence the caller picks, and the amount is capped so a
+stalled driver cannot hand out a windfall.
+
 ## Adding a new one
 
 1. Copy the closest existing workplace.

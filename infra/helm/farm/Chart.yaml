@@ -1,0 +1,6 @@
+apiVersion: v2
+name: farm
+description: A workplace that grows grain — the first implementation of workplace/v1
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

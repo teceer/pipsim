@@ -1,4 +1,4 @@
-// Command farm is a workplace that produces grain.
+// Command farm is a workplace that grows grain.
 //
 // It implements pips.workplace.v1.WorkplaceService and nothing else. It does
 // not know that other workplaces exist, and it holds no pip state beyond who is
@@ -6,47 +6,57 @@
 package main
 
 import (
+	"errors"
 	"log/slog"
 	"net/http"
 	"os"
-	"sync"
+	"strconv"
 	"time"
+
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
+
+	"github.com/teceer/pipsim/gen/go/pips/workplace/v1/workplacev1connect"
+	"github.com/teceer/pipsim/services/workplaces/farm/internal/farm"
 )
 
-// shift tracks who is working right now. Deliberately not persisted: pips
-// belong to sim-core, and a restart should re-derive shifts from it rather than
-// trusting local state.
-type shifts struct {
-	mu      sync.RWMutex
-	workers map[uint64]time.Time
+func envInt(key string, def int64) int64 {
+	if v, err := strconv.ParseInt(os.Getenv(key), 10, 64); err == nil {
+		return v
+	}
+	return def
 }
-
-const maxWorkers = 4
-
-// grainPerTick is the farm's entire domain rule. It lives here and nowhere
-// else — sim-core knows nothing about grain.
-const grainPerTick = 3
 
 func main() {
 	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
 
-	s := &shifts{workers: make(map[uint64]time.Time)}
-	_ = s
+	// Position and id are configuration for now. Once BuildWorkplace works,
+	// both arrive from the player action that created the building.
+	svc := farm.New(
+		uint64(envInt("WORKPLACE_ID", 1)),
+		int32(envInt("WORKPLACE_X", 12_000)),
+		int32(envInt("WORKPLACE_Y", 8_000)),
+	)
 
 	mux := http.NewServeMux()
+	mux.Handle(workplacev1connect.NewWorkplaceServiceHandler(svc))
+
+	// Part of the operational contract every service in this repo implements,
+	// whatever the language.
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(`{"status":"ok"}`))
+		_, _ = w.Write([]byte(`{"status":"ok","workers":` +
+			strconv.Itoa(svc.Workers()) + `}`))
 	})
 
-	// TODO: mount the generated Connect handler for WorkplaceService.
-	//   Describe   -> kind "farm", maxWorkers, produces GRAIN
-	//   CanEmploy  -> len(workers) < maxWorkers
-	//   Work       -> grainPerTick, need_deltas{FOOD: -2}
-	//   EndShift   -> when the field is exhausted or night falls
+	srv := &http.Server{
+		Addr:              ":8090",
+		Handler:           h2c.NewHandler(mux, &http2.Server{}),
+		ReadHeaderTimeout: 10 * time.Second,
+	}
 
-	slog.Info("farm listening", "addr", ":8090", "max_workers", maxWorkers)
-	if err := http.ListenAndServe(":8090", mux); err != nil {
+	slog.Info("farm listening", "addr", srv.Addr, "max_workers", farm.MaxWorkers)
+	if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		slog.Error("server failed", "err", err)
 		os.Exit(1)
 	}
