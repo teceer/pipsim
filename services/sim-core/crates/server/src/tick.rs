@@ -10,15 +10,19 @@ use std::time::Duration;
 
 use rdkafka::producer::FutureProducer;
 use sim::{Intent, World};
+use tokio::sync::broadcast;
 use tracing::Instrument;
 
 use crate::events;
+use crate::grpc::full_delta;
+use crate::pb::pips::sim::v1 as simpb;
 
 pub struct Driver {
     pub world: Arc<Mutex<World>>,
     pub pending: Arc<Mutex<Vec<Intent>>>,
     pub producer: FutureProducer,
     pub period: Duration,
+    pub deltas: broadcast::Sender<simpb::WorldDelta>,
 }
 
 impl Driver {
@@ -61,11 +65,15 @@ impl Driver {
 
             // The lock is released before any await: holding a std Mutex across
             // an await point would be a deadlock waiting to happen.
-            let (tick, pips, events, hash) = {
+            let (tick, pips, events, hash, delta) = {
                 let mut w = self.world.lock().unwrap();
                 let events = w.step(&intents);
-                (w.tick, w.len(), events, w.state_hash())
+                (w.tick, w.len(), events, w.state_hash(), full_delta(&w))
             };
+
+            // Fails only when nobody is watching, which is the normal state
+            // before a client connects — not worth logging every 100 ms.
+            let _ = self.deltas.send(delta);
 
             let span = tracing::Span::current();
             span.record("tick", tick);

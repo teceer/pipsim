@@ -1,0 +1,26 @@
+image:
+  repository: pipsim-registry:5000/pipsim/world-gateway
+  tag: dev
+  # Always, not IfNotPresent.
+  #
+  # The tag is mutable: `dev` is overwritten on every push, so a node that
+  # already has it will happily keep running a stale binary and the rollout
+  # looks successful. Tilt sidesteps this by generating an immutable tag per
+  # build; a plain `helm upgrade` needs to be told to re-pull.
+  pullPolicy: Always
+
+# Must match what sim-core is running, or the seed reported to clients is a lie
+# and their local prediction diverges from the served world immediately.
+sim:
+  seed: 42
+  tickHz: 10
+  address: sim-core:50051
+
+replicaCount: 2
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    memory: 128Mi

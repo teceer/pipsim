@@ -1,0 +1,6 @@
+apiVersion: v2
+name: world-gateway
+description: Client-facing Connect API aggregating sim-core and the workplaces
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

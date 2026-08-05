@@ -3,7 +3,13 @@
 image:
   repository: pipsim-registry:5000/pipsim/sim-core
   tag: dev
-  pullPolicy: IfNotPresent
+  # Always, not IfNotPresent.
+  #
+  # The tag is mutable: `dev` is overwritten on every push, so a node that
+  # already has it will happily keep running a stale binary and the rollout
+  # looks successful. Tilt sidesteps this by generating an immutable tag per
+  # build; a plain `helm upgrade` needs to be told to re-pull.
+  pullPolicy: Always
 
 # Deliberately fixed rather than generated at startup: two runs with the same
 # seed and the same intents must produce the same world, and the seed is the

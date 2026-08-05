@@ -15,6 +15,7 @@ license.workspace = true
 sim = { workspace = true }
 
 tokio = { version = "1", features = ["full"] }
+tokio-stream = { version = "0.1", features = ["sync"] }
 tonic = "0.14"
 tonic-prost = "0.14"
 prost = "0.14"

@@ -15,8 +15,12 @@ use anyhow::Result;
 use rdkafka::producer::FutureProducer;
 use rdkafka::ClientConfig;
 use sim::{Intent, Vec2, World};
+use tokio::sync::broadcast;
+use tonic::transport::Server;
 
 mod events;
+mod grpc;
+mod pb;
 mod telemetry;
 mod tick;
 
@@ -54,6 +58,7 @@ async fn main() -> Result<()> {
     let tick_hz = env_u64("SIM_TICK_HZ", 10);
     let brokers = std::env::var("KAFKA_BROKERS").unwrap_or_else(|_| "localhost:31092".to_string());
     let initial_pips = env_u64("SIM_INITIAL_PIPS", 50);
+    let grpc_port = env_u64("SIM_GRPC_PORT", 50051);
 
     tracing::info!(seed, tick_hz, %brokers, initial_pips, "starting sim-core");
 
@@ -78,17 +83,39 @@ async fn main() -> Result<()> {
         }
     }
 
+    // Bounded on purpose. A subscriber that falls behind is dropped rather than
+    // slowing the tick loop — a client that cannot keep up should resync from a
+    // snapshot instead of applying backpressure to the simulation.
+    let (deltas, _) = broadcast::channel(256);
+
     let driver = tick::Driver {
         world: world.clone(),
         pending: pending.clone(),
         producer: kafka_producer(&brokers)?,
         period: Duration::from_millis(1000 / tick_hz.max(1)),
+        deltas: deltas.clone(),
     };
+
+    let addr: std::net::SocketAddr = format!("0.0.0.0:{grpc_port}").parse()?;
+    let service = grpc::SimServiceImpl {
+        world: world.clone(),
+        pending: pending.clone(),
+        deltas: deltas.clone(),
+    };
+    tracing::info!(%addr, "serving SimService");
+    let grpc_server = Server::builder()
+        .add_service(pb::pips::sim::v1::sim_service_server::SimServiceServer::new(service))
+        .serve(addr);
 
     // Flush spans on shutdown. Without this the last batch is dropped, and you
     // spend an hour wondering why the interesting trace never reached Jaeger.
     tokio::select! {
         _ = driver.run() => {}
+        res = grpc_server => {
+            if let Err(err) = res {
+                tracing::error!(error = %err, "grpc server failed");
+            }
+        }
         _ = tokio::signal::ctrl_c() => {
             tracing::info!("shutting down");
         }

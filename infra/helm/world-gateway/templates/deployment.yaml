@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: world-gateway
+  labels:
+    app.kubernetes.io/name: world-gateway
+    app.kubernetes.io/part-of: pipsim
+spec:
+  # Unlike sim-core, this one scales: it holds no world state, only open
+  # streams, so a second replica is genuine redundancy rather than a second
+  # divergent world.
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: world-gateway
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: world-gateway
+        app.kubernetes.io/part-of: pipsim
+    spec:
+      containers:
+        - name: world-gateway
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8081
+          env:
+            - name: SIM_CORE_ADDR
+              value: "{{ .Values.sim.address }}"
+            - name: SIM_SEED
+              value: "{{ .Values.sim.seed }}"
+            - name: SIM_TICK_HZ
+              value: "{{ .Values.sim.tickHz }}"
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            capabilities:
+              drop: ["ALL"]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: world-gateway
+spec:
+  selector:
+    app.kubernetes.io/name: world-gateway
+  ports:
+    - name: http
+      port: 8081
+      targetPort: http
