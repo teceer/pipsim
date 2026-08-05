@@ -34,6 +34,8 @@ spec:
               value: "{{ .Values.sim.tickHz }}"
             - name: SIM_INITIAL_PIPS
               value: "{{ .Values.sim.initialPips }}"
+            - name: SIM_SPAWN_EVERY_TICKS
+              value: "{{ .Values.sim.spawnEveryTicks }}"
             # The internal listener, not the NodePort: in-cluster clients
             # resolve the broker's advertised DNS name directly.
             - name: KAFKA_BROKERS

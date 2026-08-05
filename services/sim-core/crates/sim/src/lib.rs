@@ -26,6 +26,17 @@ pub type Milli = i32;
 pub const NEED_MAX: i32 = 1000;
 pub const FOOD_HUNGRY_THRESHOLD: i32 = 300;
 
+/// World bounds in milli-tiles. The renderer's grid must match these, or pips
+/// will walk off the drawn area.
+pub const WORLD_W_MILLI: Milli = 48_000;
+pub const WORLD_H_MILLI: Milli = 30_000;
+
+/// Chance per tick that an idle pip decides to go somewhere, in parts per
+/// thousand. At 10 Hz, 15/1000 means an idle pip sets off roughly every seven
+/// seconds — busy enough to look alive, sparse enough that the event log stays
+/// readable.
+pub const WANDER_CHANCE_PER_MILLE: i32 = 15;
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Vec2 {
     pub x: Milli,
@@ -168,10 +179,39 @@ impl World {
 
         self.apply_intents(intents, &mut events);
         self.decay_needs(&mut events);
+        self.wander();
         self.move_walkers();
         self.tick += 1;
 
         events
+    }
+
+    /// Idle pips pick somewhere to go.
+    ///
+    /// This belongs in the core rather than in a client or a driver script: it
+    /// is a rule about how pips behave, and putting it anywhere else would mean
+    /// the browser's prediction and the server's world disagree about what
+    /// happens next. Because the roll comes from the seeded `Rng` carried in
+    /// `World`, wandering stays fully reproducible.
+    ///
+    /// The order matters: every pip is offered a roll on every tick, in index
+    /// order, so the RNG is consumed identically regardless of how many pips
+    /// happen to be idle.
+    fn wander(&mut self) {
+        for i in 0..self.positions.len() {
+            let roll = self.rng.next_range(0, 1000);
+            if self.activities[i] != Activity::Idle {
+                continue;
+            }
+            if roll >= WANDER_CHANCE_PER_MILLE {
+                continue;
+            }
+
+            let x = self.rng.next_range(0, WORLD_W_MILLI);
+            let y = self.rng.next_range(0, WORLD_H_MILLI);
+            self.destinations[i] = Some(Vec2 { x, y });
+            self.activities[i] = Activity::Walking;
+        }
     }
 
     fn apply_intents(&mut self, intents: &[Intent], events: &mut Vec<DomainEvent>) {
@@ -383,7 +423,7 @@ mod tests {
     }
 
     #[test]
-    fn walking_reaches_destination_and_stops() {
+    fn walking_reaches_its_destination() {
         let mut w = World::new(3);
         w.step(&spawn(1));
         let dest = Vec2 { x: 500, y: 500 };
@@ -392,13 +432,52 @@ mod tests {
             destination: dest,
         }]);
 
+        // Arrival is the property under test, not staying put. Once a pip is
+        // idle again `wander` may send it somewhere else, so asserting on the
+        // final position would amount to asserting that wandering does not
+        // exist.
+        let mut arrived = false;
         for _ in 0..100 {
+            w.step(&[]);
+            if w.positions[0] == dest {
+                arrived = true;
+                break;
+            }
+        }
+
+        assert!(arrived, "pip never reached its destination");
+    }
+
+    #[test]
+    fn idle_pips_start_wandering_and_stay_in_bounds() {
+        let mut w = World::new(11);
+        w.step(&spawn(30));
+
+        for _ in 0..300 {
             w.step(&[]);
         }
 
-        assert_eq!(w.positions[0], dest);
-        assert_eq!(w.activities[0], Activity::Idle);
-        assert_eq!(w.destinations[0], None);
+        let walking = w.activities.iter().filter(|a| **a == Activity::Walking).count();
+        assert!(walking > 0, "nobody ever set off");
+
+        for p in &w.positions {
+            assert!((0..=WORLD_W_MILLI).contains(&p.x), "x out of bounds: {}", p.x);
+            assert!((0..=WORLD_H_MILLI).contains(&p.y), "y out of bounds: {}", p.y);
+        }
+    }
+
+    /// Wandering must not break the property everything else rests on.
+    #[test]
+    fn wandering_is_reproducible() {
+        let run = || {
+            let mut w = World::new(99);
+            w.step(&spawn(40));
+            for _ in 0..400 {
+                w.step(&[]);
+            }
+            w
+        };
+        assert_eq!(run().state_hash(), run().state_hash());
     }
 
     #[test]

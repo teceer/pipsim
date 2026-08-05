@@ -59,8 +59,9 @@ async fn main() -> Result<()> {
     let brokers = std::env::var("KAFKA_BROKERS").unwrap_or_else(|_| "localhost:31092".to_string());
     let initial_pips = env_u64("SIM_INITIAL_PIPS", 50);
     let grpc_port = env_u64("SIM_GRPC_PORT", 50051);
+    let spawn_every = env_u64("SIM_SPAWN_EVERY_TICKS", 20);
 
-    tracing::info!(seed, tick_hz, %brokers, initial_pips, "starting sim-core");
+    tracing::info!(seed, tick_hz, %brokers, initial_pips, spawn_every, "starting sim-core");
 
     let world = Arc::new(Mutex::new(World::new(seed)));
     let pending: Arc<Mutex<Vec<Intent>>> = Arc::new(Mutex::new(Vec::new()));
@@ -94,6 +95,7 @@ async fn main() -> Result<()> {
         producer: kafka_producer(&brokers)?,
         period: Duration::from_millis(1000 / tick_hz.max(1)),
         deltas: deltas.clone(),
+        spawn_every,
     };
 
     let addr: std::net::SocketAddr = format!("0.0.0.0:{grpc_port}").parse()?;

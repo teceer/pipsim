@@ -18,6 +18,10 @@ sim:
   seed: 42
   tickHz: 10
   initialPips: 50
+  # Ticks between arrivals. Temporary: nothing produces food yet, so without a
+  # trickle of newcomers the world empties out within a couple of minutes and
+  # stays empty. Set to 0 once the farm closes the economy loop.
+  spawnEveryTicks: 20
 
 # The platform lives in its own namespace so `make infra-down` can drop it
 # without touching running services.

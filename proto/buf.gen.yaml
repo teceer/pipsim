@@ -21,10 +21,12 @@ plugins:
     opt: paths=source_relative
 
   # TypeScript: shared by web/ and services/bff.
+  #
+  # No connect-es plugin. protobuf-es v2 emits a service descriptor into the
+  # _pb file, and @connectrpc/connect v2 consumes that directly — the separate
+  # protoc-gen-connect-es is a v1 artefact and generates code against the old
+  # @bufbuild/protobuf API, which does not compile against v2.
   - remote: buf.build/bufbuild/es
-    out: gen/ts
-    opt: target=ts
-  - remote: buf.build/connectrpc/es
     out: gen/ts
     opt: target=ts
 

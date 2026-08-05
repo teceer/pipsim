@@ -1,0 +1,11 @@
+{
+  "name": "pipsim",
+  "private": true,
+  "//": "Workspace root. It exists so gen/ts can be a package that web/ and the TypeScript services depend on, rather than a directory they reach into across the tree and cannot resolve dependencies from.",
+  "workspaces": [
+    "gen/ts",
+    "web",
+    "services/bff",
+    "services/workplaces/workshop"
+  ]
+}

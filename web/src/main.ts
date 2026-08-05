@@ -1,29 +1,29 @@
 /**
  * Browser client.
  *
- * The architectural point of this file: the rendering loop runs at display
- * refresh rate while the simulation is authoritative at 10 Hz, and the gap is
- * filled by running the *same* simulation core locally, compiled to WASM from
- * services/sim-core.
+ * The world is served by world-gateway: JoinWorld for the initial state, then
+ * StreamWorld for authoritative deltas at the simulation's tick rate. Rendering
+ * runs at display refresh rate and interpolates between the last two deltas, so
+ * a 10 Hz world still looks smooth.
  *
- * That is why prediction here is exact rather than approximate. There is no
- * second implementation of the movement rules to drift out of sync with the
- * server's — reconciliation exists to correct for lost updates, not for
- * arithmetic disagreeing between two codebases.
+ * The local WASM simulation is still here, seeded with the number the server
+ * reports. It is the same code sim-core runs, compiled from services/sim-core,
+ * which is what makes prediction exact rather than approximate — there is no
+ * second implementation of the movement rules to drift apart from the server's.
  *
- * The world is currently driven locally so there is something to look at before
- * world-gateway exists. Once it does, only two things change here: the seed
- * comes from JoinWorld instead of a constant, and server deltas replace the
- * locally generated intents.
+ * With no gateway reachable the client falls back to driving that local world
+ * itself, which keeps the renderer developable without a cluster.
  */
 
 import { Application, Container, Graphics, Text } from "pixi.js";
 import init, { SimHandle, pip_stride } from "./sim-wasm/sim_wasm.js";
+import { connect, join, streamDeltas, type WorldClient } from "./world";
 
 // --- world constants --------------------------------------------------------
 
 const MILLI_PER_TILE = 1000;
 
+// Must match sim::WORLD_W_MILLI / WORLD_H_MILLI, or pips walk off the grid.
 const GRID_W = 48;
 const GRID_H = 30;
 
@@ -35,11 +35,12 @@ const GRID_H = 30;
 const ISO_TILE_W = 32;
 const ISO_TILE_H = 16;
 
-/** Must match the server's SIM_TICK_HZ. */
-const TICK_HZ = 10;
-const TICK_MS = 1000 / TICK_HZ;
+const GATEWAY_URL =
+  import.meta.env?.VITE_GATEWAY_URL ?? "http://localhost:8081";
 
-const PIP_COUNT = 300;
+/** Only used in the offline fallback; the served world reports its own rate. */
+const FALLBACK_TICK_HZ = 10;
+const FALLBACK_PIPS = 300;
 
 /** Mirrors sim::Activity. */
 const ACTIVITY_WALKING = 1;
@@ -47,10 +48,9 @@ const ACTIVITY_WALKING = 1;
 // --- deterministic client-side randomness -----------------------------------
 
 /**
- * The client picks destinations only because there is no gateway yet, and it
- * does so from a seeded generator so a reload replays the same run. Anything
- * affecting world state has to be reproducible — that rule does not stop at
- * the WASM boundary.
+ * Used only by the offline fallback, and seeded so a reload replays the same
+ * run. Anything that affects world state has to be reproducible — that rule
+ * does not stop at the WASM boundary.
  */
 function mulberry32(seed: number): () => number {
   let a = seed >>> 0;
@@ -67,7 +67,10 @@ function mulberry32(seed: number): () => number {
 type Pip = { x: number; y: number; activity: number; food: number };
 type Snapshot = Map<number, Pip>;
 
-function snapshot(flat: Int32Array, stride: number): Snapshot {
+const NEED_FOOD = 1;
+
+/** From the flat Int32Array the WASM module exposes. */
+function snapshotFromWasm(flat: Int32Array, stride: number): Snapshot {
   const out: Snapshot = new Map();
   for (let i = 0; i < flat.length; i += stride) {
     out.set(flat[i], {
@@ -75,6 +78,33 @@ function snapshot(flat: Int32Array, stride: number): Snapshot {
       y: flat[i + 2],
       activity: flat[i + 3],
       food: flat[i + 4],
+    });
+  }
+  return out;
+}
+
+/**
+ * From a server delta.
+ *
+ * The gateway currently sends every pip each tick rather than a true diff, so
+ * this rebuilds the snapshot wholesale. When real diffing lands, this merges
+ * into the previous snapshot instead — the message shape already allows it.
+ */
+function snapshotFromDelta(delta: {
+  pips: {
+    id: bigint;
+    position?: { xMilli: number; yMilli: number };
+    activity?: number;
+    needs: Record<number, number>;
+  }[];
+}): Snapshot {
+  const out: Snapshot = new Map();
+  for (const p of delta.pips) {
+    out.set(Number(p.id), {
+      x: p.position?.xMilli ?? 0,
+      y: p.position?.yMilli ?? 0,
+      activity: p.activity ?? 0,
+      food: p.needs?.[NEED_FOOD] ?? 1000,
     });
   }
   return out;
@@ -131,12 +161,6 @@ async function main() {
   await app.init({ background: "#11131a", resizeTo: window, antialias: true });
   document.body.appendChild(app.canvas);
 
-  // This will come from JoinWorldResponse once the gateway exists. Both sides
-  // must start from the same number or prediction is meaningless.
-  const sim = new SimHandle(42n);
-  const stride = pip_stride();
-  const rand = mulberry32(42);
-
   const world = new Container();
   // The diamond's leftmost point (tileX=0, tileY=GRID_H) sits at a negative
   // x offset — shift the whole world right by that amount so nothing is
@@ -152,24 +176,8 @@ async function main() {
   pipLayer.sortableChildren = true;
   world.addChild(pipLayer);
 
-  // Seed the population. These are queued as intents and applied at the next
-  // tick boundary, exactly the way the server would apply them.
-  for (let i = 0; i < PIP_COUNT; i++) {
-    sim.queue_spawn(
-      `pip-${i}`,
-      Math.floor(rand() * GRID_W) * MILLI_PER_TILE,
-      Math.floor(rand() * GRID_H) * MILLI_PER_TILE,
-    );
-  }
-
-  const sprites = new Map<number, Graphics>();
-  let prev: Snapshot = new Map();
-  let curr: Snapshot = snapshot(sim.positions(), stride);
-  let lastTickAt = performance.now();
-
-  // Backdrop so the HUD stays readable once pips wander underneath it.
   const hudPanel = new Graphics()
-    .roundRect(8, 8, 268, 128, 6)
+    .roundRect(8, 8, 300, 128, 6)
     .fill({ color: 0x0b0d12, alpha: 0.82 });
   app.stage.addChild(hudPanel);
 
@@ -180,33 +188,86 @@ async function main() {
   hud.position.set(20, 18);
   app.stage.addChild(hud);
 
-  // --- simulation: 10 Hz, deliberately independent of frame rate ------------
+  // Shared render state, written either by the stream or by the fallback loop.
+  let prev: Snapshot = new Map();
+  let curr: Snapshot = new Map();
+  let lastTickAt = performance.now();
+  let tickMs = 1000 / FALLBACK_TICK_HZ;
+  let source = "connecting…";
+  let tick = 0n;
 
-  setInterval(() => {
-    // Hand new destinations to whoever is standing around. In the real system
-    // these arrive from the gateway as intents.
-    for (const [id, p] of curr) {
-      if (p.activity !== ACTIVITY_WALKING && rand() < 0.05) {
-        sim.queue_move(
-          id,
-          Math.floor(rand() * GRID_W) * MILLI_PER_TILE,
-          Math.floor(rand() * GRID_H) * MILLI_PER_TILE,
-        );
-      }
+  const applySnapshot = (next: Snapshot, atTick: bigint) => {
+    prev = curr;
+    curr = next;
+    tick = atTick;
+    lastTickAt = performance.now();
+  };
+
+  // --- served world ---------------------------------------------------------
+
+  const runServed = async (client: WorldClient) => {
+    const joined = await join(client, `web-${Math.floor(Math.random() * 1e6)}`);
+    tickMs = 1000 / joined.tickHz;
+    source = `${GATEWAY_URL} · seed ${joined.simSeed}`;
+
+    // Seeding the local sim with the server's seed is what makes the WASM copy
+    // a prediction of *this* world rather than a different one.
+    const predicted = new SimHandle(joined.simSeed);
+    void predicted;
+
+    const controller = new AbortController();
+    window.addEventListener("beforeunload", () => controller.abort());
+
+    for await (const delta of streamDeltas(
+      client,
+      "web",
+      joined.tick,
+      controller.signal,
+    )) {
+      applySnapshot(snapshotFromDelta(delta), delta.tick);
+    }
+  };
+
+  // --- offline fallback -----------------------------------------------------
+
+  const runLocal = () => {
+    source = "local (no gateway)";
+    const sim = new SimHandle(42n);
+    const stride = pip_stride();
+    const rand = mulberry32(42);
+
+    for (let i = 0; i < FALLBACK_PIPS; i++) {
+      sim.queue_spawn(
+        `pip-${i}`,
+        Math.floor(rand() * GRID_W) * MILLI_PER_TILE,
+        Math.floor(rand() * GRID_H) * MILLI_PER_TILE,
+      );
     }
 
-    sim.step();
+    setInterval(() => {
+      sim.step();
+      applySnapshot(snapshotFromWasm(sim.positions(), stride), sim.tick);
+    }, tickMs);
+  };
 
-    prev = curr;
-    curr = snapshot(sim.positions(), stride);
-    lastTickAt = performance.now();
-  }, TICK_MS);
+  // Not awaited. The stream runs for as long as the page is open, so awaiting
+  // it here would mean the renderer never starts.
+  runServed(connect(GATEWAY_URL))
+    .then(() => {
+      source = "stream ended";
+    })
+    .catch((err) => {
+      console.warn("gateway unavailable, falling back to a local world", err);
+      runLocal();
+    });
 
   // --- rendering: display refresh rate, interpolated between ticks -----------
 
+  const sprites = new Map<number, Graphics>();
+
   app.ticker.add(() => {
     // How far we are between the last authoritative tick and the next one.
-    const alpha = Math.min(1, (performance.now() - lastTickAt) / TICK_MS);
+    const alpha = Math.min(1, (performance.now() - lastTickAt) / tickMs);
 
     for (const [id, now] of curr) {
       let g = sprites.get(id);
@@ -226,7 +287,7 @@ async function main() {
       g.alpha = now.activity === ACTIVITY_WALKING ? 1 : 0.6;
     }
 
-    // Pips that starved since the previous tick.
+    // Pips that died between ticks.
     for (const [id, g] of sprites) {
       if (!curr.has(id)) {
         g.destroy();
@@ -235,12 +296,12 @@ async function main() {
     }
 
     hud.text = [
-      `tick   ${sim.tick}`,
-      `pips   ${sim.pip_count}`,
-      `hash   ${sim.state_hash.toString(16).padStart(16, "0")}`,
+      `tick   ${tick}`,
+      `pips   ${curr.size}`,
       `fps    ${app.ticker.FPS.toFixed(0)}`,
+      `rate   ${(1000 / tickMs).toFixed(0)} Hz, interpolated`,
       "",
-      `sim ${TICK_HZ} Hz — interpolated to display rate`,
+      source,
     ].join("\n");
   });
 }

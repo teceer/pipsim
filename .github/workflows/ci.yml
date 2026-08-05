@@ -194,8 +194,9 @@ jobs:
       - name: build wasm bindings
         run: make -C services/sim-core wasm
 
+      # Installed from the workspace root: gen/ts is a package web/ depends on,
+      # so a bare `bun install` inside web/ cannot resolve it.
       - name: typecheck
-        working-directory: web
         run: |
           bun install
-          ./node_modules/.bin/tsc --noEmit
+          ./node_modules/.bin/tsc --noEmit -p web/tsconfig.json

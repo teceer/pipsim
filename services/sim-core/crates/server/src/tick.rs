@@ -23,6 +23,17 @@ pub struct Driver {
     pub producer: FutureProducer,
     pub period: Duration,
     pub deltas: broadcast::Sender<simpb::WorldDelta>,
+    /// Ticks between arrivals, or 0 to disable.
+    ///
+    /// Temporary. There is no food in the world yet — nothing produces it and
+    /// nobody eats — so every pip starves within roughly a thousand ticks and
+    /// the world stays empty forever. A trickle of arrivals keeps it populated
+    /// until the farm exists and the economy closes the loop.
+    ///
+    /// It lives here in the I/O shell rather than in `sim` on purpose: "people
+    /// show up from somewhere" is not a rule of the world, it is a stand-in for
+    /// one, and the core should not carry stand-ins.
+    pub spawn_every: u64,
 }
 
 impl Driver {
@@ -58,10 +69,27 @@ impl Driver {
             // Drain intents accumulated since the previous tick and apply them
             // all at the tick boundary. Order within a tick is arrival order,
             // which the event log records, so replay reproduces it exactly.
-            let intents = {
+            let mut intents = {
                 let mut p = self.pending.lock().unwrap();
                 std::mem::take(&mut *p)
             };
+
+            if self.spawn_every > 0 {
+                let tick_now = self.world.lock().unwrap().tick;
+                if tick_now.is_multiple_of(self.spawn_every) {
+                    // Position derived from the tick rather than randomised, so
+                    // a restart from the same seed reproduces the same arrivals.
+                    intents.push(sim::Intent::Spawn {
+                        name: format!("pip-t{tick_now}"),
+                        position: sim::Vec2 {
+                            x: ((tick_now as i32).wrapping_mul(3137))
+                                .rem_euclid(sim::WORLD_W_MILLI),
+                            y: ((tick_now as i32).wrapping_mul(1733))
+                                .rem_euclid(sim::WORLD_H_MILLI),
+                        },
+                    });
+                }
+            }
 
             // The lock is released before any await: holding a std Mutex across
             // an await point would be a deadlock waiting to happen.

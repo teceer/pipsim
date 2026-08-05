@@ -99,9 +99,10 @@ agents but are the fastest orientation for humans too.
 
 ## Status
 
-`sim-core` runs in the cluster, publishing facts to Kafka and spans to Jaeger.
-Its state hash on tick 1 is identical whether the binary runs natively on macOS
-or inside the Linux container — determinism holds across platforms, not just
+The chain runs end to end: `sim-core` and `world-gateway` in the cluster, the
+browser rendering a world it is served rather than one it invents. sim-core's
+state hash on tick 1 is identical whether the binary runs natively on macOS or
+inside the Linux container — determinism holds across platforms, not just
 across runs.
 
 What is actually verified in CI:
@@ -113,9 +114,11 @@ What is actually verified in CI:
 - every Go module vetting and building, which also proves `gen/go` compiles
 - the web client typechecking against the generated WASM bindings
 
-Not yet real: every service other than sim-core is contracts plus a skeleton,
-and there is no gateway, so the browser client still drives a local world rather
-than a served one. The proto definitions are the part worth reading first.
+Not yet real: the workplaces, broadcast and the BFF are contracts plus
+skeletons. Nothing produces food, so pips starve and the world is kept
+populated by a temporary trickle of arrivals in sim-core's I/O shell — closing
+that loop is what the farm is for. The proto definitions are the part worth
+reading first.
 
 ## License
 
