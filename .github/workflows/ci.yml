@@ -83,9 +83,16 @@ jobs:
       # here instead of quietly breaking consumers that replay an older Kafka log.
       #
       # Skipped on main, where there is no earlier revision to compare against.
+      # actions/checkout leaves a PR at a detached merge ref with no local
+      # branch for the base, so buf's `.git#branch=...` input cannot resolve it
+      # even with full history. Fetch it explicitly.
+      - name: fetch base branch
+        if: github.event_name == 'pull_request'
+        run: git fetch origin "${{ github.base_ref }}:${{ github.base_ref }}"
+
       - name: no breaking contract changes
         if: github.event_name == 'pull_request'
-        run: buf breaking proto --against '.git#branch=main,subdir=proto'
+        run: buf breaking proto --against ".git#branch=${{ github.base_ref }},subdir=proto"
 
       # gen/ is committed on purpose; this is what stops it going stale.
       - name: generated code is current
