@@ -105,18 +105,31 @@ func main() {
 	// The economy loop: fill the farm's positions and forward what a shift does
 	// to the workers. Mechanics only — see internal/economy for why the policy
 	// deliberately lives elsewhere.
-	if farmAddr := os.Getenv("FARM_ADDR"); farmAddr != "" {
+	amqpURL := os.Getenv("AMQP_URL")
+	farmAddr := os.Getenv("FARM_ADDR")
+	if farmAddr != "" && amqpURL != "" {
+		offers, err := economy.Dial(amqpURL)
+		if err != nil {
+			slog.Error("could not reach the broker", "err", err)
+			os.Exit(1)
+		}
+		defer offers.Close()
+
 		driver := economy.NewDriver(
 			simClient,
 			workplacev1connect.NewWorkplaceServiceClient(h2cClient(), "http://"+farmAddr),
 			envUint("FARM_WORKPLACE_ID", 1),
+			"farm",
+			offers,
 		)
+
 		ctx, cancelEconomy := context.WithCancel(context.Background())
 		defer cancelEconomy()
 		go driver.Run(ctx, time.Second)
+		go economy.RunOutcomes(ctx, amqpURL, driver.OnHired)
 		slog.Info("economy driver started", "farm", farmAddr)
 	} else {
-		slog.Info("no FARM_ADDR set; running without an economy")
+		slog.Info("economy disabled; FARM_ADDR and AMQP_URL are both required")
 	}
 
 	mux := http.NewServeMux()

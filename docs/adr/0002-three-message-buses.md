@@ -34,6 +34,25 @@ The complementary rule, stated in the root `CLAUDE.md`:
 > **Commands over gRPC, facts over Kafka.** If the caller waits for an answer,
 > gRPC. If something already happened and may concern many, Kafka.
 
+## What it looks like in practice
+
+RabbitMQ's turn came with the farm. The gateway publishes a `WorkOffer` per
+unemployed pip to the `pipsim.work` exchange; workplace replicas share one queue
+per kind and compete for offers; outcomes come back on `pipsim.work.hired`.
+
+The motivation was not decoration. Direct RPC forced the allocation driver to be
+a singleton — two drivers polling the same workplace would both see a free
+position and both hire into it — which is why world-gateway had been pinned to
+one replica. With allocation on a queue the broker arbitrates instead, and that
+was measured working: two farm replicas took 27 and 111 offers with no
+double-hires.
+
+It also exposed the next problem honestly. Allocation distributes cleanly, but
+everything *after* the hire does not: shift state lives in each replica's
+memory while `Work` and `EndShift` are ordinary RPCs that the Service
+load-balances, so a pip hired by one replica is unknown to the other. That is a
+shared-state problem, not a messaging one, and no amount of queueing fixes it.
+
 ## Consequences
 
 - The simulation loop itself stays out of Kafka entirely. At 10 Hz with 500 pips

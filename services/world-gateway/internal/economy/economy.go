@@ -5,15 +5,16 @@
 // not decide who deserves work, what a shift costs, or whether a pip survives.
 // The farm owns the first, sim-core owns the rest.
 //
-// Concretely, it never looks at a pip's needs. It hires whoever is unemployed
-// until the workplace says it is full, which means scarcity emerges from the
-// workplace's own capacity rather than from a rule written here. If this file
-// ever grows an `if needs[food] < …`, the boundary has leaked.
+// Concretely, it never looks at a pip's needs. It offers whoever is unemployed
+// to the work exchange and lets a workplace with capacity claim them, so
+// scarcity emerges from the workplaces rather than from a rule written here.
+// If this file ever grows an `if needs[food] < …`, the boundary has leaked.
 package economy
 
 import (
 	"context"
 	"log/slog"
+	"sync"
 	"time"
 
 	"connectrpc.com/connect"
@@ -28,24 +29,60 @@ type Driver struct {
 	sim       simv1connect.SimServiceClient
 	workplace workplacev1connect.WorkplaceServiceClient
 	id        uint64
+	kind      string
+	offers    *Publisher
 
-	// Who this driver believes is on shift. Rebuilt from nothing on restart —
-	// sim-core is the authority on pips, and a stale local view heals within a
-	// cycle because Work reports an unknown pip as shift-should-end.
+	// Who this driver believes is on shift. Written by the outcome consumer as
+	// well as the cycle, hence the lock. Rebuilt from nothing on restart —
+	// sim-core is the authority on pips, and a stale view heals within a cycle
+	// because Work reports an unknown pip as shift-should-end.
+	mu       sync.Mutex
 	employed map[uint64]bool
+
+	// Offered but not yet answered. Without this the driver would re-offer the
+	// same pip every round while its first offer is still queued, and a
+	// workplace with one free position would be handed the same candidate a
+	// dozen times.
+	pending map[uint64]time.Time
 }
 
 func NewDriver(
 	sim simv1connect.SimServiceClient,
 	workplace workplacev1connect.WorkplaceServiceClient,
 	workplaceID uint64,
+	kind string,
+	offers *Publisher,
 ) *Driver {
 	return &Driver{
 		sim:       sim,
 		workplace: workplace,
 		id:        workplaceID,
+		kind:      kind,
+		offers:    offers,
 		employed:  make(map[uint64]bool),
+		pending:   make(map[uint64]time.Time),
 	}
+}
+
+// OnHired records a workplace's acceptance and tells the world about it.
+//
+// This is the only place a Hire intent is submitted. The workplace decided; the
+// gateway records. Keeping that split is what lets a workplace stay ignorant of
+// sim-core's existence.
+func (d *Driver) OnHired(pipID, workplaceID uint64) {
+	if _, err := d.sim.SubmitIntent(context.Background(), connect.NewRequest(&simv1.SubmitIntentRequest{
+		Intent: &simv1.SubmitIntentRequest_Hire{
+			Hire: &simv1.HireIntent{PipId: pipID, WorkplaceId: workplaceID},
+		},
+	})); err != nil {
+		slog.Warn("could not record hire", "pip", pipID, "err", err)
+		return
+	}
+
+	d.mu.Lock()
+	d.employed[pipID] = true
+	delete(d.pending, pipID)
+	d.mu.Unlock()
 }
 
 // Run drives one cycle per interval until the context is cancelled.
@@ -86,66 +123,65 @@ func (d *Driver) cycle(ctx context.Context) error {
 
 	// Pips that died on shift. The farm frees the position; without this a
 	// starved worker would occupy it forever.
+	d.mu.Lock()
+	var dead []uint64
 	for pip := range d.employed {
 		if !alive[pip] {
-			d.endShift(ctx, pip, tick, "pip died")
+			dead = append(dead, pip)
 		}
 	}
+	d.mu.Unlock()
+	for _, pip := range dead {
+		d.endShift(ctx, pip, tick, "pip died")
+	}
 
-	worked, hired := 0, 0
+	worked, offered := 0, 0
 	for _, p := range snap.Msg.GetPips() {
-		if d.employed[p.GetId()] {
+		d.mu.Lock()
+		isEmployed := d.employed[p.GetId()]
+		d.mu.Unlock()
+
+		if isEmployed {
 			if d.work(ctx, p.GetId(), tick) {
 				worked++
 			}
 			continue
 		}
-		if d.tryHire(ctx, p.GetId(), tick) {
-			hired++
+		if offered < maxOffersPerRound && d.offer(ctx, p.GetId(), tick) {
+			offered++
 		}
 	}
 
-	if hired > 0 || worked > 0 {
+	d.mu.Lock()
+	employedCount := len(d.employed)
+	d.mu.Unlock()
+
+	if offered > 0 || worked > 0 {
 		slog.Info("economy cycle",
-			"tick", tick, "hired", hired, "worked", worked, "employed", len(d.employed))
+			"tick", tick, "offered", offered, "worked", worked, "employed", employedCount)
 	}
 	return nil
 }
 
-// tryHire returns whether the pip started a shift. A full workplace is the
-// normal case, not an error.
-func (d *Driver) tryHire(ctx context.Context, pip, tick uint64) bool {
-	can, err := d.workplace.CanEmploy(ctx, connect.NewRequest(&workplacev1.CanEmployRequest{
-		WorkplaceId: d.id,
-		PipId:       pip,
-	}))
-	if err != nil || !can.Msg.GetAllowed() {
+// offer publishes a pip to the work exchange. Returns whether one was sent.
+func (d *Driver) offer(ctx context.Context, pip, tick uint64) bool {
+	d.mu.Lock()
+	// An offer nobody answered eventually expires at the broker; give up
+	// tracking it a little later so the pip becomes offerable again.
+	if at, waiting := d.pending[pip]; waiting && time.Since(at) < 15*time.Second {
+		d.mu.Unlock()
 		return false
 	}
+	d.pending[pip] = time.Now()
+	d.mu.Unlock()
 
-	started, err := d.workplace.StartShift(ctx, connect.NewRequest(&workplacev1.StartShiftRequest{
-		WorkplaceId: d.id,
-		PipId:       pip,
-		Tick:        tick,
-	}))
-	if err != nil || !started.Msg.GetAccepted() {
+	if err := d.offers.Offer(ctx, d.kind, pip, tick, ""); err != nil {
+		slog.Warn("could not publish offer", "pip", pip, "err", err)
+		d.mu.Lock()
+		delete(d.pending, pip)
+		d.mu.Unlock()
 		return false
 	}
-
-	// Only now does the world learn about it. The workplace tracks the shift;
-	// sim-core tracks the pip; this call is what joins them.
-	if _, err := d.sim.SubmitIntent(ctx, connect.NewRequest(&simv1.SubmitIntentRequest{
-		Intent: &simv1.SubmitIntentRequest_Hire{
-			Hire: &simv1.HireIntent{PipId: pip, WorkplaceId: d.id},
-		},
-	})); err != nil {
-		// Roll the shift back rather than leaving the workplace believing it
-		// employs someone the world has never heard of.
-		d.endShift(ctx, pip, tick, "could not record hire")
-		return false
-	}
-
-	d.employed[pip] = true
 	return true
 }
 
@@ -190,5 +226,8 @@ func (d *Driver) endShift(ctx context.Context, pip, tick uint64, reason string) 
 		Tick:        tick,
 		Reason:      reason,
 	}))
+	d.mu.Lock()
 	delete(d.employed, pip)
+	delete(d.pending, pip)
+	d.mu.Unlock()
 }

@@ -240,6 +240,33 @@ func (s *Service) EndShift(
 	return connect.NewResponse(&workplacev1.EndShiftResponse{}), nil
 }
 
+// ConsiderOffer answers a work offer taken off the queue.
+//
+// Capacity check and shift start happen under one lock rather than as separate
+// CanEmploy/StartShift calls: an offer is claimed by exactly one consumer, so
+// there is no window for another caller to take the position in between, and
+// pretending otherwise would just be a slower version of the same answer.
+func (s *Service) ConsiderOffer(_ context.Context, pipID, tick uint64) (bool, string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.reapLocked()
+
+	if _, already := s.onShift[pipID]; already {
+		return false, "already on shift here"
+	}
+	if len(s.onShift) >= MaxWorkers {
+		return false, "no free positions"
+	}
+
+	s.onShift[pipID] = &shift{
+		startedTick:  tick,
+		lastWorkTick: tick,
+		lastWork:     s.now(),
+	}
+	slog.Info("offer accepted", "pip", pipID, "tick", tick, "workers", len(s.onShift))
+	return true, ""
+}
+
 // Workers reports the current headcount, for the health endpoint.
 func (s *Service) Workers() int {
 	s.mu.RLock()

@@ -154,6 +154,43 @@ resource "rabbitmq_queue" "workplace_tasks" {
   }
 }
 
+# Bind each workplace queue to the offers routed at its kind. Multiple replicas
+# of one workplace share a queue, which is what makes them competing consumers:
+# an offer is delivered to exactly one of them and acknowledged individually.
+resource "rabbitmq_binding" "workplace_tasks" {
+  for_each = toset(["farm", "workshop", "tavern"])
+
+  source           = rabbitmq_exchange.work.name
+  destination      = rabbitmq_queue.workplace_tasks[each.key].name
+  destination_type = "queue"
+  routing_key      = "offer.${each.key}"
+  vhost            = rabbitmq_vhost.pipsim.name
+}
+
+# Outcomes flow back on their own queue rather than as an RPC reply, so a
+# workplace never has to wait on the gateway and the gateway never has to hold
+# a correlation table.
+resource "rabbitmq_queue" "hired" {
+  name  = "pipsim.work.hired"
+  vhost = rabbitmq_vhost.pipsim.name
+
+  settings {
+    durable     = true
+    auto_delete = false
+    arguments = {
+      "x-dead-letter-exchange" = "pipsim.work.dlx"
+    }
+  }
+}
+
+resource "rabbitmq_binding" "hired" {
+  source           = rabbitmq_exchange.work.name
+  destination      = rabbitmq_queue.hired.name
+  destination_type = "queue"
+  routing_key      = "hired"
+  vhost            = rabbitmq_vhost.pipsim.name
+}
+
 resource "rabbitmq_exchange" "work_dlx" {
   name  = "pipsim.work.dlx"
   vhost = rabbitmq_vhost.pipsim.name

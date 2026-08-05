@@ -37,6 +37,8 @@ spec:
               value: "{{ .Values.farm.address }}"
             - name: FARM_WORKPLACE_ID
               value: "{{ .Values.farm.workplaceId }}"
+            - name: AMQP_URL
+              value: "amqp://pipsim:pipsim@rabbitmq.{{ .Values.platformNamespace }}.svc.cluster.local:5672/pipsim"
           readinessProbe:
             httpGet:
               path: /healthz

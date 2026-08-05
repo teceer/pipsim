@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+package pips.work.v1;
+
+// RabbitMQ payloads: task distribution, not facts and not commands.
+//
+// A separate package from pips.events.v1 because the semantics differ, and the
+// difference is the whole reason this project runs three buses (ADR 0002):
+//
+//   Kafka     — an immutable fact log. Retained, replayable, read by many.
+//   RabbitMQ  — a task handed to exactly one worker and acknowledged by it.
+//   BullMQ    — work scheduled for later.
+//
+// An offer is consumed once. Several replicas of a workplace share one queue,
+// so they compete for offers and the broker guarantees only one gets each —
+// which is precisely what a fan-out log cannot express.
+//
+// Routing on the `pipsim.work` topic exchange:
+//   offer.<kind>  -> pipsim.work.<kind>
+//   hired         -> pipsim.work.hired
+
+// A pip is available and looking for work.
+//
+// Published per unemployed pip, per allocation round. Redelivery is fine: the
+// workplace re-checks capacity, and a duplicate hire is rejected by the
+// workplace rather than prevented by the broker.
+message WorkOffer {
+  uint64 pip_id = 1;
+  // Simulation tick the offer was made at. Ordering authority for anything
+  // that needs to reason about staleness — an offer from long ago describes a
+  // world that has moved on.
+  uint64 tick = 2;
+  // W3C trace id, so an offer picked up by some replica minutes later still
+  // joins the trace that produced it.
+  string trace_id = 3;
+}
+
+// What a workplace did with an offer.
+//
+// Sent back on its own queue rather than as an RPC reply: the workplace should
+// never block on whoever made the offer, and the gateway should not have to
+// hold a table of outstanding correlations.
+message HireOutcome {
+  uint64 pip_id = 1;
+  uint64 workplace_id = 2;
+  string workplace_kind = 3;
+  bool accepted = 4;
+  // Populated when accepted is false — "no free positions", "already on shift".
+  string reason = 5;
+  uint64 tick = 6;
+  string trace_id = 7;
+}

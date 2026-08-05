@@ -22,9 +22,8 @@ farm:
   address: farm:8090
   workplaceId: 1
 
-# One replica while the economy driver lives here: two would both try to fill
-# the same positions. Splitting the driver into its own deployment is what
-# makes the gateway horizontally scalable again.
+platformNamespace: pipsim-platform
+
 replicaCount: 1
 
 resources:

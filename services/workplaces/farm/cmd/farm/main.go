@@ -6,6 +6,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -18,6 +19,7 @@ import (
 
 	"github.com/teceer/pipsim/gen/go/pips/workplace/v1/workplacev1connect"
 	"github.com/teceer/pipsim/services/workplaces/farm/internal/farm"
+	"github.com/teceer/pipsim/services/workplaces/farm/internal/queue"
 )
 
 func envInt(key string, def int64) int64 {
@@ -37,6 +39,23 @@ func main() {
 		int32(envInt("WORKPLACE_X", 12_000)),
 		int32(envInt("WORKPLACE_Y", 8_000)),
 	)
+
+	// Competing consumers: several replicas share pipsim.work.farm, so an offer
+	// goes to exactly one of them. Without a broker URL the farm still serves
+	// its RPCs and simply never receives offers.
+	if amqpURL := os.Getenv("AMQP_URL"); amqpURL != "" {
+		consumer := queue.NewConsumer(
+			amqpURL,
+			uint64(envInt("WORKPLACE_ID", 1)),
+			"farm",
+			svc.ConsiderOffer,
+		)
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		go consumer.Run(ctx)
+	} else {
+		slog.Info("no AMQP_URL set; not consuming work offers")
+	}
 
 	mux := http.NewServeMux()
 	mux.Handle(workplacev1connect.NewWorkplaceServiceHandler(svc))
