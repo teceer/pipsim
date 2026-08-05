@@ -1,0 +1,70 @@
+syntax = "proto3";
+
+package pips.world.v1;
+
+import "pips/sim/v1/sim.proto";
+import "pips/workplace/v1/workplace.proto";
+
+// The client-facing API. Served over Connect-RPC, which means the browser can
+// call it directly — no gRPC-Web bridge, no Envoy.
+//
+// The world-gateway is the only service clients talk to. It aggregates sim-core
+// and the workplaces; it holds no domain logic of its own.
+service WorldService {
+  // Initial state on join.
+  rpc JoinWorld(JoinWorldRequest) returns (JoinWorldResponse);
+
+  // Server-streamed deltas. The server is authoritative at a low tick rate
+  // (10 Hz); the client interpolates and predicts between ticks using the same
+  // sim code compiled to WASM.
+  rpc StreamWorld(StreamWorldRequest) returns (stream WorldUpdate);
+
+  // Player actions. Forwarded to sim-core as intents applied on the next tick.
+  rpc BuildWorkplace(BuildWorkplaceRequest) returns (BuildWorkplaceResponse);
+  rpc AssignWork(AssignWorkRequest) returns (AssignWorkResponse);
+}
+
+message JoinWorldRequest {
+  string client_id = 1;
+}
+
+message JoinWorldResponse {
+  uint64 tick = 1;
+  int32 tick_hz = 2;
+  // Seed the client needs to run identical prediction locally.
+  uint64 sim_seed = 3;
+  repeated pips.sim.v1.Pip pips = 4;
+  repeated pips.workplace.v1.DescribeResponse workplaces = 5;
+}
+
+message StreamWorldRequest {
+  string client_id = 1;
+  uint64 from_tick = 2;
+}
+
+message WorldUpdate {
+  pips.sim.v1.WorldDelta delta = 1;
+  repeated pips.workplace.v1.DescribeResponse changed_workplaces = 2;
+}
+
+message BuildWorkplaceRequest {
+  string kind = 1;
+  pips.sim.v1.Vec2 position = 2;
+}
+
+message BuildWorkplaceResponse {
+  uint64 workplace_id = 1;
+  // Construction is not instant — it is a BullMQ delayed job. The client gets
+  // the tick at which the building becomes usable.
+  uint64 ready_at_tick = 2;
+}
+
+message AssignWorkRequest {
+  uint64 pip_id = 1;
+  uint64 workplace_id = 2;
+}
+
+message AssignWorkResponse {
+  bool accepted = 1;
+  string reason = 2;
+}

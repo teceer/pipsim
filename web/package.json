@@ -1,0 +1,23 @@
+{
+  "name": "@pipsim/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "test": "bun test",
+    "lint": "biome check src"
+  },
+  "dependencies": {
+    "@connectrpc/connect": "^2.0.0",
+    "@connectrpc/connect-web": "^2.0.0",
+    "pixi.js": "^8.5.2"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.10",
+    "vite-plugin-wasm": "^3.3.0"
+  }
+}

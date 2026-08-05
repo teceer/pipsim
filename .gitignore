@@ -1,0 +1,28 @@
+# build output
+target/
+dist/
+bin/
+_build/
+deps/
+node_modules/
+*.beam
+web/src/sim-wasm/
+
+# terraform: local state is deliberate (see infra/terraform/00-cluster/main.tf),
+# but it must never be committed
+**/.terraform/
+**/.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+*.tfvars
+
+# local env
+.env
+.env.local
+.direnv/
+
+# editors / os
+.DS_Store
+.idea/
+.vscode/
+*.swp

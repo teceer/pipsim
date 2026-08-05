@@ -1,0 +1,101 @@
+syntax = "proto3";
+
+package pips.workplace.v1;
+
+import "pips/sim/v1/sim.proto";
+
+// The extensibility contract of the whole project.
+//
+// Every workplace — farm, workshop, tavern — implements exactly this service.
+// Adding a new building type is therefore an hour of work in any language and
+// touches nothing in the core. If you find yourself wanting to extend this
+// service for one specific building, that is a signal the abstraction is wrong.
+service WorkplaceService {
+  // Static description: what it is, how many it employs, what it produces.
+  rpc Describe(DescribeRequest) returns (DescribeResponse);
+
+  // Can this pip work here right now? Called by the gateway before hiring.
+  rpc CanEmploy(CanEmployRequest) returns (CanEmployResponse);
+
+  // A pip starts a work shift.
+  rpc StartShift(StartShiftRequest) returns (StartShiftResponse);
+
+  // A tick of work performed by an employed pip. Returns what was produced
+  // and how the pip's needs changed.
+  rpc Work(WorkRequest) returns (WorkResponse);
+
+  // A pip ends the shift, voluntarily or not.
+  rpc EndShift(EndShiftRequest) returns (EndShiftResponse);
+}
+
+message DescribeRequest {
+  uint64 workplace_id = 1;
+}
+
+message DescribeResponse {
+  uint64 workplace_id = 1;
+  string kind = 2;               // "farm", "workshop", "tavern"
+  string display_name = 3;
+  int32 max_workers = 4;
+  int32 current_workers = 5;
+  pips.sim.v1.Vec2 position = 6;
+  repeated ResourceKind produces = 7;
+  repeated ResourceKind consumes = 8;
+}
+
+enum ResourceKind {
+  RESOURCE_KIND_UNSPECIFIED = 0;
+  RESOURCE_KIND_GRAIN = 1;
+  RESOURCE_KIND_FOOD = 2;
+  RESOURCE_KIND_TOOL = 3;
+  RESOURCE_KIND_ALE = 4;
+}
+
+message CanEmployRequest {
+  uint64 workplace_id = 1;
+  uint64 pip_id = 2;
+}
+
+message CanEmployResponse {
+  bool allowed = 1;
+  string reason = 2;
+}
+
+message StartShiftRequest {
+  uint64 workplace_id = 1;
+  uint64 pip_id = 2;
+  uint64 tick = 3;
+}
+
+message StartShiftResponse {
+  bool accepted = 1;
+  string reason = 2;
+}
+
+message WorkRequest {
+  uint64 workplace_id = 1;
+  uint64 pip_id = 2;
+  uint64 tick = 3;
+}
+
+message WorkResponse {
+  repeated ResourceAmount produced = 1;
+  // Deltas applied to the pip's needs, e.g. work makes it hungrier.
+  map<int32, int32> need_deltas = 2;
+  // The workplace can ask for the shift to end (materials ran out, night fell).
+  bool shift_should_end = 3;
+}
+
+message ResourceAmount {
+  ResourceKind kind = 1;
+  int32 amount = 2;
+}
+
+message EndShiftRequest {
+  uint64 workplace_id = 1;
+  uint64 pip_id = 2;
+  uint64 tick = 3;
+  string reason = 4;
+}
+
+message EndShiftResponse {}

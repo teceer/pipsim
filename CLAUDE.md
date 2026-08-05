@@ -1,0 +1,74 @@
+# pipsim
+
+A simulation of "pips" (little people) split across microservices. The project is
+a playground for learning distributed systems — the browser renders, the cluster
+computes.
+
+## Service map
+
+| Service | Language | Responsibility | What it must NOT do |
+|---|---|---|---|
+| `services/sim-core` | Rust | Simulation core: tick loop, needs, pip state. Also compiles to WASM | Touch the network inside the `sim` crate — zero I/O there |
+| `services/world-gateway` | Go | State aggregation, Connect-RPC for clients, fan-in from workplaces | Hold domain logic — it is routing only |
+| `services/broadcast` | Elixir | Phoenix Channels, presence, fan-out of world deltas to browsers | Mutate world state — it is read-only |
+| `services/bff` | TS/Bun | Client-facing API, BullMQ (timers, construction, crop growth) | Talk to Kafka — that is the gateway's job |
+| `services/pathfinder` | Rust + Zig | Flow field pathfinding, hot kernel in Zig via FFI | Keep state between requests |
+| `services/workplaces/*` | mixed | Workplaces — each implements `workplace/v1` | Know about each other |
+
+## Non-negotiable rules
+
+1. **`proto/` is the single source of truth for contracts.** An API change starts
+   in `.proto`, never in service code.
+2. **Commands over gRPC, facts over Kafka.** If the caller waits for an answer —
+   gRPC. If something already happened and may concern many — Kafka.
+3. **The simulation is deterministic.** Inside `crates/sim` you must not use
+   `SystemTime`, `HashMap` (randomized seed → non-reproducible iteration order)
+   or an unseeded RNG. The same event log must reproduce the same world.
+4. **No domain rule is implemented in two languages.** Each has exactly one owner.
+5. **Postgres: schema per service.** No shared tables. A service reads another's
+   data only through RPC or Kafka.
+6. **Every service is testable without a cluster.** `make test` must never
+   require a running Kubernetes.
+
+## Bus split
+
+- **Kafka (Redpanda)** — immutable fact log, retention, replay, many independent
+  consumers. Payloads live in `proto/pips/events/v1`.
+- **RabbitMQ** — task distribution, competing consumers, per-message ack.
+  "Five pips are waiting for work, first come first served."
+- **BullMQ (Redis)** — delayed and repeating jobs. "Construction finishes in 30s."
+
+## Operational contract
+
+Every service, whatever the language, exposes identical Make targets:
+
+```
+make run     make test     make lint     make build     make gen
+```
+
+The root `Makefile` is only a facade iterating over `services/*`. You never have
+to remember that Elixir uses `mix test` while Rust uses `cargo nextest run`.
+
+On top of that, every service provides: a `/healthz` endpoint, JSON logs with a
+shared schema, and OpenTelemetry spans named `pipsim.<service>.<operation>`.
+
+## Development loop
+
+```bash
+make dev        # compose.dev.yaml — platform + services locally, no k8s
+make infra-up   # k3d + terraform (00 -> 10 -> 20)
+tilt up         # hot reload on the cluster
+make e2e        # bring everything up, run 60s of simulation, assert world state
+```
+
+Work in `make dev` by default. The cluster is for integration testing, not for
+iterating on code.
+
+## Notes for agents
+
+- `gen/` is committed on purpose — read the generated types from there instead of
+  running `buf generate`. After changing a `.proto`, run `make gen` from the root.
+- Rust has nothing in `gen/` — `tonic-build` reads `proto/` directly from `build.rs`.
+- Every service has its own `CLAUDE.md` with that language's idioms. Read it
+  before editing the service.
+- Architectural decisions and their rationale live in `docs/adr/`.

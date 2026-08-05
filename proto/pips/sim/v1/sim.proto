@@ -1,0 +1,139 @@
+syntax = "proto3";
+
+package pips.sim.v1;
+
+// The simulation core. Everything here is a COMMAND — the caller waits for an
+// answer. Facts produced as a side effect land in Kafka as pips.events.v1.
+service SimService {
+  // Advances the world by exactly one tick. Called by the tick driver, never
+  // by clients. Returns the events produced, which the gateway forwards to Kafka.
+  rpc Step(StepRequest) returns (StepResponse);
+
+  // Full world snapshot. Expensive — used on client join and for replay
+  // verification, not in the render loop.
+  rpc Snapshot(SnapshotRequest) returns (SnapshotResponse);
+
+  // Streams deltas as they are produced. This is what the render path uses.
+  rpc WatchDeltas(WatchDeltasRequest) returns (stream WorldDelta);
+
+  // Queues an intent for the next tick. Never applied immediately — applying
+  // mid-tick would break determinism.
+  rpc SubmitIntent(SubmitIntentRequest) returns (SubmitIntentResponse);
+}
+
+// ---------------------------------------------------------------------------
+// Core types
+//
+// Positions are fixed-point (millis of a tile), not floats. Floats would make
+// replay diverge between native and WASM builds.
+// ---------------------------------------------------------------------------
+
+message Vec2 {
+  int32 x_milli = 1;
+  int32 y_milli = 2;
+}
+
+enum Need {
+  NEED_UNSPECIFIED = 0;
+  NEED_FOOD = 1;
+  NEED_REST = 2;
+  NEED_SOCIAL = 3;
+}
+
+message Pip {
+  uint64 id = 1;
+  string name = 2;
+  Vec2 position = 3;
+  PipActivity activity = 4;
+  // Need levels, 0..1000. Fixed-point for the same reason as position.
+  map<int32, int32> needs = 5;
+  optional uint64 employer_workplace_id = 6;
+}
+
+enum PipActivity {
+  PIP_ACTIVITY_UNSPECIFIED = 0;
+  PIP_ACTIVITY_IDLE = 1;
+  PIP_ACTIVITY_WALKING = 2;
+  PIP_ACTIVITY_WORKING = 3;
+  PIP_ACTIVITY_EATING = 4;
+  PIP_ACTIVITY_SLEEPING = 5;
+}
+
+// ---------------------------------------------------------------------------
+// Stepping
+// ---------------------------------------------------------------------------
+
+message StepRequest {
+  // Must be exactly current_tick + 1. The core rejects gaps rather than
+  // silently interpolating — a gap means an event was lost.
+  uint64 tick = 1;
+}
+
+message StepResponse {
+  uint64 tick = 1;
+  WorldDelta delta = 2;
+  // Facts to publish to Kafka. The core does not publish them itself —
+  // it has no I/O.
+  repeated bytes domain_events = 3;
+}
+
+message WorldDelta {
+  uint64 tick = 1;
+  repeated PipDelta pips = 2;
+  repeated uint64 removed_pip_ids = 3;
+}
+
+message PipDelta {
+  uint64 id = 1;
+  optional Vec2 position = 2;
+  optional PipActivity activity = 3;
+  map<int32, int32> needs = 4;
+}
+
+// ---------------------------------------------------------------------------
+// Snapshot and intents
+// ---------------------------------------------------------------------------
+
+message SnapshotRequest {}
+
+message SnapshotResponse {
+  uint64 tick = 1;
+  repeated Pip pips = 2;
+  // Hash of the full state. Replay compares this to detect divergence.
+  bytes state_hash = 3;
+}
+
+message WatchDeltasRequest {
+  // Resume from this tick. 0 means "from now".
+  uint64 from_tick = 1;
+}
+
+message SubmitIntentRequest {
+  oneof intent {
+    HireIntent hire = 1;
+    MoveIntent move = 2;
+    SpawnPipIntent spawn = 3;
+  }
+}
+
+message SubmitIntentResponse {
+  bool accepted = 1;
+  string rejection_reason = 2;
+  // Tick at which the intent will be applied.
+  uint64 scheduled_tick = 3;
+}
+
+message HireIntent {
+  uint64 pip_id = 1;
+  uint64 workplace_id = 2;
+}
+
+message MoveIntent {
+  uint64 pip_id = 1;
+  Vec2 destination = 2;
+}
+
+message SpawnPipIntent {
+  string name = 1;
+  Vec2 position = 2;
+}

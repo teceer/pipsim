@@ -1,0 +1,110 @@
+# Development mode without Kubernetes.
+# This is the default working loop — the cluster is for integration testing,
+# not for iterating on code.
+
+name: pipsim
+
+services:
+  # --- platform -------------------------------------------------------------
+
+  redpanda:
+    image: redpandadata/redpanda:v24.2.7
+    command:
+      - redpanda start
+      - --smp 1
+      - --overprovisioned
+      - --node-id 0
+      - --kafka-addr PLAINTEXT://0.0.0.0:29092,OUTSIDE://0.0.0.0:9092
+      - --advertise-kafka-addr PLAINTEXT://redpanda:29092,OUTSIDE://localhost:9092
+      - --mode dev-container
+    ports: ["9092:9092", "9644:9644"]
+    healthcheck:
+      test: ["CMD", "rpk", "cluster", "health"]
+      interval: 5s
+      retries: 20
+
+  console:
+    image: redpandadata/console:v2.7.2
+    ports: ["8080:8080"]
+    environment:
+      KAFKA_BROKERS: redpanda:29092
+    depends_on: { redpanda: { condition: service_healthy } }
+
+  rabbitmq:
+    image: rabbitmq:4-management-alpine
+    ports: ["5672:5672", "15672:15672"]
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_running"]
+      interval: 5s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 20
+
+  postgres:
+    image: postgres:17-alpine
+    ports: ["5432:5432"]
+    environment:
+      POSTGRES_PASSWORD: pipsim
+      POSTGRES_USER: pipsim
+      POSTGRES_DB: pipsim
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pipsim"]
+      interval: 5s
+      retries: 20
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.111.0
+    command: ["--config=/etc/otel/config.yaml"]
+    volumes: ["./infra/otel/collector.yaml:/etc/otel/config.yaml:ro"]
+    ports: ["4317:4317", "4318:4318"]
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.62.0
+    ports: ["16686:16686"]
+
+  # --- services ---------------------------------------------------------------
+  # Behind a profile so that `make dev-platform` brings up the platform alone.
+
+  sim-core:
+    build: ./services/sim-core
+    profiles: ["services"]
+    ports: ["50051:50051"]
+    environment:
+      KAFKA_BROKERS: redpanda:29092
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      SIM_SEED: "42"          # determinism: fixed seed in dev
+      SIM_TICK_HZ: "10"
+    depends_on: { redpanda: { condition: service_healthy } }
+
+  world-gateway:
+    build: ./services/world-gateway
+    profiles: ["services"]
+    ports: ["8081:8081"]
+    environment:
+      SIM_CORE_ADDR: sim-core:50051
+      KAFKA_BROKERS: redpanda:29092
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+    depends_on: { redpanda: { condition: service_healthy } }
+
+  broadcast:
+    build: ./services/broadcast
+    profiles: ["services"]
+    ports: ["4000:4000"]
+    environment:
+      WORLD_GATEWAY_ADDR: world-gateway:8081
+
+  bff:
+    build: ./services/bff
+    profiles: ["services"]
+    ports: ["3000:3000"]
+    environment:
+      REDIS_URL: redis://redis:6379
+      WORLD_GATEWAY_URL: http://world-gateway:8081
+    depends_on: { redis: { condition: service_healthy } }

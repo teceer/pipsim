@@ -1,0 +1,7 @@
+# gen/ is committed on purpose so agents can read generated types without
+# running buf, and so contract breakage shows up in the PR diff. Marking it
+# generated keeps it collapsed in review and out of language statistics.
+gen/** linguist-generated=true
+gen/** -diff
+
+*.proto linguist-language=Protocol-Buffer

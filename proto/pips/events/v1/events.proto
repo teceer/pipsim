@@ -1,0 +1,90 @@
+syntax = "proto3";
+
+package pips.events.v1;
+
+import "google/protobuf/timestamp.proto";
+import "pips/sim/v1/sim.proto";
+import "pips/workplace/v1/workplace.proto";
+
+// Kafka payloads. Deliberately a separate package from the RPC contracts:
+// events live far longer than APIs. A message sitting in a topic with 7-day
+// retention must still be readable by code deployed a week later, so this file
+// evolves by adding fields only — never by changing or removing them.
+//
+// Topic naming: pipsim.<domain>.<event>.v1
+// Partition key: always the aggregate id (pip_id / workplace_id), so that a
+// single entity's events keep their relative order.
+
+// Envelope wrapping every event. Kafka carries EventEnvelope, not the bare
+// payload — this is what makes replay and tracing possible.
+message EventEnvelope {
+  string event_id = 1;                          // UUIDv7, deduplication key
+  uint64 tick = 2;                              // simulation tick, the ordering authority
+  google.protobuf.Timestamp occurred_at = 3;    // wall clock, for humans only
+  string trace_id = 4;                          // W3C trace context, ties into OTel
+  string producer = 5;                          // "sim-core", "farm", ...
+
+  oneof payload {
+    PipSpawned pip_spawned = 10;
+    PipStartedWork pip_started_work = 11;
+    PipEndedWork pip_ended_work = 12;
+    PipGotHungry pip_got_hungry = 13;
+    PipDied pip_died = 14;
+    ResourceProduced resource_produced = 20;
+    WorkplaceBuilt workplace_built = 21;
+    WorkplaceDemolished workplace_demolished = 22;
+  }
+}
+
+// --- pip lifecycle ----------------------------------------------------------
+
+message PipSpawned {
+  uint64 pip_id = 1;
+  string name = 2;
+  pips.sim.v1.Vec2 position = 3;
+}
+
+message PipStartedWork {
+  uint64 pip_id = 1;
+  uint64 workplace_id = 2;
+  string workplace_kind = 3;
+}
+
+message PipEndedWork {
+  uint64 pip_id = 1;
+  uint64 workplace_id = 2;
+  string reason = 3;
+  int32 ticks_worked = 4;
+}
+
+message PipGotHungry {
+  uint64 pip_id = 1;
+  int32 food_level = 2;   // 0..1000
+}
+
+message PipDied {
+  uint64 pip_id = 1;
+  string cause = 2;
+  int32 age_ticks = 3;
+}
+
+// --- economy ----------------------------------------------------------------
+
+message ResourceProduced {
+  uint64 workplace_id = 1;
+  uint64 pip_id = 2;
+  pips.workplace.v1.ResourceKind kind = 3;
+  int32 amount = 4;
+}
+
+message WorkplaceBuilt {
+  uint64 workplace_id = 1;
+  string kind = 2;
+  pips.sim.v1.Vec2 position = 3;
+  int32 max_workers = 4;
+}
+
+message WorkplaceDemolished {
+  uint64 workplace_id = 1;
+  string reason = 2;
+}

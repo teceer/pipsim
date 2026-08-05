@@ -1,0 +1,25 @@
+[package]
+name = "sim-server"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+# The I/O shell around `sim`. Everything the core is forbidden from doing —
+# gRPC, Kafka, clocks, tracing — lives here.
+[dependencies]
+sim = { workspace = true }
+tokio = { version = "1", features = ["full"] }
+tonic = "0.12"
+prost = "0.13"
+prost-types = "0.13"
+rdkafka = { version = "0.36", features = ["cmake-build"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["json", "env-filter"] }
+opentelemetry = "0.26"
+opentelemetry_sdk = { version = "0.26", features = ["rt-tokio"] }
+opentelemetry-otlp = "0.26"
+tracing-opentelemetry = "0.27"
+anyhow = "1"
+
+[build-dependencies]
+tonic-build = "0.12"

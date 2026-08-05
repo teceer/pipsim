@@ -1,0 +1,32 @@
+# Generates into gen/. Rust is absent on purpose — tonic-build reads proto/
+# directly from build.rs, which does not fit buf's plugin model.
+version: v2
+
+managed:
+  enabled: true
+  override:
+    - file_option: go_package_prefix
+      value: github.com/teceer/pipsim/gen/go
+
+plugins:
+  # Go: messages + Connect-RPC (works browser->service and service->service,
+  # so no Envoy proxy is needed anywhere).
+  - remote: buf.build/protocolbuffers/go
+    out: gen/go
+    opt: paths=source_relative
+  - remote: buf.build/connectrpc/go
+    out: gen/go
+    opt: paths=source_relative
+
+  # TypeScript: shared by web/ and services/bff.
+  - remote: buf.build/bufbuild/es
+    out: gen/ts
+    opt: target=ts
+  - remote: buf.build/connectrpc/es
+    out: gen/ts
+    opt: target=ts
+
+  # Elixir: services/broadcast and services/workplaces/tavern.
+  - local: protoc-gen-elixir
+    out: gen/elixir
+    opt: plugins=grpc

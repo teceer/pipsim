@@ -1,0 +1,15 @@
+[package]
+name = "sim"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+# Deliberately zero dependencies.
+#
+# This crate is the deterministic heart of the project: it must compile to
+# wasm32-unknown-unknown, produce byte-identical results there and natively,
+# and build offline. Every dependency added here is a new way for those three
+# properties to break. I/O, networking and time live in `server`, not here.
+[dependencies]
+
+[dev-dependencies]
