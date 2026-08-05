@@ -79,6 +79,33 @@ infra-down:
 	-cd infra/terraform/10-platform && terraform destroy -auto-approve
 	-cd infra/terraform/00-cluster  && terraform destroy -auto-approve
 
+## infra-forward: port-forward the platform UIs and admin APIs to localhost
+# Kafka needs no forward — layer 00 maps its NodePort straight to the host.
+# The rest are ClusterIP, and layer 20's rabbitmq/postgres providers talk to
+# them over these forwards, so this must be running before `make infra-up`
+# reaches layer 20.
+infra-forward:
+	@echo "jaeger          http://localhost:16686"
+	@echo "redpanda console http://localhost:8085"
+	@echo "rabbitmq        http://localhost:15672  (pipsim/pipsim)"
+	@echo "kafka           localhost:31092"
+	@echo "postgres        localhost:5432          (pipsim/pipsim)"
+	@echo
+	@kubectl -n pipsim-platform port-forward svc/jaeger 16686:16686 & \
+	 kubectl -n pipsim-platform port-forward svc/redpanda-console 8085:8080 & \
+	 kubectl -n pipsim-platform port-forward svc/rabbitmq 15672:15672 & \
+	 kubectl -n pipsim-platform port-forward svc/postgres 5432:5432 & \
+	 wait
+
+## infra-recreate: destroy and recreate the cluster
+# The k3d provider cannot update a cluster in place and does not mark its
+# config as force-new, so changing anything in layer 00 needs an explicit
+# destroy. Layer 10 goes first because its providers need a live cluster.
+infra-recreate:
+	-cd infra/terraform/10-platform && terraform destroy -auto-approve
+	cd infra/terraform/00-cluster && terraform destroy -auto-approve
+	$(MAKE) infra-up
+
 ## infra-plan: show the plan for every layer
 infra-plan:
 	@for d in infra/terraform/*/; do \
@@ -101,4 +128,4 @@ replay:
 	go run ./tools/replay -from-beginning
 
 .PHONY: help test lint build gen gen-check proto-lint dev dev-platform \
-        infra-up infra-down infra-plan e2e parity replay
+        infra-up infra-down infra-plan infra-forward infra-recreate e2e parity replay

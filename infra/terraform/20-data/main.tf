@@ -33,8 +33,9 @@ terraform {
 }
 
 variable "kafka_bootstrap" {
-  type    = string
-  default = "localhost:9092"
+  description = "Redpanda's external listener, mapped to the host by layer 00."
+  type        = string
+  default     = "localhost:31092"
 }
 
 variable "rabbitmq_endpoint" {
@@ -58,10 +59,12 @@ provider "rabbitmq" {
   password = "pipsim"
 }
 
+# The container is created with POSTGRES_USER=pipsim, so that is the superuser;
+# there is no "postgres" role to connect as.
 provider "postgresql" {
   host     = var.postgres_host
   port     = 5432
-  username = "postgres"
+  username = "pipsim"
   password = "pipsim"
   sslmode  = "disable"
 }
@@ -191,8 +194,11 @@ resource "postgresql_role" "service" {
 resource "postgresql_database" "service" {
   for_each = toset(local.service_databases)
 
-  name              = each.key
-  owner             = postgresql_role.service[each.key].name
+  name  = each.key
+  owner = postgresql_role.service[each.key].name
+  # template0 is required whenever the collation differs from the default
+  # template; Postgres refuses to copy template1 under a different collation.
+  template          = "template0"
   lc_collate        = "C"
   connection_limit  = 20
   allow_connections = true

@@ -38,6 +38,17 @@ variable "agent_count" {
   default     = 2
 }
 
+variable "kafka_node_port" {
+  description = <<-EOT
+    NodePort the Redpanda chart assigns to its external Kafka listener, mapped
+    straight through to the same port on the host. Fixed rather than dynamic
+    because layer 10 must advertise it and layer 00 must map it, and the two
+    layers have separate state.
+  EOT
+  type        = number
+  default     = 31092
+}
+
 variable "registry_port" {
   description = "Host port for the in-cluster registry Tilt pushes images to."
   type        = number
@@ -74,6 +85,15 @@ resource "k3d_cluster" "pipsim" {
         port        = "8080:80"
         nodeFilters = ["loadbalancer"]
       },
+      # Redpanda's external Kafka listener, so tooling on the host — rpk, the
+      # Terraform kafka provider in layer 20, services run outside the cluster —
+      # can reach the broker. Without this, a client bootstraps successfully and
+      # then fails, because the broker advertises an in-cluster DNS name that
+      # does not resolve from the laptop.
+      {
+        port        = "${var.kafka_node_port}:${var.kafka_node_port}"
+        nodeFilters = ["server:0"]
+      },
     ]
   })
 }
@@ -88,6 +108,10 @@ output "kube_context" {
 
 output "registry" {
   value = "localhost:${var.registry_port}"
+}
+
+output "kafka_external" {
+  value = "localhost:${var.kafka_node_port}"
 }
 
 # Consumed by layer 10 if you would rather wire the providers from state than
