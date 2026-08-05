@@ -20,6 +20,21 @@ The deterministic heart of the simulation. Rust, three crates:
 - contain simulation rules. If you are writing an `if` that decides something
   about pips, it belongs in `sim`.
 
+What it does do: drives the tick loop, wraps each tick in a span, maps
+`sim::DomainEvent` onto `pips.events.v1.EventEnvelope`, and publishes to Kafka
+keyed by aggregate id. Each envelope carries the trace id of the tick that
+produced it, so an event sitting in a topic can be taken straight to Jaeger.
+
+Two constraints worth knowing before you touch it:
+
+- The OpenTelemetry crates are version-locked to each other. `opentelemetry`,
+  `opentelemetry_sdk` and `opentelemetry-otlp` share a minor; `tracing-opentelemetry`
+  runs one ahead. Bumping one alone produces trait mismatches that read as if
+  the API disappeared.
+- The producer compresses with lz4, not zstd, because rdkafka's bundled
+  librdkafka is built without libzstd — asking for zstd fails at client
+  construction. The topics are configured zstd, so the broker recompresses.
+
 ## Determinism is the product
 
 The whole replay and event-sourcing story rests on one property: the same seed

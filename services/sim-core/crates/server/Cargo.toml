@@ -6,20 +6,31 @@ license.workspace = true
 
 # The I/O shell around `sim`. Everything the core is forbidden from doing —
 # gRPC, Kafka, clocks, tracing — lives here.
+#
+# The OpenTelemetry crates are version-locked to each other: opentelemetry,
+# opentelemetry_sdk and opentelemetry-otlp must share a minor, and
+# tracing-opentelemetry is one minor ahead of the set it targets. Bumping one
+# alone produces trait-mismatch errors that read as if the API vanished.
 [dependencies]
 sim = { workspace = true }
+
 tokio = { version = "1", features = ["full"] }
-tonic = "0.12"
-prost = "0.13"
-prost-types = "0.13"
-rdkafka = { version = "0.36", features = ["cmake-build"] }
+tonic = "0.14"
+tonic-prost = "0.14"
+prost = "0.14"
+prost-types = "0.14"
+
+rdkafka = { version = "0.39", features = ["cmake-build"] }
+
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["json", "env-filter"] }
-opentelemetry = "0.26"
-opentelemetry_sdk = { version = "0.26", features = ["rt-tokio"] }
-opentelemetry-otlp = "0.26"
-tracing-opentelemetry = "0.27"
+tracing-opentelemetry = "0.33"
+opentelemetry = "0.32"
+opentelemetry_sdk = { version = "0.32", features = ["rt-tokio"] }
+opentelemetry-otlp = { version = "0.32", features = ["grpc-tonic"] }
+
+uuid = { version = "1", features = ["v7"] }
 anyhow = "1"
 
 [build-dependencies]
-tonic-build = "0.12"
+tonic-prost-build = "0.14"
