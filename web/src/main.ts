@@ -22,11 +22,18 @@ import init, { SimHandle, pip_stride } from "./sim-wasm/sim_wasm.js";
 
 // --- world constants --------------------------------------------------------
 
-const TILE_PX = 22;
 const MILLI_PER_TILE = 1000;
 
 const GRID_W = 48;
 const GRID_H = 30;
+
+/**
+ * 2:1 isometric tile diamond, in pixels. Width is the full diagonal of the
+ * diamond, height is half of that — the ratio that keeps the tile art
+ * artifact-free at integer scales.
+ */
+const ISO_TILE_W = 32;
+const ISO_TILE_H = 16;
 
 /** Must match the server's SIM_TICK_HZ. */
 const TICK_HZ = 10;
@@ -81,15 +88,35 @@ function foodColor(food: number): number {
   return 0xf87171;
 }
 
-const toPx = (milli: number) => (milli / MILLI_PER_TILE) * TILE_PX;
+const toTile = (milli: number) => milli / MILLI_PER_TILE;
+
+/**
+ * Grid tile -> screen space. Standard 2:1 isometric projection: walking one
+ * tile east moves the sprite right-and-down, one tile south moves it
+ * left-and-down, so the two axes read as receding along the diamond's edges
+ * instead of straight down the screen.
+ */
+function isoProject(tileX: number, tileY: number): { x: number; y: number } {
+  return {
+    x: (tileX - tileY) * (ISO_TILE_W / 2),
+    y: (tileX + tileY) * (ISO_TILE_H / 2),
+  };
+}
+
+/** Depth key for painter's-algorithm sorting: farther tiles draw first. */
+const isoDepth = (tileX: number, tileY: number) => tileX + tileY;
 
 function drawGrid(parent: Container) {
   const g = new Graphics();
   for (let x = 0; x <= GRID_W; x++) {
-    g.moveTo(x * TILE_PX, 0).lineTo(x * TILE_PX, GRID_H * TILE_PX);
+    const a = isoProject(x, 0);
+    const b = isoProject(x, GRID_H);
+    g.moveTo(a.x, a.y).lineTo(b.x, b.y);
   }
   for (let y = 0; y <= GRID_H; y++) {
-    g.moveTo(0, y * TILE_PX).lineTo(GRID_W * TILE_PX, y * TILE_PX);
+    const a = isoProject(0, y);
+    const b = isoProject(GRID_W, y);
+    g.moveTo(a.x, a.y).lineTo(b.x, b.y);
   }
   g.stroke({ color: 0x1e2430, width: 1 });
   parent.addChild(g);
@@ -111,10 +138,18 @@ async function main() {
   const rand = mulberry32(42);
 
   const world = new Container();
+  // The diamond's leftmost point (tileX=0, tileY=GRID_H) sits at a negative
+  // x offset — shift the whole world right by that amount so nothing is
+  // clipped off-canvas, then drop it a bit from the top edge.
+  world.position.set((GRID_H * ISO_TILE_W) / 2 + 40, 40);
   app.stage.addChild(world);
   drawGrid(world);
 
   const pipLayer = new Container();
+  // Isometric depth: pips further along x+y are "further back" and must be
+  // drawn first, or a near pip standing behind a far one on screen would be
+  // wrongly occluded.
+  pipLayer.sortableChildren = true;
   world.addChild(pipLayer);
 
   // Seed the population. These are queued as intents and applied at the next
@@ -182,10 +217,11 @@ async function main() {
       }
 
       const before = prev.get(id) ?? now;
-      g.position.set(
-        toPx(before.x + (now.x - before.x) * alpha),
-        toPx(before.y + (now.y - before.y) * alpha),
-      );
+      const tileX = toTile(before.x + (now.x - before.x) * alpha);
+      const tileY = toTile(before.y + (now.y - before.y) * alpha);
+      const screen = isoProject(tileX, tileY);
+      g.position.set(screen.x, screen.y);
+      g.zIndex = isoDepth(tileX, tileY);
       g.tint = foodColor(now.food);
       g.alpha = now.activity === ACTIVITY_WALKING ? 1 : 0.6;
     }
