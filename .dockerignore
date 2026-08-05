@@ -1,0 +1,11 @@
+# Build contexts are the repo root (build.rs reads proto/ from outside the
+# service tree), so everything heavy has to be excluded explicitly.
+**/target/
+**/node_modules/
+**/_build/
+**/deps/
+web/src/sim-wasm/
+**/.terraform/
+*.tfstate*
+.git/
+docs/

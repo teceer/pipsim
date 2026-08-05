@@ -1,0 +1,25 @@
+# Tilt overrides image.tag per build; these defaults are what a plain
+# `helm install` uses.
+image:
+  repository: pipsim-registry:5000/pipsim/sim-core
+  tag: dev
+  pullPolicy: IfNotPresent
+
+# Deliberately fixed rather than generated at startup: two runs with the same
+# seed and the same intents must produce the same world, and the seed is the
+# input that makes replay meaningful.
+sim:
+  seed: 42
+  tickHz: 10
+  initialPips: 50
+
+# The platform lives in its own namespace so `make infra-down` can drop it
+# without touching running services.
+platformNamespace: pipsim-platform
+
+resources:
+  requests:
+    cpu: 200m
+    memory: 256Mi
+  limits:
+    memory: 512Mi

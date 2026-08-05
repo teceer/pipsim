@@ -99,7 +99,12 @@ agents but are the fastest orientation for humans too.
 
 ## Status
 
-Early, but not vapour. What is actually verified in CI:
+`sim-core` runs in the cluster, publishing facts to Kafka and spans to Jaeger.
+Its state hash on tick 1 is identical whether the binary runs natively on macOS
+or inside the Linux container — determinism holds across platforms, not just
+across runs.
+
+What is actually verified in CI:
 
 - the simulation core, with tests including the determinism invariant
 - native/WASM parity, by comparing state hashes
@@ -108,9 +113,9 @@ Early, but not vapour. What is actually verified in CI:
 - every Go module vetting and building, which also proves `gen/go` compiles
 - the web client typechecking against the generated WASM bindings
 
-Not yet real: the services themselves are contracts plus skeletons, and nothing
-has been applied to an actual cluster. The proto definitions are the part worth
-reading first.
+Not yet real: every service other than sim-core is contracts plus a skeleton,
+and there is no gateway, so the browser client still drives a local world rather
+than a served one. The proto definitions are the part worth reading first.
 
 ## License
 

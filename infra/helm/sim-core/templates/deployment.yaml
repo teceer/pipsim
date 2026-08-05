@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sim-core
+  labels:
+    app.kubernetes.io/name: sim-core
+    app.kubernetes.io/part-of: pipsim
+spec:
+  # Exactly one. The simulation is authoritative and stateful in memory; a
+  # second replica would be a second, divergent world rather than redundancy.
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: sim-core
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: sim-core
+        app.kubernetes.io/part-of: pipsim
+    spec:
+      containers:
+        - name: sim-core
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: SIM_SEED
+              value: "{{ .Values.sim.seed }}"
+            - name: SIM_TICK_HZ
+              value: "{{ .Values.sim.tickHz }}"
+            - name: SIM_INITIAL_PIPS
+              value: "{{ .Values.sim.initialPips }}"
+            # The internal listener, not the NodePort: in-cluster clients
+            # resolve the broker's advertised DNS name directly.
+            - name: KAFKA_BROKERS
+              value: "redpanda.{{ .Values.platformNamespace }}.svc.cluster.local:9093"
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "http://otel-collector.{{ .Values.platformNamespace }}.svc.cluster.local:4317"
+            - name: RUST_LOG
+              value: "info"
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            capabilities:
+              drop: ["ALL"]
