@@ -61,6 +61,19 @@ defmodule Tavern.Shifts do
   # than drawn from stock, and stops being so when a granary exists.
   @food_per_tick 3
 
+  # What a shift here pays, per tick worked. Alongside need_deltas, not instead
+  # of it — ADR 0006 adds money without removing the old channel yet, so wages
+  # can be tuned against a living world before need_deltas is retired.
+  @wage_per_tick 5
+
+  # How demanding the work is. A scalar the tavern declares about itself;
+  # sim-core, not the tavern, decides what effort costs.
+  @effort 2
+
+  # What the tavern charges for one unit of ale. Declared here, moved by the
+  # bank when a pip buys — the tavern only ever names the number.
+  @ale_price 4
+
   @shift_lease_ms 15_000
   @max_ticks_per_work 40
 
@@ -88,6 +101,9 @@ defmodule Tavern.Shifts do
   def max_workers, do: @max_workers
   def shift_lease_ms, do: @shift_lease_ms
   def max_ticks_per_work, do: @max_ticks_per_work
+  def wage_per_tick, do: @wage_per_tick
+  def effort, do: @effort
+  def ale_price, do: @ale_price
 
   def start_link(opts) do
     GenServer.start_link(__MODULE__, opts, name: opts[:name] || __MODULE__)
@@ -121,7 +137,8 @@ defmodule Tavern.Shifts do
         @need_social => @social_per_tick * elapsed,
         @need_rest => @rest_per_tick * elapsed,
         @need_food => @food_per_tick * elapsed
-      }
+      },
+      wage: @wage_per_tick * elapsed
     }
   end
 

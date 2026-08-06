@@ -17,6 +17,8 @@ defmodule Tavern.Workplace do
   alias Pips.Sim.V1.Vec2
 
   alias Pips.Workplace.V1.{
+    BuyRequest,
+    BuyResponse,
     CanEmployRequest,
     CanEmployResponse,
     DescribeRequest,
@@ -25,6 +27,7 @@ defmodule Tavern.Workplace do
     EndShiftResponse,
     ListRequest,
     ListResponse,
+    Offer,
     ResourceAmount,
     StartShiftRequest,
     StartShiftResponse,
@@ -42,6 +45,7 @@ defmodule Tavern.Workplace do
   def route("StartShift"), do: {:ok, {StartShiftRequest, StartShiftResponse, &start_shift/1}}
   def route("Work"), do: {:ok, {WorkRequest, WorkResponse, &work/1}}
   def route("EndShift"), do: {:ok, {EndShiftRequest, EndShiftResponse, &end_shift/1}}
+  def route("Buy"), do: {:ok, {BuyRequest, BuyResponse, &buy/1}}
   def route(_), do: {:error, :unimplemented}
 
   @doc "Headcount across every building, for /healthz."
@@ -97,13 +101,33 @@ defmodule Tavern.Workplace do
         %WorkResponse{}
 
       {:ok, elapsed} ->
-        %{produced: ale, needs: needs} = Shifts.effects(elapsed)
+        %{produced: ale, needs: needs, wage: wage} = Shifts.effects(elapsed)
 
         %WorkResponse{
           produced: [%ResourceAmount{kind: :RESOURCE_KIND_ALE, amount: ale}],
-          need_deltas: needs
+          need_deltas: needs,
+          wage: wage
         }
     end
+  end
+
+  @doc """
+  A pip buys one unit of what the tavern sells.
+
+  Only ever confirms the kind and the price `describe/1` already advertised —
+  the tavern never moves money itself. The gateway does that through the bank,
+  then tells sim-core what ale does to the pip via a TransferIntent.
+  """
+  def buy(%BuyRequest{kind: :RESOURCE_KIND_ALE}) do
+    %BuyResponse{
+      ok: true,
+      price: Shifts.ale_price(),
+      produced: %ResourceAmount{kind: :RESOURCE_KIND_ALE, amount: 1}
+    }
+  end
+
+  def buy(%BuyRequest{}) do
+    %BuyResponse{ok: false, reason: "the tavern sells only ale"}
   end
 
   def end_shift(%EndShiftRequest{workplace_id: id, pip_id: pip, tick: tick, reason: reason}) do
@@ -185,7 +209,10 @@ defmodule Tavern.Workplace do
       current_workers: store().count(b.id),
       position: %Vec2{x_milli: b.x, y_milli: b.y},
       produces: [:RESOURCE_KIND_ALE],
-      consumes: [:RESOURCE_KIND_GRAIN]
+      consumes: [:RESOURCE_KIND_GRAIN],
+      wage: Shifts.wage_per_tick(),
+      effort: Shifts.effort(),
+      sells: [%Offer{kind: :RESOURCE_KIND_ALE, price: Shifts.ale_price()}]
     }
   end
 
