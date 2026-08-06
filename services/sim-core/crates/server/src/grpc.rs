@@ -101,8 +101,25 @@ fn workplaces(world: &World) -> Vec<pb::Workplace> {
             }),
             capacity: world.workplace_capacities[i],
             occupants: world.workplace_occupants[i],
+            sells: world.workplace_sells[i]
+                .iter()
+                .map(|(kind, price)| pb::WorkplaceOffer {
+                    resource_kind: resource_kind_code(*kind),
+                    price: *price,
+                })
+                .collect(),
         })
         .collect()
+}
+
+/// The inverse of `resource_kind`, for putting a price back on the wire.
+fn resource_kind_code(kind: ResourceKind) -> i32 {
+    match kind {
+        ResourceKind::Grain => RESOURCE_KIND_GRAIN,
+        ResourceKind::Food => RESOURCE_KIND_FOOD,
+        ResourceKind::Tool => RESOURCE_KIND_TOOL,
+        ResourceKind::Ale => RESOURCE_KIND_ALE,
+    }
 }
 
 fn needs_map(n: &sim::Needs) -> std::collections::HashMap<i32, i32> {
@@ -268,6 +285,14 @@ impl SimService for SimServiceImpl {
                     })
                     .unwrap_or(Vec2::ZERO),
                 capacity: r.capacity,
+                // An offer whose resource does not decode is dropped rather
+                // than defaulted: a price attached to a resource the core
+                // cannot name is not something to guess at.
+                sells: r
+                    .sells
+                    .iter()
+                    .filter_map(|o| resource_kind(o.resource_kind).map(|k| (k, o.price)))
+                    .collect(),
             },
             pb::submit_intent_request::Intent::EndEmployment(e) => {
                 Intent::EndEmployment { pip: e.pip_id }

@@ -75,9 +75,9 @@ defmodule Tavern.ShiftsTest do
     assert :ok = Shifts.claim(s, 3, 1)
     assert {:ok, 10} = Shifts.touch(s, 3, 11)
 
-    %{needs: needs, produced: ale} = Shifts.effects(10)
-    assert needs[3] == 60, "social should be restored for ten ticks"
+    %{produced: ale, wage: wage} = Shifts.effects(10)
     assert ale == 20
+    assert wage == 10 * Shifts.wage_per_tick()
   end
 
   test "work twice in one tick pays once", %{shifts: s} do
@@ -98,16 +98,14 @@ defmodule Tavern.ShiftsTest do
     assert :not_on_shift = Shifts.release(s, 8)
   end
 
-  # The tavern is the only workplace that gives more than it takes, and the only
-  # one that touches social at all. If this ever goes negative, the need that
-  # nothing else in the world restores has quietly become unservable.
-  test "a shift here restores social rather than draining it", %{shifts: _s} do
-    %{needs: needs} = Shifts.effects(1)
-    assert needs[3] > 0, "social"
-    assert needs[2] > 0, "rest"
-    # Positive, but smaller than the farm's +5. The trade is real — worse for
-    # food, better for everything else — rather than fatal, which is what -1
-    # turned out to be against a working pip's 2-per-tick drain.
-    assert needs[1] > 0 and needs[1] < 5, "food"
+  # The tavern can no longer say anything about a pip's needs, and that is the
+  # point of ADR 0006. It once shipped food_per_tick = -1 and starved everyone
+  # it employed; the fix is not a better number but a contract in which the
+  # number cannot be named here at all. What ale does to a pip is sim-core's.
+  test "a shift reports what it produced and what it paid, and nothing else",
+       %{shifts: _s} do
+    effects = Shifts.effects(1)
+    assert Map.keys(effects) |> Enum.sort() == [:produced, :wage]
+    assert effects.wage > 0
   end
 end

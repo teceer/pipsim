@@ -101,11 +101,10 @@ defmodule Tavern.Workplace do
         %WorkResponse{}
 
       {:ok, elapsed} ->
-        %{produced: ale, needs: needs, wage: wage} = Shifts.effects(elapsed)
+        %{produced: ale, wage: wage} = Shifts.effects(elapsed)
 
         %WorkResponse{
           produced: [%ResourceAmount{kind: :RESOURCE_KIND_ALE, amount: ale}],
-          need_deltas: needs,
           wage: wage
         }
     end

@@ -45,25 +45,23 @@ const (
 	// independent of whatever cadence a caller chooses.
 	grainPerTick = 3
 
-	// What a shift does to the worker, keyed by pips.sim.v1.Need.
+	// What a shift here pays, per tick worked.
 	//
-	// Farm work feeds you — this is a subsistence farm, not a market — so the
-	// loop closes without a storage or trading service existing yet. Rest is
-	// the cost. When a granary and a market land, food stops being conjured
-	// here and starts being drawn from stock.
-	needFood = 1
-	needRest = 2
-
-	// Must exceed the world's drain on a working pip, or employment is a
-	// slower death rather than a living.
-	foodPerTick = 5
-	restPerTick = -1
-
-	// What a shift here pays, per tick worked. Alongside NeedDeltas, not
-	// instead of it — ADR 0006 adds money without removing the old channel
-	// yet, so wages can be tuned against a living world before need_deltas
-	// is retired.
+	// This replaced the food a shift used to hand out. The farm no longer has
+	// any opinion about hunger — it sells food and pays wages, and what food
+	// does to a pip is sim-core's to know (ADR 0006). The tavern shipping a
+	// number that starved its own staff was only possible while every
+	// building had to describe the world's metabolism to describe itself.
 	wagePerTick = 6
+
+	// What a pip pays for one meal.
+	//
+	// Well under what a shift earns in the time one meal lasts: a meal
+	// restores 200 food, a working pip burns 2 a tick, so it buys roughly a
+	// hundred ticks of work — six hundred in wages against fifty at the till.
+	// Employment has to be comfortably survivable, or the interesting failure
+	// (a wage that cannot cover food) is the only one anyone ever sees.
+	foodPrice = 50
 
 	// How demanding the work is. A scalar the farm declares about itself;
 	// sim-core, not the farm, decides what effort costs.
@@ -130,6 +128,10 @@ func (s *Service) Describe(
 		Produces:       []workplacev1.ResourceKind{workplacev1.ResourceKind_RESOURCE_KIND_GRAIN},
 		Wage:           wagePerTick,
 		Effort:         effort,
+		Sells: []*workplacev1.Offer{{
+			Kind:  workplacev1.ResourceKind_RESOURCE_KIND_FOOD,
+			Price: foodPrice,
+		}},
 	}), nil
 }
 
@@ -201,10 +203,6 @@ func (s *Service) Work(
 			Kind:   workplacev1.ResourceKind_RESOURCE_KIND_GRAIN,
 			Amount: grainPerTick * elapsed,
 		}},
-		NeedDeltas: map[int32]int32{
-			needFood: foodPerTick * elapsed,
-			needRest: restPerTick * elapsed,
-		},
 		Wage: int64(wagePerTick * elapsed),
 	}), nil
 }
@@ -226,16 +224,28 @@ func (s *Service) EndShift(
 	return connect.NewResponse(&workplacev1.EndShiftResponse{}), nil
 }
 
-// Buy always declines: the farm produces grain for workplaces to consume, it
-// does not sell anything to a pip. Declared here rather than left unhandled,
-// so a caller gets a reason instead of Unimplemented.
+// Buy sells one meal.
+//
+// The farm is where food comes from, so it is where food is bought. It sells
+// FOOD rather than the GRAIN it produces: turning one into the other is a
+// mill's job, and there is no mill — when there is, the farm sells grain to
+// it and stops selling meals.
+//
+// What the meal does to the pip is not answered here, deliberately. This
+// returns a price; sim-core owns what FOOD does to a body.
 func (s *Service) Buy(
 	_ context.Context,
-	_ *connect.Request[workplacev1.BuyRequest],
+	req *connect.Request[workplacev1.BuyRequest],
 ) (*connect.Response[workplacev1.BuyResponse], error) {
+	if req.Msg.GetKind() != workplacev1.ResourceKind_RESOURCE_KIND_FOOD {
+		return connect.NewResponse(&workplacev1.BuyResponse{
+			Ok:     false,
+			Reason: "the farm sells only food",
+		}), nil
+	}
 	return connect.NewResponse(&workplacev1.BuyResponse{
-		Ok:     false,
-		Reason: "the farm sells nothing",
+		Ok:    true,
+		Price: foodPrice,
 	}), nil
 }
 

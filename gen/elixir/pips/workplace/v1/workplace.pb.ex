@@ -167,7 +167,8 @@ defmodule Pips.Workplace.V1.WorkResponse do
     repeated: true,
     type: Pips.Workplace.V1.WorkResponse.NeedDeltasEntry,
     json_name: "needDeltas",
-    map: true
+    map: true,
+    deprecated: true
 
   field :shift_should_end, 3, type: :bool, json_name: "shiftShouldEnd"
   field :wage, 4, type: :int64
