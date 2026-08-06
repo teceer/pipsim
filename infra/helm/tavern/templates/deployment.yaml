@@ -30,9 +30,9 @@ spec:
             - name: WORKPLACE_ID
               value: "{{ .Values.workplace.id }}"
             - name: WORKPLACE_X
-              value: "{{ .Values.workplace.x }}"
+              value: "{{ .Values.workplace.xMilli }}"
             - name: WORKPLACE_Y
-              value: "{{ .Values.workplace.y }}"
+              value: "{{ .Values.workplace.yMilli }}"
             - name: AMQP_URL
               value: "amqp://pipsim:pipsim@rabbitmq.{{ .Values.platformNamespace }}.svc.cluster.local:5672/pipsim"
             # A BEAM node needs a name and a cookie even standalone, and the

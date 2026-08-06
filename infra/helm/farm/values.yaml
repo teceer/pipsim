@@ -8,9 +8,12 @@ image:
 
 workplace:
   id: 1
-  # Milli-tiles, inside the world bounds sim declares.
-  x: 12000
-  y: 8000
+  # Named in full because YAML 1.1 — which Helm parses — reads a bare `y`
+  # key as the boolean true. The farm carried that bug silently for weeks:
+  # WORKPLACE_Y rendered empty and Go fell back to a default that happened
+  # to match, so nothing looked wrong.
+  xMilli: 12000
+  yMilli: 8000
 
 platformNamespace: pipsim-platform
 

@@ -42,7 +42,10 @@ ENV LANG=C.UTF-8
 WORKDIR /app
 COPY --from=builder --chown=tavern:tavern /build/services/workplaces/tavern/_build/prod/rel/tavern ./
 
-USER tavern
+# Numeric, not the name. Kubernetes' runAsNonRoot cannot verify a username
+# against the image and refuses to start the container: "image has non-numeric
+# user (tavern), cannot verify user is non-root".
+USER 65532
 EXPOSE 8090
 ENTRYPOINT ["/app/bin/tavern"]
 CMD ["start"]

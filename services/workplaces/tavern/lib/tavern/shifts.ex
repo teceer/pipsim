@@ -48,7 +48,18 @@ defmodule Tavern.Shifts do
   # it is also tiring, and it does not feed you.
   @social_per_tick 6
   @rest_per_tick 2
-  @food_per_tick -1
+
+  # Positive, and it was not at first.
+  #
+  # At -1 the tavern killed everyone it employed: a working pip loses 2 food a
+  # tick to the world, so a shift here was -3 a tick against the farm's +3.
+  # Measured in the cluster within minutes of the first deploy — tavern staff
+  # fell from 456 food to 221 while farm staff sat at 990.
+  #
+  # +3 makes the trade real rather than fatal: worse for food than the farm,
+  # better for everything else. Like the farm's, this food is conjured rather
+  # than drawn from stock, and stops being so when a granary exists.
+  @food_per_tick 3
 
   @shift_lease_ms 15_000
   @max_ticks_per_work 40
