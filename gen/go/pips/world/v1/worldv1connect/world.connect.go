@@ -43,6 +43,8 @@ const (
 	WorldServiceBuildWorkplaceProcedure = "/pips.world.v1.WorldService/BuildWorkplace"
 	// WorldServiceAssignWorkProcedure is the fully-qualified name of the WorldService's AssignWork RPC.
 	WorldServiceAssignWorkProcedure = "/pips.world.v1.WorldService/AssignWork"
+	// WorldServiceBuyProcedure is the fully-qualified name of the WorldService's Buy RPC.
+	WorldServiceBuyProcedure = "/pips.world.v1.WorldService/Buy"
 )
 
 // WorldServiceClient is a client for the pips.world.v1.WorldService service.
@@ -56,6 +58,10 @@ type WorldServiceClient interface {
 	// Player actions. Forwarded to sim-core as intents applied on the next tick.
 	BuildWorkplace(context.Context, *connect.Request[v1.BuildWorkplaceRequest]) (*connect.Response[v1.BuildWorkplaceResponse], error)
 	AssignWork(context.Context, *connect.Request[v1.AssignWorkRequest]) (*connect.Response[v1.AssignWorkResponse], error)
+	// A pip buys one unit of something a workplace sells. The gateway calls the
+	// workplace for the price, moves the money through the bank, then tells
+	// sim-core what the purchase does to the pip via a TransferIntent.
+	Buy(context.Context, *connect.Request[v1.BuyRequest]) (*connect.Response[v1.BuyResponse], error)
 }
 
 // NewWorldServiceClient constructs a client for the pips.world.v1.WorldService service. By default,
@@ -93,6 +99,12 @@ func NewWorldServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 			connect.WithSchema(worldServiceMethods.ByName("AssignWork")),
 			connect.WithClientOptions(opts...),
 		),
+		buy: connect.NewClient[v1.BuyRequest, v1.BuyResponse](
+			httpClient,
+			baseURL+WorldServiceBuyProcedure,
+			connect.WithSchema(worldServiceMethods.ByName("Buy")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -102,6 +114,7 @@ type worldServiceClient struct {
 	streamWorld    *connect.Client[v1.StreamWorldRequest, v1.StreamWorldResponse]
 	buildWorkplace *connect.Client[v1.BuildWorkplaceRequest, v1.BuildWorkplaceResponse]
 	assignWork     *connect.Client[v1.AssignWorkRequest, v1.AssignWorkResponse]
+	buy            *connect.Client[v1.BuyRequest, v1.BuyResponse]
 }
 
 // JoinWorld calls pips.world.v1.WorldService.JoinWorld.
@@ -124,6 +137,11 @@ func (c *worldServiceClient) AssignWork(ctx context.Context, req *connect.Reques
 	return c.assignWork.CallUnary(ctx, req)
 }
 
+// Buy calls pips.world.v1.WorldService.Buy.
+func (c *worldServiceClient) Buy(ctx context.Context, req *connect.Request[v1.BuyRequest]) (*connect.Response[v1.BuyResponse], error) {
+	return c.buy.CallUnary(ctx, req)
+}
+
 // WorldServiceHandler is an implementation of the pips.world.v1.WorldService service.
 type WorldServiceHandler interface {
 	// Initial state on join.
@@ -135,6 +153,10 @@ type WorldServiceHandler interface {
 	// Player actions. Forwarded to sim-core as intents applied on the next tick.
 	BuildWorkplace(context.Context, *connect.Request[v1.BuildWorkplaceRequest]) (*connect.Response[v1.BuildWorkplaceResponse], error)
 	AssignWork(context.Context, *connect.Request[v1.AssignWorkRequest]) (*connect.Response[v1.AssignWorkResponse], error)
+	// A pip buys one unit of something a workplace sells. The gateway calls the
+	// workplace for the price, moves the money through the bank, then tells
+	// sim-core what the purchase does to the pip via a TransferIntent.
+	Buy(context.Context, *connect.Request[v1.BuyRequest]) (*connect.Response[v1.BuyResponse], error)
 }
 
 // NewWorldServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -168,6 +190,12 @@ func NewWorldServiceHandler(svc WorldServiceHandler, opts ...connect.HandlerOpti
 		connect.WithSchema(worldServiceMethods.ByName("AssignWork")),
 		connect.WithHandlerOptions(opts...),
 	)
+	worldServiceBuyHandler := connect.NewUnaryHandler(
+		WorldServiceBuyProcedure,
+		svc.Buy,
+		connect.WithSchema(worldServiceMethods.ByName("Buy")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/pips.world.v1.WorldService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case WorldServiceJoinWorldProcedure:
@@ -178,6 +206,8 @@ func NewWorldServiceHandler(svc WorldServiceHandler, opts ...connect.HandlerOpti
 			worldServiceBuildWorkplaceHandler.ServeHTTP(w, r)
 		case WorldServiceAssignWorkProcedure:
 			worldServiceAssignWorkHandler.ServeHTTP(w, r)
+		case WorldServiceBuyProcedure:
+			worldServiceBuyHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -201,4 +231,8 @@ func (UnimplementedWorldServiceHandler) BuildWorkplace(context.Context, *connect
 
 func (UnimplementedWorldServiceHandler) AssignWork(context.Context, *connect.Request[v1.AssignWorkRequest]) (*connect.Response[v1.AssignWorkResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pips.world.v1.WorldService.AssignWork is not implemented"))
+}
+
+func (UnimplementedWorldServiceHandler) Buy(context.Context, *connect.Request[v1.BuyRequest]) (*connect.Response[v1.BuyResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pips.world.v1.WorldService.Buy is not implemented"))
 }

@@ -22,6 +22,11 @@ service WorldService {
   // Player actions. Forwarded to sim-core as intents applied on the next tick.
   rpc BuildWorkplace(BuildWorkplaceRequest) returns (BuildWorkplaceResponse);
   rpc AssignWork(AssignWorkRequest) returns (AssignWorkResponse);
+
+  // A pip buys one unit of something a workplace sells. The gateway calls the
+  // workplace for the price, moves the money through the bank, then tells
+  // sim-core what the purchase does to the pip via a TransferIntent.
+  rpc Buy(BuyRequest) returns (BuyResponse);
 }
 
 message JoinWorldRequest {
@@ -73,4 +78,16 @@ message AssignWorkRequest {
 message AssignWorkResponse {
   bool accepted = 1;
   string reason = 2;
+}
+
+message BuyRequest {
+  uint64 pip_id = 1;
+  uint64 workplace_id = 2;
+  pips.workplace.v1.ResourceKind kind = 3;
+}
+
+message BuyResponse {
+  bool ok = 1;
+  string reason = 2;
+  int64 price = 3;
 }
