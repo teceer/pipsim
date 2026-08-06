@@ -395,6 +395,24 @@ func (a *ActorHost) EndShift(
 	return connect.NewResponse(out), nil
 }
 
+func (a *ActorHost) Buy(
+	ctx context.Context,
+	req *connect.Request[workplacev1.BuyRequest],
+) (*connect.Response[workplacev1.BuyResponse], error) {
+	id, err := a.resolveID(req.Msg.GetWorkplaceId())
+	if err != nil {
+		return nil, err
+	}
+	msg := req.Msg
+	msg.WorkplaceId = id
+
+	out := &workplacev1.BuyResponse{}
+	if err := a.call(ctx, id, "Buy", msg, out); err != nil {
+		return nil, connect.NewError(connect.CodeUnavailable, err)
+	}
+	return connect.NewResponse(out), nil
+}
+
 // ConsiderOffer answers a queued offer. It goes through an actor like anything
 // else that touches state — the offer arrives on a queue rather than an RPC,
 // but the write it causes is the same write.
@@ -576,6 +594,17 @@ func dispatch(ctx context.Context, b *Service, method string, body []byte) ([]by
 			return nil, err
 		}
 		res, err := b.EndShift(ctx, connect.NewRequest(in))
+		if err != nil {
+			return nil, err
+		}
+		return protojson.Marshal(res.Msg)
+
+	case "Buy":
+		in := &workplacev1.BuyRequest{}
+		if err := unmarshal(in); err != nil {
+			return nil, err
+		}
+		res, err := b.Buy(ctx, connect.NewRequest(in))
 		if err != nil {
 			return nil, err
 		}
