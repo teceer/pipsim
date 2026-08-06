@@ -12,7 +12,40 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file pips/workplace/v1/workplace.proto.
  */
 export const file_pips_workplace_v1_workplace: GenFile = /*@__PURE__*/
-  fileDesc("CiFwaXBzL3dvcmtwbGFjZS92MS93b3JrcGxhY2UucHJvdG8SEXBpcHMud29ya3BsYWNlLnYxIicKD0Rlc2NyaWJlUmVxdWVzdBIUCgx3b3JrcGxhY2VfaWQYASABKAQihQIKEERlc2NyaWJlUmVzcG9uc2USFAoMd29ya3BsYWNlX2lkGAEgASgEEgwKBGtpbmQYAiABKAkSFAoMZGlzcGxheV9uYW1lGAMgASgJEhMKC21heF93b3JrZXJzGAQgASgFEhcKD2N1cnJlbnRfd29ya2VycxgFIAEoBRIjCghwb3NpdGlvbhgGIAEoCzIRLnBpcHMuc2ltLnYxLlZlYzISMQoIcHJvZHVjZXMYByADKA4yHy5waXBzLndvcmtwbGFjZS52MS5SZXNvdXJjZUtpbmQSMQoIY29uc3VtZXMYCCADKA4yHy5waXBzLndvcmtwbGFjZS52MS5SZXNvdXJjZUtpbmQiOAoQQ2FuRW1wbG95UmVxdWVzdBIUCgx3b3JrcGxhY2VfaWQYASABKAQSDgoGcGlwX2lkGAIgASgEIjQKEUNhbkVtcGxveVJlc3BvbnNlEg8KB2FsbG93ZWQYASABKAgSDgoGcmVhc29uGAIgASgJIkcKEVN0YXJ0U2hpZnRSZXF1ZXN0EhQKDHdvcmtwbGFjZV9pZBgBIAEoBBIOCgZwaXBfaWQYAiABKAQSDAoEdGljaxgDIAEoBCI2ChJTdGFydFNoaWZ0UmVzcG9uc2USEAoIYWNjZXB0ZWQYASABKAgSDgoGcmVhc29uGAIgASgJIkEKC1dvcmtSZXF1ZXN0EhQKDHdvcmtwbGFjZV9pZBgBIAEoBBIOCgZwaXBfaWQYAiABKAQSDAoEdGljaxgDIAEoBCLWAQoMV29ya1Jlc3BvbnNlEjMKCHByb2R1Y2VkGAEgAygLMiEucGlwcy53b3JrcGxhY2UudjEuUmVzb3VyY2VBbW91bnQSRAoLbmVlZF9kZWx0YXMYAiADKAsyLy5waXBzLndvcmtwbGFjZS52MS5Xb3JrUmVzcG9uc2UuTmVlZERlbHRhc0VudHJ5EhgKEHNoaWZ0X3Nob3VsZF9lbmQYAyABKAgaMQoPTmVlZERlbHRhc0VudHJ5EgsKA2tleRgBIAEoBRINCgV2YWx1ZRgCIAEoBToCOAEiTwoOUmVzb3VyY2VBbW91bnQSLQoEa2luZBgBIAEoDjIfLnBpcHMud29ya3BsYWNlLnYxLlJlc291cmNlS2luZBIOCgZhbW91bnQYAiABKAUiVQoPRW5kU2hpZnRSZXF1ZXN0EhQKDHdvcmtwbGFjZV9pZBgBIAEoBBIOCgZwaXBfaWQYAiABKAQSDAoEdGljaxgDIAEoBBIOCgZyZWFzb24YBCABKAkiEgoQRW5kU2hpZnRSZXNwb25zZSqNAQoMUmVzb3VyY2VLaW5kEh0KGVJFU09VUkNFX0tJTkRfVU5TUEVDSUZJRUQQABIXChNSRVNPVVJDRV9LSU5EX0dSQUlOEAESFgoSUkVTT1VSQ0VfS0lORF9GT09EEAISFgoSUkVTT1VSQ0VfS0lORF9UT09MEAMSFQoRUkVTT1VSQ0VfS0lORF9BTEUQBDK4AwoQV29ya3BsYWNlU2VydmljZRJTCghEZXNjcmliZRIiLnBpcHMud29ya3BsYWNlLnYxLkRlc2NyaWJlUmVxdWVzdBojLnBpcHMud29ya3BsYWNlLnYxLkRlc2NyaWJlUmVzcG9uc2USVgoJQ2FuRW1wbG95EiMucGlwcy53b3JrcGxhY2UudjEuQ2FuRW1wbG95UmVxdWVzdBokLnBpcHMud29ya3BsYWNlLnYxLkNhbkVtcGxveVJlc3BvbnNlElkKClN0YXJ0U2hpZnQSJC5waXBzLndvcmtwbGFjZS52MS5TdGFydFNoaWZ0UmVxdWVzdBolLnBpcHMud29ya3BsYWNlLnYxLlN0YXJ0U2hpZnRSZXNwb25zZRJHCgRXb3JrEh4ucGlwcy53b3JrcGxhY2UudjEuV29ya1JlcXVlc3QaHy5waXBzLndvcmtwbGFjZS52MS5Xb3JrUmVzcG9uc2USUwoIRW5kU2hpZnQSIi5waXBzLndvcmtwbGFjZS52MS5FbmRTaGlmdFJlcXVlc3QaIy5waXBzLndvcmtwbGFjZS52MS5FbmRTaGlmdFJlc3BvbnNlQswBChVjb20ucGlwcy53b3JrcGxhY2UudjFCDldvcmtwbGFjZVByb3RvUAFaPWdpdGh1Yi5jb20vdGVjZWVyL3BpcHNpbS9nZW4vZ28vcGlwcy93b3JrcGxhY2UvdjE7d29ya3BsYWNldjGiAgNQV1iqAhFQaXBzLldvcmtwbGFjZS5WMcoCEVBpcHNcV29ya3BsYWNlXFYx4gIdUGlwc1xXb3JrcGxhY2VcVjFcR1BCTWV0YWRhdGHqAhNQaXBzOjpXb3JrcGxhY2U6OlYxYgZwcm90bzM", [file_pips_sim_v1_sim]);
+  fileDesc("CiFwaXBzL3dvcmtwbGFjZS92MS93b3JrcGxhY2UucHJvdG8SEXBpcHMud29ya3BsYWNlLnYxIg0KC0xpc3RSZXF1ZXN0IkcKDExpc3RSZXNwb25zZRI3Cgp3b3JrcGxhY2VzGAEgAygLMiMucGlwcy53b3JrcGxhY2UudjEuRGVzY3JpYmVSZXNwb25zZSInCg9EZXNjcmliZVJlcXVlc3QSFAoMd29ya3BsYWNlX2lkGAEgASgEIoUCChBEZXNjcmliZVJlc3BvbnNlEhQKDHdvcmtwbGFjZV9pZBgBIAEoBBIMCgRraW5kGAIgASgJEhQKDGRpc3BsYXlfbmFtZRgDIAEoCRITCgttYXhfd29ya2VycxgEIAEoBRIXCg9jdXJyZW50X3dvcmtlcnMYBSABKAUSIwoIcG9zaXRpb24YBiABKAsyES5waXBzLnNpbS52MS5WZWMyEjEKCHByb2R1Y2VzGAcgAygOMh8ucGlwcy53b3JrcGxhY2UudjEuUmVzb3VyY2VLaW5kEjEKCGNvbnN1bWVzGAggAygOMh8ucGlwcy53b3JrcGxhY2UudjEuUmVzb3VyY2VLaW5kIjgKEENhbkVtcGxveVJlcXVlc3QSFAoMd29ya3BsYWNlX2lkGAEgASgEEg4KBnBpcF9pZBgCIAEoBCI0ChFDYW5FbXBsb3lSZXNwb25zZRIPCgdhbGxvd2VkGAEgASgIEg4KBnJlYXNvbhgCIAEoCSJHChFTdGFydFNoaWZ0UmVxdWVzdBIUCgx3b3JrcGxhY2VfaWQYASABKAQSDgoGcGlwX2lkGAIgASgEEgwKBHRpY2sYAyABKAQiNgoSU3RhcnRTaGlmdFJlc3BvbnNlEhAKCGFjY2VwdGVkGAEgASgIEg4KBnJlYXNvbhgCIAEoCSJBCgtXb3JrUmVxdWVzdBIUCgx3b3JrcGxhY2VfaWQYASABKAQSDgoGcGlwX2lkGAIgASgEEgwKBHRpY2sYAyABKAQi1gEKDFdvcmtSZXNwb25zZRIzCghwcm9kdWNlZBgBIAMoCzIhLnBpcHMud29ya3BsYWNlLnYxLlJlc291cmNlQW1vdW50EkQKC25lZWRfZGVsdGFzGAIgAygLMi8ucGlwcy53b3JrcGxhY2UudjEuV29ya1Jlc3BvbnNlLk5lZWREZWx0YXNFbnRyeRIYChBzaGlmdF9zaG91bGRfZW5kGAMgASgIGjEKD05lZWREZWx0YXNFbnRyeRILCgNrZXkYASABKAUSDQoFdmFsdWUYAiABKAU6AjgBIk8KDlJlc291cmNlQW1vdW50Ei0KBGtpbmQYASABKA4yHy5waXBzLndvcmtwbGFjZS52MS5SZXNvdXJjZUtpbmQSDgoGYW1vdW50GAIgASgFIlUKD0VuZFNoaWZ0UmVxdWVzdBIUCgx3b3JrcGxhY2VfaWQYASABKAQSDgoGcGlwX2lkGAIgASgEEgwKBHRpY2sYAyABKAQSDgoGcmVhc29uGAQgASgJIhIKEEVuZFNoaWZ0UmVzcG9uc2UqjQEKDFJlc291cmNlS2luZBIdChlSRVNPVVJDRV9LSU5EX1VOU1BFQ0lGSUVEEAASFwoTUkVTT1VSQ0VfS0lORF9HUkFJThABEhYKElJFU09VUkNFX0tJTkRfRk9PRBACEhYKElJFU09VUkNFX0tJTkRfVE9PTBADEhUKEVJFU09VUkNFX0tJTkRfQUxFEAQygQQKEFdvcmtwbGFjZVNlcnZpY2USRwoETGlzdBIeLnBpcHMud29ya3BsYWNlLnYxLkxpc3RSZXF1ZXN0Gh8ucGlwcy53b3JrcGxhY2UudjEuTGlzdFJlc3BvbnNlElMKCERlc2NyaWJlEiIucGlwcy53b3JrcGxhY2UudjEuRGVzY3JpYmVSZXF1ZXN0GiMucGlwcy53b3JrcGxhY2UudjEuRGVzY3JpYmVSZXNwb25zZRJWCglDYW5FbXBsb3kSIy5waXBzLndvcmtwbGFjZS52MS5DYW5FbXBsb3lSZXF1ZXN0GiQucGlwcy53b3JrcGxhY2UudjEuQ2FuRW1wbG95UmVzcG9uc2USWQoKU3RhcnRTaGlmdBIkLnBpcHMud29ya3BsYWNlLnYxLlN0YXJ0U2hpZnRSZXF1ZXN0GiUucGlwcy53b3JrcGxhY2UudjEuU3RhcnRTaGlmdFJlc3BvbnNlEkcKBFdvcmsSHi5waXBzLndvcmtwbGFjZS52MS5Xb3JrUmVxdWVzdBofLnBpcHMud29ya3BsYWNlLnYxLldvcmtSZXNwb25zZRJTCghFbmRTaGlmdBIiLnBpcHMud29ya3BsYWNlLnYxLkVuZFNoaWZ0UmVxdWVzdBojLnBpcHMud29ya3BsYWNlLnYxLkVuZFNoaWZ0UmVzcG9uc2VCzAEKFWNvbS5waXBzLndvcmtwbGFjZS52MUIOV29ya3BsYWNlUHJvdG9QAVo9Z2l0aHViLmNvbS90ZWNlZXIvcGlwc2ltL2dlbi9nby9waXBzL3dvcmtwbGFjZS92MTt3b3JrcGxhY2V2MaICA1BXWKoCEVBpcHMuV29ya3BsYWNlLlYxygIRUGlwc1xXb3JrcGxhY2VcVjHiAh1QaXBzXFdvcmtwbGFjZVxWMVxHUEJNZXRhZGF0YeoCE1BpcHM6OldvcmtwbGFjZTo6VjFiBnByb3RvMw", [file_pips_sim_v1_sim]);
+
+/**
+ * @generated from message pips.workplace.v1.ListRequest
+ */
+export type ListRequest = Message<"pips.workplace.v1.ListRequest"> & {
+};
+
+/**
+ * Describes the message pips.workplace.v1.ListRequest.
+ * Use `create(ListRequestSchema)` to create a new message.
+ */
+export const ListRequestSchema: GenMessage<ListRequest> = /*@__PURE__*/
+  messageDesc(file_pips_workplace_v1_workplace, 0);
+
+/**
+ * @generated from message pips.workplace.v1.ListResponse
+ */
+export type ListResponse = Message<"pips.workplace.v1.ListResponse"> & {
+  /**
+   * Sent in full. A service hosts a handful of buildings, not a page of them,
+   * and the gateway registers every one on a loop anyway.
+   *
+   * @generated from field: repeated pips.workplace.v1.DescribeResponse workplaces = 1;
+   */
+  workplaces: DescribeResponse[];
+};
+
+/**
+ * Describes the message pips.workplace.v1.ListResponse.
+ * Use `create(ListResponseSchema)` to create a new message.
+ */
+export const ListResponseSchema: GenMessage<ListResponse> = /*@__PURE__*/
+  messageDesc(file_pips_workplace_v1_workplace, 1);
 
 /**
  * @generated from message pips.workplace.v1.DescribeRequest
@@ -29,7 +62,7 @@ export type DescribeRequest = Message<"pips.workplace.v1.DescribeRequest"> & {
  * Use `create(DescribeRequestSchema)` to create a new message.
  */
 export const DescribeRequestSchema: GenMessage<DescribeRequest> = /*@__PURE__*/
-  messageDesc(file_pips_workplace_v1_workplace, 0);
+  messageDesc(file_pips_workplace_v1_workplace, 2);
 
 /**
  * @generated from message pips.workplace.v1.DescribeResponse
@@ -83,7 +116,7 @@ export type DescribeResponse = Message<"pips.workplace.v1.DescribeResponse"> & {
  * Use `create(DescribeResponseSchema)` to create a new message.
  */
 export const DescribeResponseSchema: GenMessage<DescribeResponse> = /*@__PURE__*/
-  messageDesc(file_pips_workplace_v1_workplace, 1);
+  messageDesc(file_pips_workplace_v1_workplace, 3);
 
 /**
  * @generated from message pips.workplace.v1.CanEmployRequest
@@ -105,7 +138,7 @@ export type CanEmployRequest = Message<"pips.workplace.v1.CanEmployRequest"> & {
  * Use `create(CanEmployRequestSchema)` to create a new message.
  */
 export const CanEmployRequestSchema: GenMessage<CanEmployRequest> = /*@__PURE__*/
-  messageDesc(file_pips_workplace_v1_workplace, 2);
+  messageDesc(file_pips_workplace_v1_workplace, 4);
 
 /**
  * @generated from message pips.workplace.v1.CanEmployResponse
@@ -127,7 +160,7 @@ export type CanEmployResponse = Message<"pips.workplace.v1.CanEmployResponse"> &
  * Use `create(CanEmployResponseSchema)` to create a new message.
  */
 export const CanEmployResponseSchema: GenMessage<CanEmployResponse> = /*@__PURE__*/
-  messageDesc(file_pips_workplace_v1_workplace, 3);
+  messageDesc(file_pips_workplace_v1_workplace, 5);
 
 /**
  * @generated from message pips.workplace.v1.StartShiftRequest
@@ -154,7 +187,7 @@ export type StartShiftRequest = Message<"pips.workplace.v1.StartShiftRequest"> &
  * Use `create(StartShiftRequestSchema)` to create a new message.
  */
 export const StartShiftRequestSchema: GenMessage<StartShiftRequest> = /*@__PURE__*/
-  messageDesc(file_pips_workplace_v1_workplace, 4);
+  messageDesc(file_pips_workplace_v1_workplace, 6);
 
 /**
  * @generated from message pips.workplace.v1.StartShiftResponse
@@ -176,7 +209,7 @@ export type StartShiftResponse = Message<"pips.workplace.v1.StartShiftResponse">
  * Use `create(StartShiftResponseSchema)` to create a new message.
  */
 export const StartShiftResponseSchema: GenMessage<StartShiftResponse> = /*@__PURE__*/
-  messageDesc(file_pips_workplace_v1_workplace, 5);
+  messageDesc(file_pips_workplace_v1_workplace, 7);
 
 /**
  * @generated from message pips.workplace.v1.WorkRequest
@@ -203,7 +236,7 @@ export type WorkRequest = Message<"pips.workplace.v1.WorkRequest"> & {
  * Use `create(WorkRequestSchema)` to create a new message.
  */
 export const WorkRequestSchema: GenMessage<WorkRequest> = /*@__PURE__*/
-  messageDesc(file_pips_workplace_v1_workplace, 6);
+  messageDesc(file_pips_workplace_v1_workplace, 8);
 
 /**
  * @generated from message pips.workplace.v1.WorkResponse
@@ -234,7 +267,7 @@ export type WorkResponse = Message<"pips.workplace.v1.WorkResponse"> & {
  * Use `create(WorkResponseSchema)` to create a new message.
  */
 export const WorkResponseSchema: GenMessage<WorkResponse> = /*@__PURE__*/
-  messageDesc(file_pips_workplace_v1_workplace, 7);
+  messageDesc(file_pips_workplace_v1_workplace, 9);
 
 /**
  * @generated from message pips.workplace.v1.ResourceAmount
@@ -256,7 +289,7 @@ export type ResourceAmount = Message<"pips.workplace.v1.ResourceAmount"> & {
  * Use `create(ResourceAmountSchema)` to create a new message.
  */
 export const ResourceAmountSchema: GenMessage<ResourceAmount> = /*@__PURE__*/
-  messageDesc(file_pips_workplace_v1_workplace, 8);
+  messageDesc(file_pips_workplace_v1_workplace, 10);
 
 /**
  * @generated from message pips.workplace.v1.EndShiftRequest
@@ -288,7 +321,7 @@ export type EndShiftRequest = Message<"pips.workplace.v1.EndShiftRequest"> & {
  * Use `create(EndShiftRequestSchema)` to create a new message.
  */
 export const EndShiftRequestSchema: GenMessage<EndShiftRequest> = /*@__PURE__*/
-  messageDesc(file_pips_workplace_v1_workplace, 9);
+  messageDesc(file_pips_workplace_v1_workplace, 11);
 
 /**
  * @generated from message pips.workplace.v1.EndShiftResponse
@@ -301,7 +334,7 @@ export type EndShiftResponse = Message<"pips.workplace.v1.EndShiftResponse"> & {
  * Use `create(EndShiftResponseSchema)` to create a new message.
  */
 export const EndShiftResponseSchema: GenMessage<EndShiftResponse> = /*@__PURE__*/
-  messageDesc(file_pips_workplace_v1_workplace, 10);
+  messageDesc(file_pips_workplace_v1_workplace, 12);
 
 /**
  * @generated from enum pips.workplace.v1.ResourceKind
@@ -351,7 +384,24 @@ export const ResourceKindSchema: GenEnum<ResourceKind> = /*@__PURE__*/
  */
 export const WorkplaceService: GenService<{
   /**
-   * Static description: what it is, how many it employs, what it produces.
+   * Every building this service hosts.
+   *
+   * A service owns a *kind* of building, not one building, so "who are you" has
+   * no answer and `Describe` with no id has nothing to return. The gateway
+   * enumerates here and then addresses each instance by id. A service hosting a
+   * single building answers with one entry, which is why this is additive
+   * rather than a replacement.
+   *
+   * @generated from rpc pips.workplace.v1.WorkplaceService.List
+   */
+  list: {
+    methodKind: "unary";
+    input: typeof ListRequestSchema;
+    output: typeof ListResponseSchema;
+  },
+  /**
+   * Static description of one building. `workplace_id` is required as soon as a
+   * service hosts more than one.
    *
    * @generated from rpc pips.workplace.v1.WorkplaceService.Describe
    */

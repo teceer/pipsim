@@ -50,12 +50,48 @@ func client(t *testing.T) (workplacev1connect.WorkplaceServiceClient, uint64) {
 	c := workplacev1connect.NewWorkplaceServiceClient(
 		&http.Client{Timeout: 10 * time.Second}, "http://"+addr)
 
-	desc, err := c.Describe(context.Background(),
-		connect.NewRequest(&workplacev1.DescribeRequest{}))
-	if err != nil {
-		t.Fatalf("Describe: %v", err)
+	return c, someWorkplace(t, c)
+}
+
+// someWorkplace picks an id to drive the rest of the suite against.
+//
+// `List` first, because a service owns a *kind* of building and may host
+// several — "who are you" then has no answer, and `Describe` with no id is
+// entitled to refuse. A workplace that predates `List` answers Unimplemented,
+// and asking it to identify itself is still correct there, so the fallback is
+// not politeness: it is the older contract, still honoured.
+//
+// Only the first building is exercised. That is a real limit of this suite: it
+// checks that a host serves the contract, not that every building it holds
+// behaves. Enough to catch a broken implementation, not enough to catch one
+// building in ten misrouting.
+func someWorkplace(t *testing.T, c workplacev1connect.WorkplaceServiceClient) uint64 {
+	t.Helper()
+
+	list, err := c.List(context.Background(),
+		connect.NewRequest(&workplacev1.ListRequest{}))
+	switch {
+	case err == nil:
+		if len(list.Msg.GetWorkplaces()) == 0 {
+			t.Fatal("List returned no buildings; a workplace service hosts at least one")
+		}
+		if n := len(list.Msg.GetWorkplaces()); n > 1 {
+			t.Logf("host has %d buildings; driving the first", n)
+		}
+		return list.Msg.GetWorkplaces()[0].GetWorkplaceId()
+
+	case connect.CodeOf(err) == connect.CodeUnimplemented:
+		desc, err := c.Describe(context.Background(),
+			connect.NewRequest(&workplacev1.DescribeRequest{}))
+		if err != nil {
+			t.Fatalf("no List, and Describe with no id failed: %v", err)
+		}
+		return desc.Msg.GetWorkplaceId()
+
+	default:
+		t.Fatalf("List: %v", err)
+		return 0
 	}
-	return c, desc.Msg.GetWorkplaceId()
 }
 
 func TestDescribeIdentifiesTheWorkplace(t *testing.T) {

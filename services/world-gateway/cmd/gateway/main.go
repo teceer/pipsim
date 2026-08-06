@@ -150,14 +150,37 @@ func main() {
 		}
 		defer offers.Close()
 
+		// One driver per building, not per address: a workplace service owns a
+		// kind of building and may host several.
+		//
+		// Discovery happens once, here. That is a real limit — a building added
+		// to a running service is invisible until this restarts — and it is
+		// deliberate for now, because ids are still configuration. It stops
+		// being acceptable the moment BuildWorkplace exists.
+		discoverCtx, cancelDiscover := context.WithTimeout(context.Background(), 15*time.Second)
 		drivers := make([]*economy.Driver, 0, len(addrs))
 		for _, addr := range addrs {
-			drivers = append(drivers, economy.NewDriver(
+			found, err := economy.Discover(
+				discoverCtx,
 				simClient,
 				workplacev1connect.NewWorkplaceServiceClient(h2cClient(), "http://"+addr),
 				addr,
 				offers,
-			))
+			)
+			if err != nil {
+				// Not fatal: a workplace that is down at startup should not stop
+				// the gateway serving the world, and KeepRegistered would have
+				// retried anyway had we known what to retry.
+				slog.Warn("could not discover a workplace", "addr", addr, "err", err)
+				continue
+			}
+			slog.Info("workplaces discovered", "addr", addr, "buildings", len(found))
+			drivers = append(drivers, found...)
+		}
+		cancelDiscover()
+
+		if len(drivers) == 0 {
+			slog.Error("no workplaces reachable; economy disabled")
 		}
 		fleet := economy.NewFleet(simClient, drivers...)
 

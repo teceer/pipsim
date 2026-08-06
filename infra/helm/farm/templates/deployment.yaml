@@ -27,12 +27,13 @@ spec:
             - name: http
               containerPort: 8090
           env:
-            - name: WORKPLACE_ID
-              value: "{{ .Values.workplace.id }}"
-            - name: WORKPLACE_X
-              value: "{{ .Values.workplace.xMilli }}"
-            - name: WORKPLACE_Y
-              value: "{{ .Values.workplace.yMilli }}"
+            # id:x:y, comma separated — one entry per building this process
+            # hosts. Quoted as a whole so YAML never gets to interpret the
+            # colons.
+            - name: WORKPLACES
+              value: "{{- range $i, $w := .Values.workplaces -}}
+                {{- if $i }},{{ end }}{{ $w.id }}:{{ $w.xMilli }}:{{ $w.yMilli }}
+                {{- end }}"
             - name: AMQP_URL
               value: "amqp://pipsim:pipsim@rabbitmq.{{ .Values.platformNamespace }}.svc.cluster.local:5672/pipsim"
             # Shift state, shared by every replica. Without this each replica

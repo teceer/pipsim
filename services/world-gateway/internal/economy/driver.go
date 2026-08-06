@@ -2,6 +2,7 @@ package economy
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"sync"
 	"time"
@@ -18,12 +19,13 @@ import (
 // not caught up.
 const hireGrace = 5 * time.Second
 
-// Driver is the gateway's half of one workplace.
+// Driver is the gateway's half of one *building* — not of one address.
 //
-// It knows an address and nothing else at construction. Who lives there — the
-// workplace's id and kind — is answered by the workplace itself on the first
-// `Describe`, so the same fact is not configured twice and cannot disagree
-// between a Helm value and a service's own environment.
+// Those used to be the same thing. A workplace service now owns a kind of
+// building and may host several, so `Discover` asks an address what it has and
+// builds a driver per answer. What has not changed is who owns the facts: the
+// id, kind, position and capacity all come from the workplace describing
+// itself, never from a Helm value, so the two cannot disagree.
 type Driver struct {
 	sim       simv1connect.SimServiceClient
 	workplace workplacev1connect.WorkplaceServiceClient
@@ -74,6 +76,62 @@ func NewDriver(
 		employed:  make(map[uint64]bool),
 		hiredAt:   make(map[uint64]time.Time),
 		pending:   make(map[uint64]time.Time),
+	}
+}
+
+// NewDriverFor builds a driver for one known building at an address.
+//
+// A service hosts a kind of building and may hold several, so an address no
+// longer identifies a workplace — Discover asks it which buildings it has and
+// builds one driver per answer. The id is known up front here, which is the
+// only difference from NewDriver: everything downstream already stamps
+// `d.ID()` onto every RPC, so a driver that starts out knowing who it drives
+// needs no further help.
+func NewDriverFor(
+	sim simv1connect.SimServiceClient,
+	workplace workplacev1connect.WorkplaceServiceClient,
+	addr string,
+	offers *Publisher,
+	workplaceID uint64,
+	kind string,
+) *Driver {
+	d := NewDriver(sim, workplace, addr, offers)
+	d.id, d.kind = workplaceID, kind
+	return d
+}
+
+// Discover asks one address which buildings it hosts.
+//
+// `List` first; a workplace that predates it answers Unimplemented and is asked
+// to describe itself instead, which is exactly what it could always do. Returns
+// one driver per building.
+func Discover(
+	ctx context.Context,
+	sim simv1connect.SimServiceClient,
+	client workplacev1connect.WorkplaceServiceClient,
+	addr string,
+	offers *Publisher,
+) ([]*Driver, error) {
+	list, err := client.List(ctx, connect.NewRequest(&workplacev1.ListRequest{}))
+	switch {
+	case err == nil:
+		out := make([]*Driver, 0, len(list.Msg.GetWorkplaces()))
+		for _, w := range list.Msg.GetWorkplaces() {
+			out = append(out, NewDriverFor(sim, client, addr, offers,
+				w.GetWorkplaceId(), w.GetKind()))
+		}
+		if len(out) == 0 {
+			return nil, fmt.Errorf("%s hosts no buildings", addr)
+		}
+		return out, nil
+
+	case connect.CodeOf(err) == connect.CodeUnimplemented:
+		// One building, identifying itself the old way. The driver learns who it
+		// is on its first Register, as it always did.
+		return []*Driver{NewDriver(sim, client, addr, offers)}, nil
+
+	default:
+		return nil, err
 	}
 }
 
