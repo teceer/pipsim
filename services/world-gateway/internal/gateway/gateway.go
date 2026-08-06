@@ -21,6 +21,7 @@ import (
 
 	simv1 "github.com/teceer/pipsim/gen/go/pips/sim/v1"
 	"github.com/teceer/pipsim/gen/go/pips/sim/v1/simv1connect"
+	workplacev1 "github.com/teceer/pipsim/gen/go/pips/workplace/v1"
 	worldv1 "github.com/teceer/pipsim/gen/go/pips/world/v1"
 )
 
@@ -33,10 +34,24 @@ type Server struct {
 	// in a way that looks like a rendering bug.
 	simSeed uint64
 	tickHz  int32
+
+	// How the workplace services describe themselves, if any are wired up.
+	//
+	// Kept as a function rather than a client so the gateway stays runnable
+	// with no workplaces at all: a nil describer means the join response simply
+	// carries no payroll view, and the buildings still come through from
+	// sim-core.
+	describe func(context.Context) []*workplacev1.DescribeResponse
 }
 
 func New(sim simv1connect.SimServiceClient, simSeed uint64, tickHz int32) *Server {
 	return &Server{sim: sim, simSeed: simSeed, tickHz: tickHz}
+}
+
+// WithWorkplaces supplies the payroll view returned by JoinWorld.
+func (s *Server) WithWorkplaces(describe func(context.Context) []*workplacev1.DescribeResponse) *Server {
+	s.describe = describe
+	return s
 }
 
 func (s *Server) JoinWorld(
@@ -48,18 +63,28 @@ func (s *Server) JoinWorld(
 		return nil, connect.NewError(connect.CodeUnavailable, err)
 	}
 
+	var payroll []*workplacev1.DescribeResponse
+	if s.describe != nil {
+		payroll = s.describe(ctx)
+	}
+
 	slog.Info("client joined",
 		"client_id", req.Msg.GetClientId(),
 		"tick", snap.Msg.GetTick(),
-		"pips", len(snap.Msg.GetPips()))
+		"pips", len(snap.Msg.GetPips()),
+		"buildings", len(snap.Msg.GetWorkplaces()))
 
 	return connect.NewResponse(&worldv1.JoinWorldResponse{
 		Tick:    snap.Msg.GetTick(),
 		TickHz:  s.tickHz,
 		SimSeed: s.simSeed,
 		Pips:    snap.Msg.GetPips(),
-		// Workplaces arrive once those services exist; the field is already in
-		// the contract so adding them changes nothing here.
+		// Two views of the same buildings, and the difference is the point:
+		// `Workplaces` is who is on the payroll, `Buildings` is who is in the
+		// room. A pip hired a second ago appears in the first and not the
+		// second, because it is still walking there.
+		Workplaces: payroll,
+		Buildings:  snap.Msg.GetWorkplaces(),
 	}), nil
 }
 

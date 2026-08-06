@@ -32,12 +32,22 @@ type Driver struct {
 	kind      string
 	offers    *Publisher
 
-	// Who this driver believes is on shift. Written by the outcome consumer as
-	// well as the cycle, hence the lock. Rebuilt from nothing on restart —
-	// sim-core is the authority on pips, and a stale view heals within a cycle
-	// because Work reports an unknown pip as shift-should-end.
+	// Who this driver saw employed last cycle. Not the authority — sim-core is,
+	// and every cycle rebuilds this from the snapshot. It is kept only to spot
+	// who *stopped* being employed, so their shift can be ended promptly rather
+	// than waiting for the farm's lease to expire.
+	//
+	// Deriving it rather than owning it is what makes a gateway restart
+	// self-healing. Owning it meant a restarted gateway knew nobody, re-offered
+	// pips the farm already employed, had the offers rejected, and left them
+	// standing inside a building forever holding a place.
 	mu       sync.Mutex
 	employed map[uint64]bool
+
+	// When a hire was recorded. sim-core applies the intent on the next tick,
+	// which can land after the next snapshot is taken — without this grace the
+	// cycle would see a just-hired pip as unemployed and cancel its shift.
+	hiredAt map[uint64]time.Time
 
 	// Offered but not yet answered. Without this the driver would re-offer the
 	// same pip every round while its first offer is still queued, and a
@@ -60,8 +70,61 @@ func NewDriver(
 		kind:      kind,
 		offers:    offers,
 		employed:  make(map[uint64]bool),
+		hiredAt:   make(map[uint64]time.Time),
 		pending:   make(map[uint64]time.Time),
 	}
+}
+
+// How long after a hire the driver still believes it, even if the snapshot has
+// not caught up.
+const hireGrace = 5 * time.Second
+
+// Register puts the workplace on the map, using the numbers the workplace
+// reports about itself.
+//
+// Note what is not happening here: the gateway does not decide the capacity, it
+// copies it. `max_workers` has exactly one owner — the workplace service — and
+// sim-core enforces it physically so that a building cannot hold more bodies
+// than it employs. Registering is idempotent, so calling it on every reconnect
+// is the intended usage rather than a compromise.
+func (d *Driver) Register(ctx context.Context) error {
+	desc, err := d.workplace.Describe(ctx, connect.NewRequest(&workplacev1.DescribeRequest{
+		WorkplaceId: d.id,
+	}))
+	if err != nil {
+		return err
+	}
+
+	if _, err := d.sim.SubmitIntent(ctx, connect.NewRequest(&simv1.SubmitIntentRequest{
+		Intent: &simv1.SubmitIntentRequest_RegisterWorkplace{
+			RegisterWorkplace: &simv1.RegisterWorkplaceIntent{
+				WorkplaceId: desc.Msg.GetWorkplaceId(),
+				Kind:        desc.Msg.GetKind(),
+				Position:    desc.Msg.GetPosition(),
+				Capacity:    uint32(desc.Msg.GetMaxWorkers()),
+			},
+		},
+	})); err != nil {
+		return err
+	}
+
+	slog.Info("workplace registered",
+		"workplace", desc.Msg.GetWorkplaceId(),
+		"kind", desc.Msg.GetKind(),
+		"capacity", desc.Msg.GetMaxWorkers(),
+		"position", desc.Msg.GetPosition().String())
+	return nil
+}
+
+// Describe reports the workplace as the workplace sees itself, for JoinWorld.
+func (d *Driver) Describe(ctx context.Context) (*workplacev1.DescribeResponse, error) {
+	res, err := d.workplace.Describe(ctx, connect.NewRequest(&workplacev1.DescribeRequest{
+		WorkplaceId: d.id,
+	}))
+	if err != nil {
+		return nil, err
+	}
+	return res.Msg, nil
 }
 
 // OnHired records a workplace's acceptance and tells the world about it.
@@ -81,6 +144,7 @@ func (d *Driver) OnHired(pipID, workplaceID uint64) {
 
 	d.mu.Lock()
 	d.employed[pipID] = true
+	d.hiredAt[pipID] = time.Now()
 	delete(d.pending, pipID)
 	d.mu.Unlock()
 }
@@ -123,33 +187,51 @@ func (d *Driver) cycle(ctx context.Context) error {
 	}
 	tick := snap.Msg.GetTick()
 
-	alive := make(map[uint64]bool, len(snap.Msg.GetPips()))
+	// Employment as sim-core sees it. This is the authority: it survives a
+	// gateway restart, and it is already what decides whether the pip walks to
+	// the building.
+	employed := make(map[uint64]bool, len(snap.Msg.GetPips()))
 	for _, p := range snap.Msg.GetPips() {
-		alive[p.GetId()] = true
-	}
-
-	// Pips that died on shift. The farm frees the position; without this a
-	// starved worker would occupy it forever.
-	d.mu.Lock()
-	var dead []uint64
-	for pip := range d.employed {
-		if !alive[pip] {
-			dead = append(dead, pip)
+		if p.GetEmployerWorkplaceId() == d.id {
+			employed[p.GetId()] = true
 		}
 	}
+
+	// Anyone who was employed here and is not any more: died, was let go, or
+	// vanished with a restarted world. Their shift is ended so the farm frees
+	// the position now rather than fifteen seconds from now.
+	d.mu.Lock()
+	for pip := range d.hiredAt {
+		if time.Since(d.hiredAt[pip]) > hireGrace {
+			delete(d.hiredAt, pip)
+		} else {
+			employed[pip] = true
+		}
+	}
+	var gone []uint64
+	for pip := range d.employed {
+		if !employed[pip] {
+			gone = append(gone, pip)
+		}
+	}
+	d.employed = employed
 	d.mu.Unlock()
-	for _, pip := range dead {
-		d.endShift(ctx, pip, tick, "pip died")
+
+	for _, pip := range gone {
+		d.endShift(ctx, pip, tick, "no longer employed here")
 	}
 
-	worked, offered := 0, 0
+	worked, offered, commuting := 0, 0, 0
 	for _, p := range snap.Msg.GetPips() {
-		d.mu.Lock()
-		isEmployed := d.employed[p.GetId()]
-		d.mu.Unlock()
-
-		if isEmployed {
-			if d.work(ctx, p.GetId(), tick) {
+		if employed[p.GetId()] {
+			// Physically at work, as opposed to merely on the payroll. A hired
+			// pip walks to the building and may queue at a full door; until it
+			// is inside, the shift is kept alive but pays nothing.
+			inside := p.GetInsideWorkplaceId() == d.id
+			if !inside {
+				commuting++
+			}
+			if d.work(ctx, p.GetId(), tick, inside) && inside {
 				worked++
 			}
 			continue
@@ -163,9 +245,10 @@ func (d *Driver) cycle(ctx context.Context) error {
 	employedCount := len(d.employed)
 	d.mu.Unlock()
 
-	if offered > 0 || worked > 0 {
+	if offered > 0 || worked > 0 || commuting > 0 {
 		slog.Info("economy cycle",
-			"tick", tick, "offered", offered, "worked", worked, "employed", employedCount)
+			"tick", tick, "offered", offered, "worked", worked,
+			"commuting", commuting, "employed", employedCount)
 	}
 	return nil
 }
@@ -192,7 +275,15 @@ func (d *Driver) offer(ctx context.Context, pip, tick uint64) bool {
 	return true
 }
 
-func (d *Driver) work(ctx context.Context, pip, tick uint64) bool {
+// work exercises the shift. `inside` says whether the pip is actually in the
+// building.
+//
+// The call is made either way, and that is deliberate: Work renews the farm's
+// lease, and a commute across the map takes longer than the lease lasts, so
+// skipping the call while a pip walks would have the farm reap a shift the pip
+// is on its way to. Only the *effects* are withheld — and because the farm
+// prices by elapsed ticks, the walk is not paid retroactively either.
+func (d *Driver) work(ctx context.Context, pip, tick uint64, inside bool) bool {
 	res, err := d.workplace.Work(ctx, connect.NewRequest(&workplacev1.WorkRequest{
 		WorkplaceId: d.id,
 		PipId:       pip,
@@ -208,7 +299,7 @@ func (d *Driver) work(ctx context.Context, pip, tick uint64) bool {
 	}
 
 	deltas := res.Msg.GetNeedDeltas()
-	if len(deltas) == 0 {
+	if len(deltas) == 0 || !inside {
 		return true
 	}
 
@@ -233,6 +324,18 @@ func (d *Driver) endShift(ctx context.Context, pip, tick uint64, reason string) 
 		Tick:        tick,
 		Reason:      reason,
 	}))
+
+	// Tell the world too, or the pip stays standing in the building forever
+	// holding a place nobody can use. Best-effort: the pip may already be dead,
+	// in which case sim-core has freed the place itself.
+	if _, err := d.sim.SubmitIntent(ctx, connect.NewRequest(&simv1.SubmitIntentRequest{
+		Intent: &simv1.SubmitIntentRequest_EndEmployment{
+			EndEmployment: &simv1.EndEmploymentIntent{PipId: pip},
+		},
+	})); err != nil {
+		slog.Warn("could not record the end of employment", "pip", pip, "err", err)
+	}
+
 	d.mu.Lock()
 	delete(d.employed, pip)
 	delete(d.pending, pip)

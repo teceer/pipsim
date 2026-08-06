@@ -23,6 +23,7 @@ import (
 	"golang.org/x/net/http2/h2c"
 
 	"github.com/teceer/pipsim/gen/go/pips/sim/v1/simv1connect"
+	workplacev1 "github.com/teceer/pipsim/gen/go/pips/workplace/v1"
 	"github.com/teceer/pipsim/gen/go/pips/workplace/v1/workplacev1connect"
 	"github.com/teceer/pipsim/gen/go/pips/world/v1/worldv1connect"
 	"github.com/teceer/pipsim/services/world-gateway/internal/economy"
@@ -96,6 +97,34 @@ func withCORS(h http.Handler) http.Handler {
 	})
 }
 
+// keepRegistered re-registers the workplace forever.
+//
+// Not just at startup, and not just until it succeeds. Registration is
+// idempotent by contract, so repeating it is free, and it covers the case that
+// actually happens in this cluster: sim-core restarts with a fresh world and
+// forgets every building while the gateway is still running. A world with a
+// workplace nobody can find is a world where every hired pip stands still.
+func keepRegistered(ctx context.Context, driver *economy.Driver, every time.Duration) {
+	failures := 0
+	for ctx.Err() == nil {
+		if err := driver.Register(ctx); err != nil {
+			// Quiet after the first: a workplace that is down stays down for
+			// many cycles, and one line per attempt drowns the log.
+			if failures == 0 {
+				slog.Warn("could not register the workplace", "err", err)
+			}
+			failures++
+		} else {
+			failures = 0
+		}
+
+		select {
+		case <-ctx.Done():
+		case <-time.After(every):
+		}
+	}
+}
+
 func main() {
 	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
 
@@ -137,8 +166,21 @@ func main() {
 
 		ctx, cancelEconomy := context.WithCancel(context.Background())
 		defer cancelEconomy()
+
+		go keepRegistered(ctx, driver, 10*time.Second)
+
 		go driver.Run(ctx, time.Second)
 		go economy.RunOutcomes(ctx, amqpURL, driver.OnHired)
+
+		svc = svc.WithWorkplaces(func(ctx context.Context) []*workplacev1.DescribeResponse {
+			desc, err := driver.Describe(ctx)
+			if err != nil {
+				slog.Warn("could not describe the farm for a joining client", "err", err)
+				return nil
+			}
+			return []*workplacev1.DescribeResponse{desc}
+		})
+
 		slog.Info("economy driver started", "farm", farmAddr)
 	} else {
 		slog.Info("economy disabled; FARM_ADDR and AMQP_URL are both required")

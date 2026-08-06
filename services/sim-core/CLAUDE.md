@@ -45,6 +45,25 @@ fails, do not weaken it — something else is genuinely broken.
 `World::state_hash()` is logged every tick so a divergent replay can be pinned
 to the exact tick where the two runs parted.
 
+## Buildings, and who owns "how many fit"
+
+The core keeps a workplace registry — position, capacity, and how many pips are
+physically inside. It does **not** decide the capacity. That number is the
+workplace service's own `max_workers`, and the gateway copies it in with a
+`RegisterWorkplace` intent, which is idempotent and re-sent on a loop so a
+restarted core is repopulated without anyone coordinating.
+
+That split is what keeps rule 4 intact. The farm owns *employment* capacity —
+how many it takes on — and the core owns *physical* occupancy, enforcing the
+same number. One owner, two places it bites.
+
+The consequence worth remembering: **`employers[i]` and `inside[i]` are
+different facts.** A hired pip walks to the building, and if it arrives to a
+full one it queues at the door — employed, outside, `Activity::Commuting`. The
+gateway relies on this: it keeps calling `Work` while a pip commutes, because
+the farm's shift lease is shorter than a long walk, but it applies the need
+deltas only once the pip is actually inside.
+
 ## Data layout
 
 Structure-of-arrays: `positions[i]`, `needs[i]`, `activities[i]` all describe

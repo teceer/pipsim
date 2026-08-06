@@ -17,8 +17,11 @@
 use sim::{Activity, Intent, Vec2, World};
 use wasm_bindgen::prelude::*;
 
-/// Stride of the array returned by `positions()`: id, x, y, activity, food.
-pub const PIP_STRIDE: usize = 5;
+/// Stride of `positions()`: id, x, y, activity, food, inside (0 = outside).
+pub const PIP_STRIDE: usize = 6;
+
+/// Stride of `workplaces()`: id, x, y, capacity, occupants.
+pub const WORKPLACE_STRIDE: usize = 5;
 
 #[wasm_bindgen]
 pub struct SimHandle {
@@ -61,6 +64,24 @@ impl SimHandle {
         });
     }
 
+    /// Queues a building. The offline fallback uses this to put the same
+    /// workplaces on the map that the gateway would have registered.
+    pub fn queue_register_workplace(
+        &mut self,
+        id: u32,
+        kind: String,
+        x: i32,
+        y: i32,
+        capacity: u32,
+    ) {
+        self.pending.push(Intent::RegisterWorkplace {
+            id: id as u64,
+            kind,
+            position: Vec2 { x, y },
+            capacity,
+        });
+    }
+
     /// Advances the world by exactly one tick, draining queued intents first.
     /// Returns how many domain events the tick produced — the client uses this
     /// only for display; the authoritative copies come from the server.
@@ -99,23 +120,47 @@ impl SimHandle {
             out.push(self.world.positions[i].y);
             out.push(activity_code(self.world.activities[i]));
             out.push(self.world.needs[i].food);
+            out.push(self.world.inside[i].unwrap_or(0) as i32);
+        }
+        out
+    }
+
+    /// Flat `[id, x, y, capacity, occupants]` tuples, same reasoning as
+    /// `positions()`.
+    pub fn workplaces(&self) -> Vec<i32> {
+        let n = self.world.workplace_ids.len();
+        let mut out = Vec::with_capacity(n * WORKPLACE_STRIDE);
+        for i in 0..n {
+            out.push(self.world.workplace_ids[i] as i32);
+            out.push(self.world.workplace_positions[i].x);
+            out.push(self.world.workplace_positions[i].y);
+            out.push(self.world.workplace_capacities[i] as i32);
+            out.push(self.world.workplace_occupants[i] as i32);
         }
         out
     }
 }
 
+/// Mirrors `pips.sim.v1.PipActivity` exactly, so the renderer has one mapping
+/// to understand rather than one per transport.
 fn activity_code(a: Activity) -> i32 {
     match a {
-        Activity::Idle => 0,
-        Activity::Walking => 1,
-        Activity::Working => 2,
-        Activity::Eating => 3,
-        Activity::Sleeping => 4,
+        Activity::Idle => 1,
+        Activity::Walking => 2,
+        Activity::Working => 3,
+        Activity::Eating => 4,
+        Activity::Sleeping => 5,
+        Activity::Commuting => 6,
     }
 }
 
-/// Stride exposed to JS so the renderer never hardcodes it.
+/// Strides exposed to JS so the renderer never hardcodes them.
 #[wasm_bindgen]
 pub fn pip_stride() -> usize {
     PIP_STRIDE
+}
+
+#[wasm_bindgen]
+pub fn workplace_stride() -> usize {
+    WORKPLACE_STRIDE
 }

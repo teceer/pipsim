@@ -23,12 +23,18 @@ use crate::telemetry;
 
 use crate::pb;
 use pb::pips::events::v1::{
-    event_envelope::Payload, EventEnvelope, PipDied, PipGotHungry, PipSpawned, PipStartedWork,
+    event_envelope::Payload, EventEnvelope, PipDied, PipEndedWork, PipGotHungry, PipSpawned,
+    PipStartedWork, WorkplaceBuilt,
 };
 use pb::pips::sim::v1 as simpb;
 
 pub const TOPIC_LIFECYCLE: &str = "pipsim.pip.lifecycle.v1";
 pub const TOPIC_WORK: &str = "pipsim.pip.work.v1";
+/// Compacted, keyed by workplace id: the topic holds the current state of every
+/// building rather than the history of how it got there. Declared that way in
+/// Terraform layer 20 — a consumer rebuilding a map of the world reads it from
+/// the beginning and ends up with one entry per building.
+pub const TOPIC_BUILDINGS: &str = "pipsim.world.buildings.v1";
 
 /// Envelope plus its routing decision: which topic, and which key.
 struct Routed {
@@ -89,6 +95,40 @@ fn route(tick: u64, event: &DomainEvent) -> Routed {
                 pip_id: *pip,
                 workplace_id: *workplace,
                 workplace_kind: String::new(),
+            }),
+        ),
+        DomainEvent::PipEndedWork {
+            pip,
+            workplace,
+            reason,
+        } => (
+            TOPIC_WORK,
+            pip.to_string(),
+            Payload::PipEndedWork(PipEndedWork {
+                pip_id: *pip,
+                workplace_id: *workplace,
+                reason: (*reason).to_string(),
+                ticks_worked: 0,
+            }),
+        ),
+        // Keyed by the workplace, not a pip: the aggregate here is the
+        // building, and compaction keeps the newest record per key.
+        DomainEvent::WorkplaceBuilt {
+            workplace,
+            kind,
+            position,
+            capacity,
+        } => (
+            TOPIC_BUILDINGS,
+            workplace.to_string(),
+            Payload::WorkplaceBuilt(WorkplaceBuilt {
+                workplace_id: *workplace,
+                kind: kind.clone(),
+                position: Some(simpb::Vec2 {
+                    x_milli: position.x,
+                    y_milli: position.y,
+                }),
+                max_workers: *capacity as i32,
             }),
         ),
     };

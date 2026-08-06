@@ -48,6 +48,10 @@ message Pip {
   // Need levels, 0..1000. Fixed-point for the same reason as position.
   map<int32, int32> needs = 5;
   optional uint64 employer_workplace_id = 6;
+  // Which building the pip is physically standing in, which is NOT the same as
+  // who employs it: a hired pip is outside for the whole walk there, and stays
+  // outside if it arrives to a full building.
+  optional uint64 inside_workplace_id = 7;
 }
 
 enum PipActivity {
@@ -57,6 +61,23 @@ enum PipActivity {
   PIP_ACTIVITY_WORKING = 3;
   PIP_ACTIVITY_EATING = 4;
   PIP_ACTIVITY_SLEEPING = 5;
+  // Employed but not inside yet — walking to work, or queuing at a full door.
+  PIP_ACTIVITY_COMMUTING = 6;
+}
+
+// A building on the map, as the simulation sees it.
+//
+// Distinct from pips.workplace.v1.DescribeResponse, which is how the *service*
+// describes itself. This is the physical object: where it stands, how many
+// bodies fit inside, and how many are in there now. `capacity` is a copy of the
+// workplace's own `max_workers` — the gateway registers it, so the number keeps
+// one owner and the core only enforces it.
+message Workplace {
+  uint64 id = 1;
+  string kind = 2;
+  Vec2 position = 3;
+  uint32 capacity = 4;
+  uint32 occupants = 5;
 }
 
 // ---------------------------------------------------------------------------
@@ -81,6 +102,10 @@ message WorldDelta {
   uint64 tick = 1;
   repeated PipDelta pips = 2;
   repeated uint64 removed_pip_ids = 3;
+  // Buildings and their occupancy. Sent in full: there are a handful of them,
+  // and a client that missed a delta would otherwise draw a stale headcount
+  // indefinitely.
+  repeated Workplace workplaces = 4;
 }
 
 message PipDelta {
@@ -88,6 +113,9 @@ message PipDelta {
   optional Vec2 position = 2;
   optional PipActivity activity = 3;
   map<int32, int32> needs = 4;
+  // Absent means the pip is outside. The producer sends this field on every
+  // delta, so absence is a fact rather than "unchanged".
+  optional uint64 inside_workplace_id = 5;
 }
 
 // ---------------------------------------------------------------------------
@@ -101,6 +129,7 @@ message SnapshotResponse {
   repeated Pip pips = 2;
   // Hash of the full state. Replay compares this to detect divergence.
   bytes state_hash = 3;
+  repeated Workplace workplaces = 4;
 }
 
 message WatchDeltasRequest {
@@ -122,6 +151,8 @@ message SubmitIntentRequest {
     MoveIntent move = 2;
     SpawnPipIntent spawn = 3;
     ApplyNeedsIntent apply_needs = 4;
+    RegisterWorkplaceIntent register_workplace = 5;
+    EndEmploymentIntent end_employment = 6;
   }
 }
 
@@ -132,9 +163,31 @@ message SubmitIntentResponse {
   uint64 scheduled_tick = 3;
 }
 
+// Records that a workplace has taken a pip on.
+//
+// It does not put the pip at work. The core walks it to the building and lets
+// it in if there is room — hiring is a contract, not a teleport.
 message HireIntent {
   uint64 pip_id = 1;
   uint64 workplace_id = 2;
+}
+
+// The pip no longer works there. Frees its place in the building.
+message EndEmploymentIntent {
+  uint64 pip_id = 1;
+}
+
+// Puts a building on the map, or updates one already there.
+//
+// The core does not invent workplaces — each is a service. The gateway
+// registers them from what `Describe` reports, which is why `capacity` is
+// carried here rather than decided by the core: the number has one owner, and
+// the core only enforces it physically.
+message RegisterWorkplaceIntent {
+  uint64 workplace_id = 1;
+  string kind = 2;
+  Vec2 position = 3;
+  uint32 capacity = 4;
 }
 
 message MoveIntent {

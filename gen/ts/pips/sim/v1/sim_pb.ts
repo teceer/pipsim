@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file pips/sim/v1/sim.proto.
  */
 export const file_pips_sim_v1_sim: GenFile = /*@__PURE__*/
-  fileDesc("ChVwaXBzL3NpbS92MS9zaW0ucHJvdG8SC3BpcHMuc2ltLnYxIigKBFZlYzISDwoHeF9taWxsaRgBIAEoBRIPCgd5X21pbGxpGAIgASgFIogCCgNQaXASCgoCaWQYASABKAQSDAoEbmFtZRgCIAEoCRIjCghwb3NpdGlvbhgDIAEoCzIRLnBpcHMuc2ltLnYxLlZlYzISKgoIYWN0aXZpdHkYBCABKA4yGC5waXBzLnNpbS52MS5QaXBBY3Rpdml0eRIqCgVuZWVkcxgFIAMoCzIbLnBpcHMuc2ltLnYxLlBpcC5OZWVkc0VudHJ5EiIKFWVtcGxveWVyX3dvcmtwbGFjZV9pZBgGIAEoBEgAiAEBGiwKCk5lZWRzRW50cnkSCwoDa2V5GAEgASgFEg0KBXZhbHVlGAIgASgFOgI4AUIYChZfZW1wbG95ZXJfd29ya3BsYWNlX2lkIhsKC1N0ZXBSZXF1ZXN0EgwKBHRpY2sYASABKAQiWwoMU3RlcFJlc3BvbnNlEgwKBHRpY2sYASABKAQSJgoFZGVsdGEYAiABKAsyFy5waXBzLnNpbS52MS5Xb3JsZERlbHRhEhUKDWRvbWFpbl9ldmVudHMYAyADKAwiWAoKV29ybGREZWx0YRIMCgR0aWNrGAEgASgEEiMKBHBpcHMYAiADKAsyFS5waXBzLnNpbS52MS5QaXBEZWx0YRIXCg9yZW1vdmVkX3BpcF9pZHMYAyADKAQi6gEKCFBpcERlbHRhEgoKAmlkGAEgASgEEigKCHBvc2l0aW9uGAIgASgLMhEucGlwcy5zaW0udjEuVmVjMkgAiAEBEi8KCGFjdGl2aXR5GAMgASgOMhgucGlwcy5zaW0udjEuUGlwQWN0aXZpdHlIAYgBARIvCgVuZWVkcxgEIAMoCzIgLnBpcHMuc2ltLnYxLlBpcERlbHRhLk5lZWRzRW50cnkaLAoKTmVlZHNFbnRyeRILCgNrZXkYASABKAUSDQoFdmFsdWUYAiABKAU6AjgBQgsKCV9wb3NpdGlvbkILCglfYWN0aXZpdHkiEQoPU25hcHNob3RSZXF1ZXN0IlQKEFNuYXBzaG90UmVzcG9uc2USDAoEdGljaxgBIAEoBBIeCgRwaXBzGAIgAygLMhAucGlwcy5zaW0udjEuUGlwEhIKCnN0YXRlX2hhc2gYAyABKAwiJwoSV2F0Y2hEZWx0YXNSZXF1ZXN0EhEKCWZyb21fdGljaxgBIAEoBCI9ChNXYXRjaERlbHRhc1Jlc3BvbnNlEiYKBWRlbHRhGAEgASgLMhcucGlwcy5zaW0udjEuV29ybGREZWx0YSLVAQoTU3VibWl0SW50ZW50UmVxdWVzdBInCgRoaXJlGAEgASgLMhcucGlwcy5zaW0udjEuSGlyZUludGVudEgAEicKBG1vdmUYAiABKAsyFy5waXBzLnNpbS52MS5Nb3ZlSW50ZW50SAASLAoFc3Bhd24YAyABKAsyGy5waXBzLnNpbS52MS5TcGF3blBpcEludGVudEgAEjQKC2FwcGx5X25lZWRzGAQgASgLMh0ucGlwcy5zaW0udjEuQXBwbHlOZWVkc0ludGVudEgAQggKBmludGVudCJaChRTdWJtaXRJbnRlbnRSZXNwb25zZRIQCghhY2NlcHRlZBgBIAEoCBIYChByZWplY3Rpb25fcmVhc29uGAIgASgJEhYKDnNjaGVkdWxlZF90aWNrGAMgASgEIjIKCkhpcmVJbnRlbnQSDgoGcGlwX2lkGAEgASgEEhQKDHdvcmtwbGFjZV9pZBgCIAEoBCJECgpNb3ZlSW50ZW50Eg4KBnBpcF9pZBgBIAEoBBImCgtkZXN0aW5hdGlvbhgCIAEoCzIRLnBpcHMuc2ltLnYxLlZlYzIiQwoOU3Bhd25QaXBJbnRlbnQSDAoEbmFtZRgBIAEoCRIjCghwb3NpdGlvbhgCIAEoCzIRLnBpcHMuc2ltLnYxLlZlYzIimQEKEEFwcGx5TmVlZHNJbnRlbnQSDgoGcGlwX2lkGAEgASgEEkIKC25lZWRfZGVsdGFzGAIgAygLMi0ucGlwcy5zaW0udjEuQXBwbHlOZWVkc0ludGVudC5OZWVkRGVsdGFzRW50cnkaMQoPTmVlZERlbHRhc0VudHJ5EgsKA2tleRgBIAEoBRINCgV2YWx1ZRgCIAEoBToCOAEqSwoETmVlZBIUChBORUVEX1VOU1BFQ0lGSUVEEAASDQoJTkVFRF9GT09EEAESDQoJTkVFRF9SRVNUEAISDwoLTkVFRF9TT0NJQUwQAyqqAQoLUGlwQWN0aXZpdHkSHAoYUElQX0FDVElWSVRZX1VOU1BFQ0lGSUVEEAASFQoRUElQX0FDVElWSVRZX0lETEUQARIYChRQSVBfQUNUSVZJVFlfV0FMS0lORxACEhgKFFBJUF9BQ1RJVklUWV9XT1JLSU5HEAMSFwoTUElQX0FDVElWSVRZX0VBVElORxAEEhkKFVBJUF9BQ1RJVklUWV9TTEVFUElORxAFMrsCCgpTaW1TZXJ2aWNlEjsKBFN0ZXASGC5waXBzLnNpbS52MS5TdGVwUmVxdWVzdBoZLnBpcHMuc2ltLnYxLlN0ZXBSZXNwb25zZRJHCghTbmFwc2hvdBIcLnBpcHMuc2ltLnYxLlNuYXBzaG90UmVxdWVzdBodLnBpcHMuc2ltLnYxLlNuYXBzaG90UmVzcG9uc2USUgoLV2F0Y2hEZWx0YXMSHy5waXBzLnNpbS52MS5XYXRjaERlbHRhc1JlcXVlc3QaIC5waXBzLnNpbS52MS5XYXRjaERlbHRhc1Jlc3BvbnNlMAESUwoMU3VibWl0SW50ZW50EiAucGlwcy5zaW0udjEuU3VibWl0SW50ZW50UmVxdWVzdBohLnBpcHMuc2ltLnYxLlN1Ym1pdEludGVudFJlc3BvbnNlQpwBCg9jb20ucGlwcy5zaW0udjFCCFNpbVByb3RvUAFaMWdpdGh1Yi5jb20vdGVjZWVyL3BpcHNpbS9nZW4vZ28vcGlwcy9zaW0vdjE7c2ltdjGiAgNQU1iqAgtQaXBzLlNpbS5WMcoCC1BpcHNcU2ltXFYx4gIXUGlwc1xTaW1cVjFcR1BCTWV0YWRhdGHqAg1QaXBzOjpTaW06OlYxYgZwcm90bzM");
+  fileDesc("ChVwaXBzL3NpbS92MS9zaW0ucHJvdG8SC3BpcHMuc2ltLnYxIigKBFZlYzISDwoHeF9taWxsaRgBIAEoBRIPCgd5X21pbGxpGAIgASgFIsICCgNQaXASCgoCaWQYASABKAQSDAoEbmFtZRgCIAEoCRIjCghwb3NpdGlvbhgDIAEoCzIRLnBpcHMuc2ltLnYxLlZlYzISKgoIYWN0aXZpdHkYBCABKA4yGC5waXBzLnNpbS52MS5QaXBBY3Rpdml0eRIqCgVuZWVkcxgFIAMoCzIbLnBpcHMuc2ltLnYxLlBpcC5OZWVkc0VudHJ5EiIKFWVtcGxveWVyX3dvcmtwbGFjZV9pZBgGIAEoBEgAiAEBEiAKE2luc2lkZV93b3JrcGxhY2VfaWQYByABKARIAYgBARosCgpOZWVkc0VudHJ5EgsKA2tleRgBIAEoBRINCgV2YWx1ZRgCIAEoBToCOAFCGAoWX2VtcGxveWVyX3dvcmtwbGFjZV9pZEIWChRfaW5zaWRlX3dvcmtwbGFjZV9pZCJvCglXb3JrcGxhY2USCgoCaWQYASABKAQSDAoEa2luZBgCIAEoCRIjCghwb3NpdGlvbhgDIAEoCzIRLnBpcHMuc2ltLnYxLlZlYzISEAoIY2FwYWNpdHkYBCABKA0SEQoJb2NjdXBhbnRzGAUgASgNIhsKC1N0ZXBSZXF1ZXN0EgwKBHRpY2sYASABKAQiWwoMU3RlcFJlc3BvbnNlEgwKBHRpY2sYASABKAQSJgoFZGVsdGEYAiABKAsyFy5waXBzLnNpbS52MS5Xb3JsZERlbHRhEhUKDWRvbWFpbl9ldmVudHMYAyADKAwihAEKCldvcmxkRGVsdGESDAoEdGljaxgBIAEoBBIjCgRwaXBzGAIgAygLMhUucGlwcy5zaW0udjEuUGlwRGVsdGESFwoPcmVtb3ZlZF9waXBfaWRzGAMgAygEEioKCndvcmtwbGFjZXMYBCADKAsyFi5waXBzLnNpbS52MS5Xb3JrcGxhY2UipAIKCFBpcERlbHRhEgoKAmlkGAEgASgEEigKCHBvc2l0aW9uGAIgASgLMhEucGlwcy5zaW0udjEuVmVjMkgAiAEBEi8KCGFjdGl2aXR5GAMgASgOMhgucGlwcy5zaW0udjEuUGlwQWN0aXZpdHlIAYgBARIvCgVuZWVkcxgEIAMoCzIgLnBpcHMuc2ltLnYxLlBpcERlbHRhLk5lZWRzRW50cnkSIAoTaW5zaWRlX3dvcmtwbGFjZV9pZBgFIAEoBEgCiAEBGiwKCk5lZWRzRW50cnkSCwoDa2V5GAEgASgFEg0KBXZhbHVlGAIgASgFOgI4AUILCglfcG9zaXRpb25CCwoJX2FjdGl2aXR5QhYKFF9pbnNpZGVfd29ya3BsYWNlX2lkIhEKD1NuYXBzaG90UmVxdWVzdCKAAQoQU25hcHNob3RSZXNwb25zZRIMCgR0aWNrGAEgASgEEh4KBHBpcHMYAiADKAsyEC5waXBzLnNpbS52MS5QaXASEgoKc3RhdGVfaGFzaBgDIAEoDBIqCgp3b3JrcGxhY2VzGAQgAygLMhYucGlwcy5zaW0udjEuV29ya3BsYWNlIicKEldhdGNoRGVsdGFzUmVxdWVzdBIRCglmcm9tX3RpY2sYASABKAQiPQoTV2F0Y2hEZWx0YXNSZXNwb25zZRImCgVkZWx0YRgBIAEoCzIXLnBpcHMuc2ltLnYxLldvcmxkRGVsdGEi1QIKE1N1Ym1pdEludGVudFJlcXVlc3QSJwoEaGlyZRgBIAEoCzIXLnBpcHMuc2ltLnYxLkhpcmVJbnRlbnRIABInCgRtb3ZlGAIgASgLMhcucGlwcy5zaW0udjEuTW92ZUludGVudEgAEiwKBXNwYXduGAMgASgLMhsucGlwcy5zaW0udjEuU3Bhd25QaXBJbnRlbnRIABI0CgthcHBseV9uZWVkcxgEIAEoCzIdLnBpcHMuc2ltLnYxLkFwcGx5TmVlZHNJbnRlbnRIABJCChJyZWdpc3Rlcl93b3JrcGxhY2UYBSABKAsyJC5waXBzLnNpbS52MS5SZWdpc3RlcldvcmtwbGFjZUludGVudEgAEjoKDmVuZF9lbXBsb3ltZW50GAYgASgLMiAucGlwcy5zaW0udjEuRW5kRW1wbG95bWVudEludGVudEgAQggKBmludGVudCJaChRTdWJtaXRJbnRlbnRSZXNwb25zZRIQCghhY2NlcHRlZBgBIAEoCBIYChByZWplY3Rpb25fcmVhc29uGAIgASgJEhYKDnNjaGVkdWxlZF90aWNrGAMgASgEIjIKCkhpcmVJbnRlbnQSDgoGcGlwX2lkGAEgASgEEhQKDHdvcmtwbGFjZV9pZBgCIAEoBCIlChNFbmRFbXBsb3ltZW50SW50ZW50Eg4KBnBpcF9pZBgBIAEoBCJ0ChdSZWdpc3RlcldvcmtwbGFjZUludGVudBIUCgx3b3JrcGxhY2VfaWQYASABKAQSDAoEa2luZBgCIAEoCRIjCghwb3NpdGlvbhgDIAEoCzIRLnBpcHMuc2ltLnYxLlZlYzISEAoIY2FwYWNpdHkYBCABKA0iRAoKTW92ZUludGVudBIOCgZwaXBfaWQYASABKAQSJgoLZGVzdGluYXRpb24YAiABKAsyES5waXBzLnNpbS52MS5WZWMyIkMKDlNwYXduUGlwSW50ZW50EgwKBG5hbWUYASABKAkSIwoIcG9zaXRpb24YAiABKAsyES5waXBzLnNpbS52MS5WZWMyIpkBChBBcHBseU5lZWRzSW50ZW50Eg4KBnBpcF9pZBgBIAEoBBJCCgtuZWVkX2RlbHRhcxgCIAMoCzItLnBpcHMuc2ltLnYxLkFwcGx5TmVlZHNJbnRlbnQuTmVlZERlbHRhc0VudHJ5GjEKD05lZWREZWx0YXNFbnRyeRILCgNrZXkYASABKAUSDQoFdmFsdWUYAiABKAU6AjgBKksKBE5lZWQSFAoQTkVFRF9VTlNQRUNJRklFRBAAEg0KCU5FRURfRk9PRBABEg0KCU5FRURfUkVTVBACEg8KC05FRURfU09DSUFMEAMqxgEKC1BpcEFjdGl2aXR5EhwKGFBJUF9BQ1RJVklUWV9VTlNQRUNJRklFRBAAEhUKEVBJUF9BQ1RJVklUWV9JRExFEAESGAoUUElQX0FDVElWSVRZX1dBTEtJTkcQAhIYChRQSVBfQUNUSVZJVFlfV09SS0lORxADEhcKE1BJUF9BQ1RJVklUWV9FQVRJTkcQBBIZChVQSVBfQUNUSVZJVFlfU0xFRVBJTkcQBRIaChZQSVBfQUNUSVZJVFlfQ09NTVVUSU5HEAYyuwIKClNpbVNlcnZpY2USOwoEU3RlcBIYLnBpcHMuc2ltLnYxLlN0ZXBSZXF1ZXN0GhkucGlwcy5zaW0udjEuU3RlcFJlc3BvbnNlEkcKCFNuYXBzaG90EhwucGlwcy5zaW0udjEuU25hcHNob3RSZXF1ZXN0Gh0ucGlwcy5zaW0udjEuU25hcHNob3RSZXNwb25zZRJSCgtXYXRjaERlbHRhcxIfLnBpcHMuc2ltLnYxLldhdGNoRGVsdGFzUmVxdWVzdBogLnBpcHMuc2ltLnYxLldhdGNoRGVsdGFzUmVzcG9uc2UwARJTCgxTdWJtaXRJbnRlbnQSIC5waXBzLnNpbS52MS5TdWJtaXRJbnRlbnRSZXF1ZXN0GiEucGlwcy5zaW0udjEuU3VibWl0SW50ZW50UmVzcG9uc2VCnAEKD2NvbS5waXBzLnNpbS52MUIIU2ltUHJvdG9QAVoxZ2l0aHViLmNvbS90ZWNlZXIvcGlwc2ltL2dlbi9nby9waXBzL3NpbS92MTtzaW12MaICA1BTWKoCC1BpcHMuU2ltLlYxygILUGlwc1xTaW1cVjHiAhdQaXBzXFNpbVxWMVxHUEJNZXRhZGF0YeoCDVBpcHM6OlNpbTo6VjFiBnByb3RvMw");
 
 /**
  * @generated from message pips.sim.v1.Vec2
@@ -69,6 +69,15 @@ export type Pip = Message<"pips.sim.v1.Pip"> & {
    * @generated from field: optional uint64 employer_workplace_id = 6;
    */
   employerWorkplaceId?: bigint | undefined;
+
+  /**
+   * Which building the pip is physically standing in, which is NOT the same as
+   * who employs it: a hired pip is outside for the whole walk there, and stays
+   * outside if it arrives to a full building.
+   *
+   * @generated from field: optional uint64 inside_workplace_id = 7;
+   */
+  insideWorkplaceId?: bigint | undefined;
 };
 
 /**
@@ -77,6 +86,51 @@ export type Pip = Message<"pips.sim.v1.Pip"> & {
  */
 export const PipSchema: GenMessage<Pip> = /*@__PURE__*/
   messageDesc(file_pips_sim_v1_sim, 1);
+
+/**
+ * A building on the map, as the simulation sees it.
+ *
+ * Distinct from pips.workplace.v1.DescribeResponse, which is how the *service*
+ * describes itself. This is the physical object: where it stands, how many
+ * bodies fit inside, and how many are in there now. `capacity` is a copy of the
+ * workplace's own `max_workers` — the gateway registers it, so the number keeps
+ * one owner and the core only enforces it.
+ *
+ * @generated from message pips.sim.v1.Workplace
+ */
+export type Workplace = Message<"pips.sim.v1.Workplace"> & {
+  /**
+   * @generated from field: uint64 id = 1;
+   */
+  id: bigint;
+
+  /**
+   * @generated from field: string kind = 2;
+   */
+  kind: string;
+
+  /**
+   * @generated from field: pips.sim.v1.Vec2 position = 3;
+   */
+  position?: Vec2 | undefined;
+
+  /**
+   * @generated from field: uint32 capacity = 4;
+   */
+  capacity: number;
+
+  /**
+   * @generated from field: uint32 occupants = 5;
+   */
+  occupants: number;
+};
+
+/**
+ * Describes the message pips.sim.v1.Workplace.
+ * Use `create(WorkplaceSchema)` to create a new message.
+ */
+export const WorkplaceSchema: GenMessage<Workplace> = /*@__PURE__*/
+  messageDesc(file_pips_sim_v1_sim, 2);
 
 /**
  * @generated from message pips.sim.v1.StepRequest
@@ -96,7 +150,7 @@ export type StepRequest = Message<"pips.sim.v1.StepRequest"> & {
  * Use `create(StepRequestSchema)` to create a new message.
  */
 export const StepRequestSchema: GenMessage<StepRequest> = /*@__PURE__*/
-  messageDesc(file_pips_sim_v1_sim, 2);
+  messageDesc(file_pips_sim_v1_sim, 3);
 
 /**
  * @generated from message pips.sim.v1.StepResponse
@@ -126,7 +180,7 @@ export type StepResponse = Message<"pips.sim.v1.StepResponse"> & {
  * Use `create(StepResponseSchema)` to create a new message.
  */
 export const StepResponseSchema: GenMessage<StepResponse> = /*@__PURE__*/
-  messageDesc(file_pips_sim_v1_sim, 3);
+  messageDesc(file_pips_sim_v1_sim, 4);
 
 /**
  * @generated from message pips.sim.v1.WorldDelta
@@ -146,6 +200,15 @@ export type WorldDelta = Message<"pips.sim.v1.WorldDelta"> & {
    * @generated from field: repeated uint64 removed_pip_ids = 3;
    */
   removedPipIds: bigint[];
+
+  /**
+   * Buildings and their occupancy. Sent in full: there are a handful of them,
+   * and a client that missed a delta would otherwise draw a stale headcount
+   * indefinitely.
+   *
+   * @generated from field: repeated pips.sim.v1.Workplace workplaces = 4;
+   */
+  workplaces: Workplace[];
 };
 
 /**
@@ -153,7 +216,7 @@ export type WorldDelta = Message<"pips.sim.v1.WorldDelta"> & {
  * Use `create(WorldDeltaSchema)` to create a new message.
  */
 export const WorldDeltaSchema: GenMessage<WorldDelta> = /*@__PURE__*/
-  messageDesc(file_pips_sim_v1_sim, 4);
+  messageDesc(file_pips_sim_v1_sim, 5);
 
 /**
  * @generated from message pips.sim.v1.PipDelta
@@ -178,6 +241,14 @@ export type PipDelta = Message<"pips.sim.v1.PipDelta"> & {
    * @generated from field: map<int32, int32> needs = 4;
    */
   needs: { [key: number]: number };
+
+  /**
+   * Absent means the pip is outside. The producer sends this field on every
+   * delta, so absence is a fact rather than "unchanged".
+   *
+   * @generated from field: optional uint64 inside_workplace_id = 5;
+   */
+  insideWorkplaceId?: bigint | undefined;
 };
 
 /**
@@ -185,7 +256,7 @@ export type PipDelta = Message<"pips.sim.v1.PipDelta"> & {
  * Use `create(PipDeltaSchema)` to create a new message.
  */
 export const PipDeltaSchema: GenMessage<PipDelta> = /*@__PURE__*/
-  messageDesc(file_pips_sim_v1_sim, 5);
+  messageDesc(file_pips_sim_v1_sim, 6);
 
 /**
  * @generated from message pips.sim.v1.SnapshotRequest
@@ -198,7 +269,7 @@ export type SnapshotRequest = Message<"pips.sim.v1.SnapshotRequest"> & {
  * Use `create(SnapshotRequestSchema)` to create a new message.
  */
 export const SnapshotRequestSchema: GenMessage<SnapshotRequest> = /*@__PURE__*/
-  messageDesc(file_pips_sim_v1_sim, 6);
+  messageDesc(file_pips_sim_v1_sim, 7);
 
 /**
  * @generated from message pips.sim.v1.SnapshotResponse
@@ -220,6 +291,11 @@ export type SnapshotResponse = Message<"pips.sim.v1.SnapshotResponse"> & {
    * @generated from field: bytes state_hash = 3;
    */
   stateHash: Uint8Array;
+
+  /**
+   * @generated from field: repeated pips.sim.v1.Workplace workplaces = 4;
+   */
+  workplaces: Workplace[];
 };
 
 /**
@@ -227,7 +303,7 @@ export type SnapshotResponse = Message<"pips.sim.v1.SnapshotResponse"> & {
  * Use `create(SnapshotResponseSchema)` to create a new message.
  */
 export const SnapshotResponseSchema: GenMessage<SnapshotResponse> = /*@__PURE__*/
-  messageDesc(file_pips_sim_v1_sim, 7);
+  messageDesc(file_pips_sim_v1_sim, 8);
 
 /**
  * @generated from message pips.sim.v1.WatchDeltasRequest
@@ -246,7 +322,7 @@ export type WatchDeltasRequest = Message<"pips.sim.v1.WatchDeltasRequest"> & {
  * Use `create(WatchDeltasRequestSchema)` to create a new message.
  */
 export const WatchDeltasRequestSchema: GenMessage<WatchDeltasRequest> = /*@__PURE__*/
-  messageDesc(file_pips_sim_v1_sim, 8);
+  messageDesc(file_pips_sim_v1_sim, 9);
 
 /**
  * A thin envelope around WorldDelta rather than streaming the delta directly.
@@ -268,7 +344,7 @@ export type WatchDeltasResponse = Message<"pips.sim.v1.WatchDeltasResponse"> & {
  * Use `create(WatchDeltasResponseSchema)` to create a new message.
  */
 export const WatchDeltasResponseSchema: GenMessage<WatchDeltasResponse> = /*@__PURE__*/
-  messageDesc(file_pips_sim_v1_sim, 9);
+  messageDesc(file_pips_sim_v1_sim, 10);
 
 /**
  * @generated from message pips.sim.v1.SubmitIntentRequest
@@ -301,6 +377,18 @@ export type SubmitIntentRequest = Message<"pips.sim.v1.SubmitIntentRequest"> & {
      */
     value: ApplyNeedsIntent;
     case: "applyNeeds";
+  } | {
+    /**
+     * @generated from field: pips.sim.v1.RegisterWorkplaceIntent register_workplace = 5;
+     */
+    value: RegisterWorkplaceIntent;
+    case: "registerWorkplace";
+  } | {
+    /**
+     * @generated from field: pips.sim.v1.EndEmploymentIntent end_employment = 6;
+     */
+    value: EndEmploymentIntent;
+    case: "endEmployment";
   } | { case: undefined; value?: undefined };
 };
 
@@ -309,7 +397,7 @@ export type SubmitIntentRequest = Message<"pips.sim.v1.SubmitIntentRequest"> & {
  * Use `create(SubmitIntentRequestSchema)` to create a new message.
  */
 export const SubmitIntentRequestSchema: GenMessage<SubmitIntentRequest> = /*@__PURE__*/
-  messageDesc(file_pips_sim_v1_sim, 10);
+  messageDesc(file_pips_sim_v1_sim, 11);
 
 /**
  * @generated from message pips.sim.v1.SubmitIntentResponse
@@ -338,9 +426,14 @@ export type SubmitIntentResponse = Message<"pips.sim.v1.SubmitIntentResponse"> &
  * Use `create(SubmitIntentResponseSchema)` to create a new message.
  */
 export const SubmitIntentResponseSchema: GenMessage<SubmitIntentResponse> = /*@__PURE__*/
-  messageDesc(file_pips_sim_v1_sim, 11);
+  messageDesc(file_pips_sim_v1_sim, 12);
 
 /**
+ * Records that a workplace has taken a pip on.
+ *
+ * It does not put the pip at work. The core walks it to the building and lets
+ * it in if there is room — hiring is a contract, not a teleport.
+ *
  * @generated from message pips.sim.v1.HireIntent
  */
 export type HireIntent = Message<"pips.sim.v1.HireIntent"> & {
@@ -360,7 +453,65 @@ export type HireIntent = Message<"pips.sim.v1.HireIntent"> & {
  * Use `create(HireIntentSchema)` to create a new message.
  */
 export const HireIntentSchema: GenMessage<HireIntent> = /*@__PURE__*/
-  messageDesc(file_pips_sim_v1_sim, 12);
+  messageDesc(file_pips_sim_v1_sim, 13);
+
+/**
+ * The pip no longer works there. Frees its place in the building.
+ *
+ * @generated from message pips.sim.v1.EndEmploymentIntent
+ */
+export type EndEmploymentIntent = Message<"pips.sim.v1.EndEmploymentIntent"> & {
+  /**
+   * @generated from field: uint64 pip_id = 1;
+   */
+  pipId: bigint;
+};
+
+/**
+ * Describes the message pips.sim.v1.EndEmploymentIntent.
+ * Use `create(EndEmploymentIntentSchema)` to create a new message.
+ */
+export const EndEmploymentIntentSchema: GenMessage<EndEmploymentIntent> = /*@__PURE__*/
+  messageDesc(file_pips_sim_v1_sim, 14);
+
+/**
+ * Puts a building on the map, or updates one already there.
+ *
+ * The core does not invent workplaces — each is a service. The gateway
+ * registers them from what `Describe` reports, which is why `capacity` is
+ * carried here rather than decided by the core: the number has one owner, and
+ * the core only enforces it physically.
+ *
+ * @generated from message pips.sim.v1.RegisterWorkplaceIntent
+ */
+export type RegisterWorkplaceIntent = Message<"pips.sim.v1.RegisterWorkplaceIntent"> & {
+  /**
+   * @generated from field: uint64 workplace_id = 1;
+   */
+  workplaceId: bigint;
+
+  /**
+   * @generated from field: string kind = 2;
+   */
+  kind: string;
+
+  /**
+   * @generated from field: pips.sim.v1.Vec2 position = 3;
+   */
+  position?: Vec2 | undefined;
+
+  /**
+   * @generated from field: uint32 capacity = 4;
+   */
+  capacity: number;
+};
+
+/**
+ * Describes the message pips.sim.v1.RegisterWorkplaceIntent.
+ * Use `create(RegisterWorkplaceIntentSchema)` to create a new message.
+ */
+export const RegisterWorkplaceIntentSchema: GenMessage<RegisterWorkplaceIntent> = /*@__PURE__*/
+  messageDesc(file_pips_sim_v1_sim, 15);
 
 /**
  * @generated from message pips.sim.v1.MoveIntent
@@ -382,7 +533,7 @@ export type MoveIntent = Message<"pips.sim.v1.MoveIntent"> & {
  * Use `create(MoveIntentSchema)` to create a new message.
  */
 export const MoveIntentSchema: GenMessage<MoveIntent> = /*@__PURE__*/
-  messageDesc(file_pips_sim_v1_sim, 13);
+  messageDesc(file_pips_sim_v1_sim, 16);
 
 /**
  * @generated from message pips.sim.v1.SpawnPipIntent
@@ -404,7 +555,7 @@ export type SpawnPipIntent = Message<"pips.sim.v1.SpawnPipIntent"> & {
  * Use `create(SpawnPipIntentSchema)` to create a new message.
  */
 export const SpawnPipIntentSchema: GenMessage<SpawnPipIntent> = /*@__PURE__*/
-  messageDesc(file_pips_sim_v1_sim, 14);
+  messageDesc(file_pips_sim_v1_sim, 17);
 
 /**
  * The effect of work on a pip, handed back by a workplace.
@@ -434,7 +585,7 @@ export type ApplyNeedsIntent = Message<"pips.sim.v1.ApplyNeedsIntent"> & {
  * Use `create(ApplyNeedsIntentSchema)` to create a new message.
  */
 export const ApplyNeedsIntentSchema: GenMessage<ApplyNeedsIntent> = /*@__PURE__*/
-  messageDesc(file_pips_sim_v1_sim, 15);
+  messageDesc(file_pips_sim_v1_sim, 18);
 
 /**
  * @generated from enum pips.sim.v1.Need
@@ -500,6 +651,13 @@ export enum PipActivity {
    * @generated from enum value: PIP_ACTIVITY_SLEEPING = 5;
    */
   SLEEPING = 5,
+
+  /**
+   * Employed but not inside yet — walking to work, or queuing at a full door.
+   *
+   * @generated from enum value: PIP_ACTIVITY_COMMUTING = 6;
+   */
+  COMMUTING = 6,
 }
 
 /**
