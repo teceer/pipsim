@@ -63,6 +63,7 @@ shared schema, and OpenTelemetry spans named `pipsim.<service>.<operation>`.
 
 ```bash
 make dev        # compose.dev.yaml — platform + services locally, no k8s
+make reset      # drop the world — volumes included — and bring it back empty
 make infra-up   # k3d + terraform (00 -> 10 -> 20)
 tilt up         # hot reload on the cluster
 make e2e        # bring everything up, run 60s of simulation, assert world state

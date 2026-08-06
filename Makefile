@@ -84,6 +84,27 @@ dev:
 dev-platform:
 	docker compose -f compose.dev.yaml up -d redpanda rabbitmq redis postgres
 
+## reset: throw the world away and bring it back up from nothing
+#
+# Restarting a service is not a reset. sim-core and broadcast hold the world in
+# memory and do come back empty, but the durable half does not: the ledger sits
+# in postgres, the fact log in redpanda, the delayed jobs in redis. Restart only
+# those two and the pips wake up in a fresh world still holding last run's
+# money, with construction timers firing for buildings that no longer exist.
+#
+# compose.dev.yaml declares no named volumes, so that state lives in anonymous
+# ones — `down` alone keeps them and `-v` is what actually clears them. The
+# profile has to be repeated here or `down` leaves the service containers
+# standing; --remove-orphans catches services deleted from compose since the
+# last run, which is exactly what a post-merge reset runs into.
+#
+# Reach for this after a change to proto/ or to a database schema: the old
+# events in the log may not deserialize under the new contract, and
+# world-gateway reads that log from the beginning.
+reset:
+	docker compose -f compose.dev.yaml --profile services down -v --remove-orphans
+	$(MAKE) dev
+
 # --- infrastructure ---------------------------------------------------------
 # The ordering is mandatory: the Kafka provider needs a running Kafka to
 # initialize, so this cannot be a single apply.
@@ -159,5 +180,5 @@ parity:
 replay:
 	go run ./tools/replay -from-beginning
 
-.PHONY: help test lint build gen gen-check proto-lint dev dev-platform \
+.PHONY: help test lint build gen gen-check proto-lint dev dev-platform reset \
         infra-up infra-down infra-plan infra-forward infra-recreate e2e parity replay
