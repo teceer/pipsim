@@ -9,11 +9,14 @@ image:
 workplace:
   # 1 is the farm. Ids are configuration until BuildWorkplace exists.
   id: 2
-  # Milli-tiles, inside the world bounds sim declares. Deliberately far from the
+  # Named in full because YAML 1.1 — which Helm parses — reads a bare `y`
+  # key as the boolean true. The farm carried that bug silently for weeks:
+  # WORKPLACE_Y rendered empty and Go fell back to a default that happened
+  # to match, so nothing looked wrong. Deliberately far from the
   # farm: the commute is the point, and two buildings on top of each other would
   # hide whether pips actually walk to the one that hired them.
-  x: 32000
-  y: 20000
+  xMilli: 32000
+  yMilli: 20000
 
 platformNamespace: pipsim-platform
 

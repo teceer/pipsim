@@ -105,6 +105,9 @@ defmodule Tavern.ShiftsTest do
     %{needs: needs} = Shifts.effects(1)
     assert needs[3] > 0, "social"
     assert needs[2] > 0, "rest"
-    assert needs[1] < 0, "food — drinking is not eating"
+    # Positive, but smaller than the farm's +5. The trade is real — worse for
+    # food, better for everything else — rather than fatal, which is what -1
+    # turned out to be against a working pip's 2-per-tick drain.
+    assert needs[1] > 0 and needs[1] < 5, "food"
   end
 end

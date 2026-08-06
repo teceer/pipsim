@@ -55,10 +55,27 @@ defmodule Tavern.Application do
 
   defp port, do: env_int("PORT", 8090)
 
+  # An unset variable and one set to the empty string mean the same thing here.
+  # They did not, once: a Helm template rendered WORKPLACE_Y empty and this
+  # crashed the release on boot, where the Go services had been quietly falling
+  # back to a default for weeks and hiding the same bug.
   defp env_int(key, default) do
     case System.get_env(key) do
-      nil -> default
-      value -> String.to_integer(value)
+      nil ->
+        default
+
+      "" ->
+        default
+
+      value ->
+        case Integer.parse(value) do
+          {n, ""} ->
+            n
+
+          _ ->
+            Logger.warning("ignoring unparseable value", key: key, value: value)
+            default
+        end
     end
   end
 end

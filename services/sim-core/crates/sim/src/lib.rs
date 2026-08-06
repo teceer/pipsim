@@ -26,6 +26,11 @@ pub type Milli = i32;
 pub const NEED_MAX: i32 = 1000;
 pub const FOOD_HUNGRY_THRESHOLD: i32 = 300;
 
+/// One point of social is lost every this many ticks. At 10 Hz that is a full
+/// bar in a little over an hour of wall clock — slow enough to be background,
+/// fast enough that a tavern shift is worth walking to.
+pub const SOCIAL_DECAY_EVERY: u64 = 4;
+
 /// World bounds in milli-tiles. The renderer's grid must match these, or pips
 /// will walk off the drawn area.
 pub const WORLD_W_MILLI: Milli = 48_000;
@@ -440,6 +445,17 @@ impl World {
             };
             self.needs[i].food -= drain;
 
+            // Company wears off. Slowly, and it never kills anyone — this is
+            // not a second way to die, it is what gives the tavern a purpose.
+            //
+            // Added when the tavern went live and the measurement was
+            // embarrassing: every pip sat at the maximum forever, because
+            // nothing in the world consumed the need the tavern exists to
+            // restore. Its only measurable effect was the food it cost.
+            if self.tick.is_multiple_of(SOCIAL_DECAY_EVERY) {
+                self.needs[i].social = (self.needs[i].social - 1).max(0);
+            }
+
             if self.needs[i].food <= 0 {
                 died.push(i);
                 continue;
@@ -797,6 +813,38 @@ mod tests {
         }
 
         assert_eq!(w.len(), 1, "a regularly fed pip should still be alive");
+    }
+
+    /// The tavern is only worth walking to if company runs out.
+    ///
+    /// This pins a real measurement rather than a hypothetical: with the tavern
+    /// deployed and nothing consuming social, every pip sat at 1000 forever and
+    /// the workplace's whole purpose was decorative.
+    #[test]
+    fn company_wears_off_but_never_kills() {
+        let mut w = World::new(31);
+        w.step(&spawn(1));
+        let before = w.needs[0].social;
+
+        for _ in 0..400 {
+            w.step(&[]);
+        }
+
+        assert!(
+            w.needs[0].social < before,
+            "social never decayed, so nothing in the world needs a tavern"
+        );
+        assert_eq!(w.len(), 1, "social must not be a second way to die");
+
+        // And a tavern shift puts it back.
+        let drained = w.needs[0].social;
+        w.step(&[Intent::ApplyNeeds {
+            pip: 1,
+            food: 0,
+            rest: 0,
+            social: 200,
+        }]);
+        assert!(w.needs[0].social > drained);
     }
 
     // --- buildings ----------------------------------------------------------
