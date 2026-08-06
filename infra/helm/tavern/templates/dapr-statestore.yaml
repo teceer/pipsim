@@ -1,19 +1,21 @@
 {{- if .Values.dapr.enabled }}
-# The actor state store.
+# The tavern's actor state store.
 #
-# Points at the same Redis the plain store used, so turning Dapr on does not
-# introduce a new dependency — it changes how an existing one is reached.
+# Its own component rather than the farm's, and scoped to this app. Dapr
+# components are namespace-wide by default, so two workplaces both shipping an
+# unscoped `statestore` would fight over one name; `scopes` says which app-id
+# each belongs to and removes the question.
 #
 # `actorStateStore: "true"` is the whole difference between a general state
 # store and one actors may use. Without it the sidecar starts, registers the
 # entity, and then fails every write with a message about the actor instance
-# being missing, which reads like a routing problem and is not.
+# being missing — which reads like a routing problem and is not.
 apiVersion: dapr.io/v1alpha1
 kind: Component
 metadata:
-  name: statestore-farm
+  name: statestore-tavern
   labels:
-    app.kubernetes.io/name: farm
+    app.kubernetes.io/name: tavern
     app.kubernetes.io/part-of: pipsim
 spec:
   type: state.redis
@@ -25,10 +27,6 @@ spec:
       value: ""
     - name: actorStateStore
       value: "true"
-# Scoped, because Dapr components are namespace-wide by default and every
-# workplace chart ships one. Two unscoped components both claiming to be the
-# actor state store is ambiguous; naming them apart and saying who each is for
-# is not.
 scopes:
-  - farm
+  - tavern
 {{- end }}

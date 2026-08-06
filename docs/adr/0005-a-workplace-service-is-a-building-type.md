@@ -253,5 +253,37 @@ bought: turn-based concurrency per building id, so the atomic reap-check-claim t
 
    Off by default in the chart (`dapr.enabled`), because it needs the control plane
    installed and the chart must stand up without one.
-5. **`tavern` in Elixir** against the hand-written actor contract — the test of whether the
-   polyglot claim survives without an SDK.
+5. ~~**`tavern` in Elixir** against the hand-written actor contract~~ — done. The claim
+   survives.
+
+   `Tavern.Dapr` is the whole integration: about 170 lines and **no new dependency**,
+   because `:httpc` ships with OTP. Three HTTP calls, one JSON body declaring the entity,
+   and two routes on a `Plug` that already existed. Conformance 6/6 through the actors with
+   two taverns, and 3 and 2 occupants survived killing both the release and the sidecar
+   container.
+
+   So the answer to "does a building type stay an hour of work in any language once Dapr is
+   in the picture" is yes — and notably, the language without an SDK needed *less* glue than
+   the one with one, because Go's SDK was never used either and the hand-written path is
+   simply what both do.
+
+   Three things cost real time and are worth carrying forward:
+
+   - **The sidecar calls the app with `PUT`.** A caller invokes an actor with `POST`; the
+     callback into the app is `PUT`. The Go host never noticed because its handler ignored
+     the verb; Elixir pattern-matched on `POST` and returned 404, which Dapr reports back as
+     `ERR_ACTOR_INVOKE_METHOD` "actor method not found" — indistinguishable, from the
+     caller's side, from an entity that was never registered.
+   - **Persisted lease time must be wall clock.** `System.monotonic_time/1` is right for
+     state that dies with the process and wrong the moment it is written down: a lease
+     stored before a restart is compared against a reading taken after one. Caught before
+     it ran, but only because the durability test was already the acceptance criterion.
+   - **Dapr components are namespace-wide.** Two workplace charts each shipping an unscoped
+     `statestore` collide. Both are now named apart and carry `scopes`.
+
+   And one thing worth stating plainly, because it is the honest cost of this ADR: a
+   `GenServer` per building under a `DynamicSupervisor` already *is* the actor model, and it
+   is better than Dapr at everything except surviving the node — 2 KiB per building,
+   microsecond activation, no network hop, real crash isolation. What Dapr buys the tavern
+   is placement, and it charges a sidecar round trip for it. For the farm that trade is
+   clear, because Go had nothing equivalent. For the tavern it is a trade, not an upgrade.

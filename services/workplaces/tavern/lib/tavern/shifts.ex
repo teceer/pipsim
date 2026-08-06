@@ -67,7 +67,23 @@ defmodule Tavern.Shifts do
   defmodule Shift do
     @moduledoc false
     defstruct [:started_tick, :last_work_tick, :last_work_ms]
+
+    @type t :: %__MODULE__{
+            started_tick: non_neg_integer(),
+            last_work_tick: non_neg_integer(),
+            last_work_ms: integer()
+          }
   end
+
+  alias Tavern.ShiftSet
+
+  @doc "The knobs the rules need, so ShiftSet does not have to know the tavern."
+  def rules,
+    do: [
+      max_workers: @max_workers,
+      lease_ms: @shift_lease_ms,
+      max_ticks_per_work: @max_ticks_per_work
+    ]
 
   def max_workers, do: @max_workers
   def shift_lease_ms, do: @shift_lease_ms
@@ -111,55 +127,34 @@ defmodule Tavern.Shifts do
 
   @impl true
   def handle_call({:claim, pip, tick}, _from, state) do
-    state = reap(state)
+    case ShiftSet.claim(state.shifts, pip, tick, state.clock.(), rules()) do
+      {:ok, shifts, expired} ->
+        log_expired(expired)
+        {:reply, :ok, %{state | shifts: shifts}}
 
-    cond do
-      Map.has_key?(state.shifts, pip) ->
-        {:reply, {:error, "already on shift here"}, state}
-
-      map_size(state.shifts) >= @max_workers ->
-        {:reply, {:error, "no free seats"}, state}
-
-      true ->
-        shift = %Shift{started_tick: tick, last_work_tick: tick, last_work_ms: state.clock.()}
-        {:reply, :ok, put_in(state.shifts[pip], shift)}
+      {:error, reason, shifts, expired} ->
+        log_expired(expired)
+        {:reply, {:error, reason}, %{state | shifts: shifts}}
     end
   end
 
   def handle_call({:touch, pip, tick}, _from, state) do
-    case state.shifts[pip] do
-      nil ->
-        {:reply, :not_on_shift, state}
-
-      %Shift{} = shift ->
-        elapsed = min(max(tick - shift.last_work_tick, 0), @max_ticks_per_work)
-
-        updated = %Shift{
-          shift
-          | last_work_tick: tick,
-            last_work_ms: state.clock.()
-        }
-
-        {:reply, {:ok, elapsed}, put_in(state.shifts[pip], updated)}
+    case ShiftSet.touch(state.shifts, pip, tick, state.clock.(), rules()) do
+      :not_on_shift -> {:reply, :not_on_shift, state}
+      {:ok, elapsed, shifts} -> {:reply, {:ok, elapsed}, %{state | shifts: shifts}}
     end
   end
 
   def handle_call({:release, pip}, _from, state) do
-    case Map.pop(state.shifts, pip) do
-      {nil, _} -> {:reply, :not_on_shift, state}
-      {shift, rest} -> {:reply, {:ok, shift.started_tick}, %{state | shifts: rest}}
+    case ShiftSet.release(state.shifts, pip) do
+      :not_on_shift -> {:reply, :not_on_shift, state}
+      {:ok, started, shifts} -> {:reply, {:ok, started}, %{state | shifts: shifts}}
     end
   end
 
   def handle_call(:count, _from, state), do: {:reply, map_size(state.shifts), state}
 
-  defp reap(state) do
-    now = state.clock.()
-
-    {kept, dropped} =
-      Enum.split_with(state.shifts, fn {_pip, s} -> now - s.last_work_ms <= @shift_lease_ms end)
-
-    Enum.each(dropped, fn {pip, _} -> Logger.info("shift lease expired", pip: pip) end)
-    %{state | shifts: Map.new(kept)}
+  defp log_expired(pips) do
+    Enum.each(pips, fn pip -> Logger.info("shift lease expired", pip: pip) end)
   end
 end

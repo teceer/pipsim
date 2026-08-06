@@ -8,20 +8,51 @@ defmodule Tavern.Application do
   def start(_type, _args) do
     load_config()
 
-    children = [{Tavern.Shifts, name: Tavern.Shifts}] ++ server() ++ offers()
+    children = shift_state() ++ server() ++ offers()
 
     Logger.info("tavern listening",
       port: port(),
-      workplace_id: Application.fetch_env!(:tavern, :workplace_id),
+      buildings: Enum.map(buildings(), & &1.id),
+      store: inspect(Application.fetch_env!(:tavern, :store)),
       max_workers: Tavern.Shifts.max_workers()
     )
 
     Supervisor.start_link(children, strategy: :one_for_one, name: Tavern.Supervisor)
   end
 
+  # A GenServer per building, addressed through a Registry — or nothing at all
+  # under Dapr, where the state lives in the actor store and the sidecar
+  # provides the exclusion the process was providing.
+  #
+  # Worth noticing what is being replaced. A process per building under a
+  # supervisor *is* the actor model, and it is better at everything except the
+  # one thing that matters here: it dies with the node. Dapr buys placement,
+  # and pays a round trip for it.
+  defp shift_state do
+    case Application.fetch_env!(:tavern, :store) do
+      Tavern.Store.Dapr ->
+        []
+
+      Tavern.Store.Process ->
+        [{Registry, keys: :unique, name: Tavern.Store.Process.registry()}] ++
+          Enum.map(buildings(), fn b ->
+            Supervisor.child_spec(
+              {Tavern.Shifts, name: Tavern.Store.Process.via(b.id)},
+              id: {Tavern.Shifts, b.id}
+            )
+          end)
+    end
+  end
+
   defp server do
     if Application.get_env(:tavern, :start_server, true) do
-      [{Bandit, plug: {Tavern.Connect, handler: Tavern.Workplace}, port: port(), scheme: :http}]
+      handler =
+        case Application.fetch_env!(:tavern, :store) do
+          Tavern.Store.Dapr -> Tavern.Workplace.Actor
+          Tavern.Store.Process -> Tavern.Workplace
+        end
+
+      [{Bandit, plug: {Tavern.Connect, handler: handler}, port: port(), scheme: :http}]
     else
       []
     end
@@ -44,14 +75,20 @@ defmodule Tavern.Application do
     end
   end
 
-  # Position and id are configuration for now, exactly as they are for the farm.
-  # Once BuildWorkplace works, both arrive from the player action that created
-  # the building.
+  # Ids and positions are configuration for now, exactly as they are for the
+  # farm. Once BuildWorkplace works, both arrive from the player action that
+  # created the building.
+  #
+  # The store is chosen by whether a sidecar injected DAPR_HTTP_PORT, so there
+  # is no separate flag to fall out of step with reality.
   defp load_config do
-    Application.put_env(:tavern, :workplace_id, env_int("WORKPLACE_ID", 2))
-    Application.put_env(:tavern, :x, env_int("WORKPLACE_X", 32_000))
-    Application.put_env(:tavern, :y, env_int("WORKPLACE_Y", 20_000))
+    Application.put_env(:tavern, :buildings, Tavern.Buildings.load())
+
+    store = if Tavern.Dapr.sidecar(), do: Tavern.Store.Dapr, else: Tavern.Store.Process
+    Application.put_env(:tavern, :store, store)
   end
+
+  defp buildings, do: Application.fetch_env!(:tavern, :buildings)
 
   defp port, do: env_int("PORT", 8090)
 
