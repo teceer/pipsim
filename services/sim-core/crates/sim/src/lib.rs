@@ -359,7 +359,9 @@ impl World {
     fn balance_of(&self, account: AccountId) -> Option<i64> {
         match account {
             AccountId::Pip(id) => self.index_of(id).map(|i| self.balances[i]),
-            AccountId::Workplace(id) => self.workplace_index(id).map(|i| self.workplace_balances[i]),
+            AccountId::Workplace(id) => {
+                self.workplace_index(id).map(|i| self.workplace_balances[i])
+            }
             AccountId::Treasury => Some(self.treasury_balance),
         }
     }
@@ -1272,11 +1274,14 @@ mod tests {
     #[test]
     fn ale_restores_social_and_grain_does_nothing() {
         assert_eq!(need_effects(ResourceKind::Ale).social, 150);
-        assert_eq!(need_effects(ResourceKind::Grain), Needs {
-            food: 0,
-            rest: 0,
-            social: 0,
-        });
+        assert_eq!(
+            need_effects(ResourceKind::Grain),
+            Needs {
+                food: 0,
+                rest: 0,
+                social: 0,
+            }
+        );
     }
 
     /// A workplace is paid, and the pip's replica balance moves. This is the
