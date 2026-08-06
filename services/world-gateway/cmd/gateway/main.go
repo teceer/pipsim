@@ -26,6 +26,7 @@ import (
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 
+	"github.com/teceer/pipsim/gen/go/pips/bank/v1/bankv1connect"
 	"github.com/teceer/pipsim/gen/go/pips/sim/v1/simv1connect"
 	"github.com/teceer/pipsim/gen/go/pips/workplace/v1/workplacev1connect"
 	"github.com/teceer/pipsim/gen/go/pips/world/v1/worldv1connect"
@@ -201,7 +202,21 @@ func main() {
 		if len(drivers) == 0 {
 			slog.Error("no workplaces reachable; economy disabled")
 		}
-		fleet := economy.NewFleet(simClient, drivers...)
+
+		// A gateway with no bank reachable still runs the economy — it just
+		// never pays wages or lets a pip buy anything. Wages resume as soon
+		// as BANK_ADDR is reachable, so this is a degrade, not a hard
+		// dependency.
+		var bankClient bankv1connect.BankServiceClient
+		if bankAddr := env("BANK_ADDR", ""); bankAddr != "" {
+			// Plain Connect, like the workplace clients below: bank is a Go
+			// Connect service, not tonic-only gRPC like sim-core.
+			bankClient = bankv1connect.NewBankServiceClient(h2cClient(), "http://"+bankAddr)
+		} else {
+			slog.Info("BANK_ADDR not set; wages and purchases disabled")
+		}
+
+		fleet := economy.NewFleet(simClient, bankClient, drivers...)
 
 		ctx, cancelEconomy := context.WithCancel(context.Background())
 		defer cancelEconomy()
@@ -210,7 +225,7 @@ func main() {
 		go fleet.Run(ctx, time.Second)
 		go economy.RunOutcomes(ctx, amqpURL, fleet.OnHired)
 
-		svc = svc.WithWorkplaces(fleet.Describe)
+		svc = svc.WithWorkplaces(fleet.Describe).WithBuy(fleet.Buy)
 
 		if _, err := otel.Meter("world-gateway").Int64ObservableGauge(
 			"pipsim.economy.offers_pending",

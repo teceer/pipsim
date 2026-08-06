@@ -100,3 +100,29 @@ defmodule Pips.World.V1.AssignWorkResponse do
   field :accepted, 1, type: :bool
   field :reason, 2, type: :string
 end
+
+defmodule Pips.World.V1.BuyRequest do
+  @moduledoc false
+
+  use Protobuf,
+    full_name: "pips.world.v1.BuyRequest",
+    protoc_gen_elixir_version: "0.17.0",
+    syntax: :proto3
+
+  field :pip_id, 1, type: :uint64, json_name: "pipId"
+  field :workplace_id, 2, type: :uint64, json_name: "workplaceId"
+  field :kind, 3, type: Pips.Workplace.V1.ResourceKind, enum: true
+end
+
+defmodule Pips.World.V1.BuyResponse do
+  @moduledoc false
+
+  use Protobuf,
+    full_name: "pips.world.v1.BuyResponse",
+    protoc_gen_elixir_version: "0.17.0",
+    syntax: :proto3
+
+  field :ok, 1, type: :bool
+  field :reason, 2, type: :string
+  field :price, 3, type: :int64
+end

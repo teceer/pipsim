@@ -16,7 +16,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file pips/events/v1/events.proto.
  */
 export const file_pips_events_v1_events: GenFile = /*@__PURE__*/
-  fileDesc("ChtwaXBzL2V2ZW50cy92MS9ldmVudHMucHJvdG8SDnBpcHMuZXZlbnRzLnYxItoECg1FdmVudEVudmVsb3BlEhAKCGV2ZW50X2lkGAEgASgJEgwKBHRpY2sYAiABKAQSLwoLb2NjdXJyZWRfYXQYAyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhAKCHRyYWNlX2lkGAQgASgJEhAKCHByb2R1Y2VyGAUgASgJEjEKC3BpcF9zcGF3bmVkGAogASgLMhoucGlwcy5ldmVudHMudjEuUGlwU3Bhd25lZEgAEjoKEHBpcF9zdGFydGVkX3dvcmsYCyABKAsyHi5waXBzLmV2ZW50cy52MS5QaXBTdGFydGVkV29ya0gAEjYKDnBpcF9lbmRlZF93b3JrGAwgASgLMhwucGlwcy5ldmVudHMudjEuUGlwRW5kZWRXb3JrSAASNgoOcGlwX2dvdF9odW5ncnkYDSABKAsyHC5waXBzLmV2ZW50cy52MS5QaXBHb3RIdW5ncnlIABIrCghwaXBfZGllZBgOIAEoCzIXLnBpcHMuZXZlbnRzLnYxLlBpcERpZWRIABI9ChFyZXNvdXJjZV9wcm9kdWNlZBgUIAEoCzIgLnBpcHMuZXZlbnRzLnYxLlJlc291cmNlUHJvZHVjZWRIABI5Cg93b3JrcGxhY2VfYnVpbHQYFSABKAsyHi5waXBzLmV2ZW50cy52MS5Xb3JrcGxhY2VCdWlsdEgAEkMKFHdvcmtwbGFjZV9kZW1vbGlzaGVkGBYgASgLMiMucGlwcy5ldmVudHMudjEuV29ya3BsYWNlRGVtb2xpc2hlZEgAQgkKB3BheWxvYWQiTwoKUGlwU3Bhd25lZBIOCgZwaXBfaWQYASABKAQSDAoEbmFtZRgCIAEoCRIjCghwb3NpdGlvbhgDIAEoCzIRLnBpcHMuc2ltLnYxLlZlYzIiTgoOUGlwU3RhcnRlZFdvcmsSDgoGcGlwX2lkGAEgASgEEhQKDHdvcmtwbGFjZV9pZBgCIAEoBBIWCg53b3JrcGxhY2Vfa2luZBgDIAEoCSJaCgxQaXBFbmRlZFdvcmsSDgoGcGlwX2lkGAEgASgEEhQKDHdvcmtwbGFjZV9pZBgCIAEoBBIOCgZyZWFzb24YAyABKAkSFAoMdGlja3Nfd29ya2VkGAQgASgFIjIKDFBpcEdvdEh1bmdyeRIOCgZwaXBfaWQYASABKAQSEgoKZm9vZF9sZXZlbBgCIAEoBSI7CgdQaXBEaWVkEg4KBnBpcF9pZBgBIAEoBBINCgVjYXVzZRgCIAEoCRIRCglhZ2VfdGlja3MYAyABKAUidwoQUmVzb3VyY2VQcm9kdWNlZBIUCgx3b3JrcGxhY2VfaWQYASABKAQSDgoGcGlwX2lkGAIgASgEEi0KBGtpbmQYAyABKA4yHy5waXBzLndvcmtwbGFjZS52MS5SZXNvdXJjZUtpbmQSDgoGYW1vdW50GAQgASgFIm4KDldvcmtwbGFjZUJ1aWx0EhQKDHdvcmtwbGFjZV9pZBgBIAEoBBIMCgRraW5kGAIgASgJEiMKCHBvc2l0aW9uGAMgASgLMhEucGlwcy5zaW0udjEuVmVjMhITCgttYXhfd29ya2VycxgEIAEoBSI7ChNXb3JrcGxhY2VEZW1vbGlzaGVkEhQKDHdvcmtwbGFjZV9pZBgBIAEoBBIOCgZyZWFzb24YAiABKAlCtAEKEmNvbS5waXBzLmV2ZW50cy52MUILRXZlbnRzUHJvdG9QAVo3Z2l0aHViLmNvbS90ZWNlZXIvcGlwc2ltL2dlbi9nby9waXBzL2V2ZW50cy92MTtldmVudHN2MaICA1BFWKoCDlBpcHMuRXZlbnRzLlYxygIOUGlwc1xFdmVudHNcVjHiAhpQaXBzXEV2ZW50c1xWMVxHUEJNZXRhZGF0YeoCEFBpcHM6OkV2ZW50czo6VjFiBnByb3RvMw", [file_google_protobuf_timestamp, file_pips_sim_v1_sim, file_pips_workplace_v1_workplace]);
+  fileDesc("ChtwaXBzL2V2ZW50cy92MS9ldmVudHMucHJvdG8SDnBpcHMuZXZlbnRzLnYxIrQGCg1FdmVudEVudmVsb3BlEhAKCGV2ZW50X2lkGAEgASgJEgwKBHRpY2sYAiABKAQSLwoLb2NjdXJyZWRfYXQYAyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhAKCHRyYWNlX2lkGAQgASgJEhAKCHByb2R1Y2VyGAUgASgJEjEKC3BpcF9zcGF3bmVkGAogASgLMhoucGlwcy5ldmVudHMudjEuUGlwU3Bhd25lZEgAEjoKEHBpcF9zdGFydGVkX3dvcmsYCyABKAsyHi5waXBzLmV2ZW50cy52MS5QaXBTdGFydGVkV29ya0gAEjYKDnBpcF9lbmRlZF93b3JrGAwgASgLMhwucGlwcy5ldmVudHMudjEuUGlwRW5kZWRXb3JrSAASNgoOcGlwX2dvdF9odW5ncnkYDSABKAsyHC5waXBzLmV2ZW50cy52MS5QaXBHb3RIdW5ncnlIABIrCghwaXBfZGllZBgOIAEoCzIXLnBpcHMuZXZlbnRzLnYxLlBpcERpZWRIABI9ChFyZXNvdXJjZV9wcm9kdWNlZBgUIAEoCzIgLnBpcHMuZXZlbnRzLnYxLlJlc291cmNlUHJvZHVjZWRIABI5Cg93b3JrcGxhY2VfYnVpbHQYFSABKAsyHi5waXBzLmV2ZW50cy52MS5Xb3JrcGxhY2VCdWlsdEgAEkMKFHdvcmtwbGFjZV9kZW1vbGlzaGVkGBYgASgLMiMucGlwcy5ldmVudHMudjEuV29ya3BsYWNlRGVtb2xpc2hlZEgAEi0KCXdhZ2VfcGFpZBgXIAEoCzIYLnBpcHMuZXZlbnRzLnYxLldhZ2VQYWlkSAASNQoNcHVyY2hhc2VfbWFkZRgYIAEoCzIcLnBpcHMuZXZlbnRzLnYxLlB1cmNoYXNlTWFkZUgAEj0KEWFjY291bnRfb3ZlcmRyYXduGBkgASgLMiAucGlwcy5ldmVudHMudjEuQWNjb3VudE92ZXJkcmF3bkgAEjMKDG1vbmV5X2lzc3VlZBgaIAEoCzIbLnBpcHMuZXZlbnRzLnYxLk1vbmV5SXNzdWVkSABCCQoHcGF5bG9hZCJPCgpQaXBTcGF3bmVkEg4KBnBpcF9pZBgBIAEoBBIMCgRuYW1lGAIgASgJEiMKCHBvc2l0aW9uGAMgASgLMhEucGlwcy5zaW0udjEuVmVjMiJOCg5QaXBTdGFydGVkV29yaxIOCgZwaXBfaWQYASABKAQSFAoMd29ya3BsYWNlX2lkGAIgASgEEhYKDndvcmtwbGFjZV9raW5kGAMgASgJIloKDFBpcEVuZGVkV29yaxIOCgZwaXBfaWQYASABKAQSFAoMd29ya3BsYWNlX2lkGAIgASgEEg4KBnJlYXNvbhgDIAEoCRIUCgx0aWNrc193b3JrZWQYBCABKAUiMgoMUGlwR290SHVuZ3J5Eg4KBnBpcF9pZBgBIAEoBBISCgpmb29kX2xldmVsGAIgASgFIjsKB1BpcERpZWQSDgoGcGlwX2lkGAEgASgEEg0KBWNhdXNlGAIgASgJEhEKCWFnZV90aWNrcxgDIAEoBSJ3ChBSZXNvdXJjZVByb2R1Y2VkEhQKDHdvcmtwbGFjZV9pZBgBIAEoBBIOCgZwaXBfaWQYAiABKAQSLQoEa2luZBgDIAEoDjIfLnBpcHMud29ya3BsYWNlLnYxLlJlc291cmNlS2luZBIOCgZhbW91bnQYBCABKAUibgoOV29ya3BsYWNlQnVpbHQSFAoMd29ya3BsYWNlX2lkGAEgASgEEgwKBGtpbmQYAiABKAkSIwoIcG9zaXRpb24YAyABKAsyES5waXBzLnNpbS52MS5WZWMyEhMKC21heF93b3JrZXJzGAQgASgFIjsKE1dvcmtwbGFjZURlbW9saXNoZWQSFAoMd29ya3BsYWNlX2lkGAEgASgEEg4KBnJlYXNvbhgCIAEoCSI4CghXYWdlUGFpZBINCgVwYXllchgBIAEoCRINCgVwYXllZRgCIAEoCRIOCgZhbW91bnQYAyABKAMiawoMUHVyY2hhc2VNYWRlEg0KBXBheWVyGAEgASgJEg0KBXBheWVlGAIgASgJEg4KBmFtb3VudBgDIAEoAxItCgRraW5kGAQgASgOMh8ucGlwcy53b3JrcGxhY2UudjEuUmVzb3VyY2VLaW5kIk4KEEFjY291bnRPdmVyZHJhd24SDwoHYWNjb3VudBgBIAEoCRIYChBhdHRlbXB0ZWRfYW1vdW50GAIgASgDEg8KB2JhbGFuY2UYAyABKAMiLAoLTW9uZXlJc3N1ZWQSDQoFcGF5ZWUYASABKAkSDgoGYW1vdW50GAIgASgDQrQBChJjb20ucGlwcy5ldmVudHMudjFCC0V2ZW50c1Byb3RvUAFaN2dpdGh1Yi5jb20vdGVjZWVyL3BpcHNpbS9nZW4vZ28vcGlwcy9ldmVudHMvdjE7ZXZlbnRzdjGiAgNQRViqAg5QaXBzLkV2ZW50cy5WMcoCDlBpcHNcRXZlbnRzXFYx4gIaUGlwc1xFdmVudHNcVjFcR1BCTWV0YWRhdGHqAhBQaXBzOjpFdmVudHM6OlYxYgZwcm90bzM", [file_google_protobuf_timestamp, file_pips_sim_v1_sim, file_pips_workplace_v1_workplace]);
 
 /**
  * Envelope wrapping every event. Kafka carries EventEnvelope, not the bare
@@ -111,6 +111,30 @@ export type EventEnvelope = Message<"pips.events.v1.EventEnvelope"> & {
      */
     value: WorkplaceDemolished;
     case: "workplaceDemolished";
+  } | {
+    /**
+     * @generated from field: pips.events.v1.WagePaid wage_paid = 23;
+     */
+    value: WagePaid;
+    case: "wagePaid";
+  } | {
+    /**
+     * @generated from field: pips.events.v1.PurchaseMade purchase_made = 24;
+     */
+    value: PurchaseMade;
+    case: "purchaseMade";
+  } | {
+    /**
+     * @generated from field: pips.events.v1.AccountOverdrawn account_overdrawn = 25;
+     */
+    value: AccountOverdrawn;
+    case: "accountOverdrawn";
+  } | {
+    /**
+     * @generated from field: pips.events.v1.MoneyIssued money_issued = 26;
+     */
+    value: MoneyIssued;
+    case: "moneyIssued";
   } | { case: undefined; value?: undefined };
 };
 
@@ -343,4 +367,112 @@ export type WorkplaceDemolished = Message<"pips.events.v1.WorkplaceDemolished"> 
  */
 export const WorkplaceDemolishedSchema: GenMessage<WorkplaceDemolished> = /*@__PURE__*/
   messageDesc(file_pips_events_v1_events, 8);
+
+/**
+ * @generated from message pips.events.v1.WagePaid
+ */
+export type WagePaid = Message<"pips.events.v1.WagePaid"> & {
+  /**
+   * @generated from field: string payer = 1;
+   */
+  payer: string;
+
+  /**
+   * @generated from field: string payee = 2;
+   */
+  payee: string;
+
+  /**
+   * @generated from field: int64 amount = 3;
+   */
+  amount: bigint;
+};
+
+/**
+ * Describes the message pips.events.v1.WagePaid.
+ * Use `create(WagePaidSchema)` to create a new message.
+ */
+export const WagePaidSchema: GenMessage<WagePaid> = /*@__PURE__*/
+  messageDesc(file_pips_events_v1_events, 9);
+
+/**
+ * @generated from message pips.events.v1.PurchaseMade
+ */
+export type PurchaseMade = Message<"pips.events.v1.PurchaseMade"> & {
+  /**
+   * @generated from field: string payer = 1;
+   */
+  payer: string;
+
+  /**
+   * @generated from field: string payee = 2;
+   */
+  payee: string;
+
+  /**
+   * @generated from field: int64 amount = 3;
+   */
+  amount: bigint;
+
+  /**
+   * @generated from field: pips.workplace.v1.ResourceKind kind = 4;
+   */
+  kind: ResourceKind;
+};
+
+/**
+ * Describes the message pips.events.v1.PurchaseMade.
+ * Use `create(PurchaseMadeSchema)` to create a new message.
+ */
+export const PurchaseMadeSchema: GenMessage<PurchaseMade> = /*@__PURE__*/
+  messageDesc(file_pips_events_v1_events, 10);
+
+/**
+ * @generated from message pips.events.v1.AccountOverdrawn
+ */
+export type AccountOverdrawn = Message<"pips.events.v1.AccountOverdrawn"> & {
+  /**
+   * @generated from field: string account = 1;
+   */
+  account: string;
+
+  /**
+   * @generated from field: int64 attempted_amount = 2;
+   */
+  attemptedAmount: bigint;
+
+  /**
+   * @generated from field: int64 balance = 3;
+   */
+  balance: bigint;
+};
+
+/**
+ * Describes the message pips.events.v1.AccountOverdrawn.
+ * Use `create(AccountOverdrawnSchema)` to create a new message.
+ */
+export const AccountOverdrawnSchema: GenMessage<AccountOverdrawn> = /*@__PURE__*/
+  messageDesc(file_pips_events_v1_events, 11);
+
+/**
+ * @generated from message pips.events.v1.MoneyIssued
+ */
+export type MoneyIssued = Message<"pips.events.v1.MoneyIssued"> & {
+  /**
+   * @generated from field: string payee = 1;
+   */
+  payee: string;
+
+  /**
+   * @generated from field: int64 amount = 2;
+   */
+  amount: bigint;
+};
+
+/**
+ * Describes the message pips.events.v1.MoneyIssued.
+ * Use `create(MoneyIssuedSchema)` to create a new message.
+ */
+export const MoneyIssuedSchema: GenMessage<MoneyIssued> = /*@__PURE__*/
+  messageDesc(file_pips_events_v1_events, 12);
 

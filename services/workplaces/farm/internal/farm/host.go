@@ -204,6 +204,17 @@ func (h *Host) EndShift(
 	return b.EndShift(ctx, req)
 }
 
+func (h *Host) Buy(
+	ctx context.Context,
+	req *connect.Request[workplacev1.BuyRequest],
+) (*connect.Response[workplacev1.BuyResponse], error) {
+	b, err := h.resolve(req.Msg.GetWorkplaceId())
+	if err != nil {
+		return nil, err
+	}
+	return b.Buy(ctx, req)
+}
+
 // ConsiderOffer answers a work offer for this *kind* of building.
 //
 // The queue is per kind, not per building, so an offer arriving here is not

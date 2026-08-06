@@ -19,6 +19,7 @@ import (
 
 	"connectrpc.com/connect"
 
+	"github.com/teceer/pipsim/gen/go/pips/bank/v1/bankv1connect"
 	simv1 "github.com/teceer/pipsim/gen/go/pips/sim/v1"
 	"github.com/teceer/pipsim/gen/go/pips/sim/v1/simv1connect"
 	workplacev1 "github.com/teceer/pipsim/gen/go/pips/workplace/v1"
@@ -32,6 +33,7 @@ import (
 // employment from sim-core is that there is one answer.
 type Fleet struct {
 	sim     simv1connect.SimServiceClient
+	bank    bankv1connect.BankServiceClient
 	drivers []*Driver
 
 	// Where the next round starts handing out offers.
@@ -44,8 +46,11 @@ type Fleet struct {
 	next int
 }
 
-func NewFleet(sim simv1connect.SimServiceClient, drivers ...*Driver) *Fleet {
-	return &Fleet{sim: sim, drivers: drivers}
+// NewFleet wires the sim-core client every driver shares. `bank` may be nil —
+// a gateway with no bank reachable still runs the economy, it just never
+// pays wages or lets a pip buy anything.
+func NewFleet(sim simv1connect.SimServiceClient, bank bankv1connect.BankServiceClient, drivers ...*Driver) *Fleet {
+	return &Fleet{sim: sim, bank: bank, drivers: drivers}
 }
 
 func (f *Fleet) Drivers() []*Driver { return f.drivers }
@@ -167,6 +172,11 @@ func (f *Fleet) cycle(ctx context.Context) error {
 		offersLeft[d.ID()] = maxOffersPerRound
 	}
 
+	// Wages owed this cycle, per workplace. Paid in one BatchTransfer per
+	// workplace after the loop below, not one Transfer per pip as it is
+	// discovered — see payWages.
+	credits := make(map[uint64]map[uint64]int64, len(live))
+
 	worked, offered, commuting := 0, 0, 0
 	for _, p := range snap.Msg.GetPips() {
 		if d, employed := byID[p.GetEmployerWorkplaceId()]; employed {
@@ -177,8 +187,15 @@ func (f *Fleet) cycle(ctx context.Context) error {
 			if !inside {
 				commuting++
 			}
-			if d.work(ctx, p.GetId(), tick, inside) && inside {
+			ok, wage := d.work(ctx, p.GetId(), tick, inside)
+			if ok && inside {
 				worked++
+				if wage > 0 {
+					if credits[d.ID()] == nil {
+						credits[d.ID()] = make(map[uint64]int64)
+					}
+					credits[d.ID()][p.GetId()] = wage
+				}
 			}
 			continue
 		}
@@ -197,6 +214,10 @@ func (f *Fleet) cycle(ctx context.Context) error {
 				break
 			}
 		}
+	}
+
+	for workplaceID, pipCredits := range credits {
+		f.payWages(ctx, workplaceID, tick, pipCredits)
 	}
 
 	if offered > 0 || worked > 0 || commuting > 0 {

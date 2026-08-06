@@ -471,6 +471,126 @@ func (x *AssignWorkResponse) GetReason() string {
 	return ""
 }
 
+type BuyRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	PipId         uint64                 `protobuf:"varint,1,opt,name=pip_id,json=pipId,proto3" json:"pip_id,omitempty"`
+	WorkplaceId   uint64                 `protobuf:"varint,2,opt,name=workplace_id,json=workplaceId,proto3" json:"workplace_id,omitempty"`
+	Kind          v11.ResourceKind       `protobuf:"varint,3,opt,name=kind,proto3,enum=pips.workplace.v1.ResourceKind" json:"kind,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BuyRequest) Reset() {
+	*x = BuyRequest{}
+	mi := &file_pips_world_v1_world_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BuyRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BuyRequest) ProtoMessage() {}
+
+func (x *BuyRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_pips_world_v1_world_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BuyRequest.ProtoReflect.Descriptor instead.
+func (*BuyRequest) Descriptor() ([]byte, []int) {
+	return file_pips_world_v1_world_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *BuyRequest) GetPipId() uint64 {
+	if x != nil {
+		return x.PipId
+	}
+	return 0
+}
+
+func (x *BuyRequest) GetWorkplaceId() uint64 {
+	if x != nil {
+		return x.WorkplaceId
+	}
+	return 0
+}
+
+func (x *BuyRequest) GetKind() v11.ResourceKind {
+	if x != nil {
+		return x.Kind
+	}
+	return v11.ResourceKind(0)
+}
+
+type BuyResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Ok            bool                   `protobuf:"varint,1,opt,name=ok,proto3" json:"ok,omitempty"`
+	Reason        string                 `protobuf:"bytes,2,opt,name=reason,proto3" json:"reason,omitempty"`
+	Price         int64                  `protobuf:"varint,3,opt,name=price,proto3" json:"price,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BuyResponse) Reset() {
+	*x = BuyResponse{}
+	mi := &file_pips_world_v1_world_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BuyResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BuyResponse) ProtoMessage() {}
+
+func (x *BuyResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_pips_world_v1_world_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BuyResponse.ProtoReflect.Descriptor instead.
+func (*BuyResponse) Descriptor() ([]byte, []int) {
+	return file_pips_world_v1_world_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *BuyResponse) GetOk() bool {
+	if x != nil {
+		return x.Ok
+	}
+	return false
+}
+
+func (x *BuyResponse) GetReason() string {
+	if x != nil {
+		return x.Reason
+	}
+	return ""
+}
+
+func (x *BuyResponse) GetPrice() int64 {
+	if x != nil {
+		return x.Price
+	}
+	return 0
+}
+
 var File_pips_world_v1_world_proto protoreflect.FileDescriptor
 
 const file_pips_world_v1_world_proto_rawDesc = "" +
@@ -504,13 +624,23 @@ const file_pips_world_v1_world_proto_rawDesc = "" +
 	"\fworkplace_id\x18\x02 \x01(\x04R\vworkplaceId\"H\n" +
 	"\x12AssignWorkResponse\x12\x1a\n" +
 	"\baccepted\x18\x01 \x01(\bR\baccepted\x12\x16\n" +
-	"\x06reason\x18\x02 \x01(\tR\x06reason2\xe8\x02\n" +
+	"\x06reason\x18\x02 \x01(\tR\x06reason\"{\n" +
+	"\n" +
+	"BuyRequest\x12\x15\n" +
+	"\x06pip_id\x18\x01 \x01(\x04R\x05pipId\x12!\n" +
+	"\fworkplace_id\x18\x02 \x01(\x04R\vworkplaceId\x123\n" +
+	"\x04kind\x18\x03 \x01(\x0e2\x1f.pips.workplace.v1.ResourceKindR\x04kind\"K\n" +
+	"\vBuyResponse\x12\x0e\n" +
+	"\x02ok\x18\x01 \x01(\bR\x02ok\x12\x16\n" +
+	"\x06reason\x18\x02 \x01(\tR\x06reason\x12\x14\n" +
+	"\x05price\x18\x03 \x01(\x03R\x05price2\xa6\x03\n" +
 	"\fWorldService\x12N\n" +
 	"\tJoinWorld\x12\x1f.pips.world.v1.JoinWorldRequest\x1a .pips.world.v1.JoinWorldResponse\x12V\n" +
 	"\vStreamWorld\x12!.pips.world.v1.StreamWorldRequest\x1a\".pips.world.v1.StreamWorldResponse0\x01\x12]\n" +
 	"\x0eBuildWorkplace\x12$.pips.world.v1.BuildWorkplaceRequest\x1a%.pips.world.v1.BuildWorkplaceResponse\x12Q\n" +
 	"\n" +
-	"AssignWork\x12 .pips.world.v1.AssignWorkRequest\x1a!.pips.world.v1.AssignWorkResponseB\xac\x01\n" +
+	"AssignWork\x12 .pips.world.v1.AssignWorkRequest\x1a!.pips.world.v1.AssignWorkResponse\x12<\n" +
+	"\x03Buy\x12\x19.pips.world.v1.BuyRequest\x1a\x1a.pips.world.v1.BuyResponseB\xac\x01\n" +
 	"\x11com.pips.world.v1B\n" +
 	"WorldProtoP\x01Z5github.com/teceer/pipsim/gen/go/pips/world/v1;worldv1\xa2\x02\x03PWX\xaa\x02\rPips.World.V1\xca\x02\rPips\\World\\V1\xe2\x02\x19Pips\\World\\V1\\GPBMetadata\xea\x02\x0fPips::World::V1b\x06proto3"
 
@@ -526,7 +656,7 @@ func file_pips_world_v1_world_proto_rawDescGZIP() []byte {
 	return file_pips_world_v1_world_proto_rawDescData
 }
 
-var file_pips_world_v1_world_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_pips_world_v1_world_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_pips_world_v1_world_proto_goTypes = []any{
 	(*JoinWorldRequest)(nil),       // 0: pips.world.v1.JoinWorldRequest
 	(*JoinWorldResponse)(nil),      // 1: pips.world.v1.JoinWorldResponse
@@ -536,32 +666,38 @@ var file_pips_world_v1_world_proto_goTypes = []any{
 	(*BuildWorkplaceResponse)(nil), // 5: pips.world.v1.BuildWorkplaceResponse
 	(*AssignWorkRequest)(nil),      // 6: pips.world.v1.AssignWorkRequest
 	(*AssignWorkResponse)(nil),     // 7: pips.world.v1.AssignWorkResponse
-	(*v1.Pip)(nil),                 // 8: pips.sim.v1.Pip
-	(*v11.DescribeResponse)(nil),   // 9: pips.workplace.v1.DescribeResponse
-	(*v1.Workplace)(nil),           // 10: pips.sim.v1.Workplace
-	(*v1.WorldDelta)(nil),          // 11: pips.sim.v1.WorldDelta
-	(*v1.Vec2)(nil),                // 12: pips.sim.v1.Vec2
+	(*BuyRequest)(nil),             // 8: pips.world.v1.BuyRequest
+	(*BuyResponse)(nil),            // 9: pips.world.v1.BuyResponse
+	(*v1.Pip)(nil),                 // 10: pips.sim.v1.Pip
+	(*v11.DescribeResponse)(nil),   // 11: pips.workplace.v1.DescribeResponse
+	(*v1.Workplace)(nil),           // 12: pips.sim.v1.Workplace
+	(*v1.WorldDelta)(nil),          // 13: pips.sim.v1.WorldDelta
+	(*v1.Vec2)(nil),                // 14: pips.sim.v1.Vec2
+	(v11.ResourceKind)(0),          // 15: pips.workplace.v1.ResourceKind
 }
 var file_pips_world_v1_world_proto_depIdxs = []int32{
-	8,  // 0: pips.world.v1.JoinWorldResponse.pips:type_name -> pips.sim.v1.Pip
-	9,  // 1: pips.world.v1.JoinWorldResponse.workplaces:type_name -> pips.workplace.v1.DescribeResponse
-	10, // 2: pips.world.v1.JoinWorldResponse.buildings:type_name -> pips.sim.v1.Workplace
-	11, // 3: pips.world.v1.StreamWorldResponse.delta:type_name -> pips.sim.v1.WorldDelta
-	9,  // 4: pips.world.v1.StreamWorldResponse.changed_workplaces:type_name -> pips.workplace.v1.DescribeResponse
-	12, // 5: pips.world.v1.BuildWorkplaceRequest.position:type_name -> pips.sim.v1.Vec2
-	0,  // 6: pips.world.v1.WorldService.JoinWorld:input_type -> pips.world.v1.JoinWorldRequest
-	2,  // 7: pips.world.v1.WorldService.StreamWorld:input_type -> pips.world.v1.StreamWorldRequest
-	4,  // 8: pips.world.v1.WorldService.BuildWorkplace:input_type -> pips.world.v1.BuildWorkplaceRequest
-	6,  // 9: pips.world.v1.WorldService.AssignWork:input_type -> pips.world.v1.AssignWorkRequest
-	1,  // 10: pips.world.v1.WorldService.JoinWorld:output_type -> pips.world.v1.JoinWorldResponse
-	3,  // 11: pips.world.v1.WorldService.StreamWorld:output_type -> pips.world.v1.StreamWorldResponse
-	5,  // 12: pips.world.v1.WorldService.BuildWorkplace:output_type -> pips.world.v1.BuildWorkplaceResponse
-	7,  // 13: pips.world.v1.WorldService.AssignWork:output_type -> pips.world.v1.AssignWorkResponse
-	10, // [10:14] is the sub-list for method output_type
-	6,  // [6:10] is the sub-list for method input_type
-	6,  // [6:6] is the sub-list for extension type_name
-	6,  // [6:6] is the sub-list for extension extendee
-	0,  // [0:6] is the sub-list for field type_name
+	10, // 0: pips.world.v1.JoinWorldResponse.pips:type_name -> pips.sim.v1.Pip
+	11, // 1: pips.world.v1.JoinWorldResponse.workplaces:type_name -> pips.workplace.v1.DescribeResponse
+	12, // 2: pips.world.v1.JoinWorldResponse.buildings:type_name -> pips.sim.v1.Workplace
+	13, // 3: pips.world.v1.StreamWorldResponse.delta:type_name -> pips.sim.v1.WorldDelta
+	11, // 4: pips.world.v1.StreamWorldResponse.changed_workplaces:type_name -> pips.workplace.v1.DescribeResponse
+	14, // 5: pips.world.v1.BuildWorkplaceRequest.position:type_name -> pips.sim.v1.Vec2
+	15, // 6: pips.world.v1.BuyRequest.kind:type_name -> pips.workplace.v1.ResourceKind
+	0,  // 7: pips.world.v1.WorldService.JoinWorld:input_type -> pips.world.v1.JoinWorldRequest
+	2,  // 8: pips.world.v1.WorldService.StreamWorld:input_type -> pips.world.v1.StreamWorldRequest
+	4,  // 9: pips.world.v1.WorldService.BuildWorkplace:input_type -> pips.world.v1.BuildWorkplaceRequest
+	6,  // 10: pips.world.v1.WorldService.AssignWork:input_type -> pips.world.v1.AssignWorkRequest
+	8,  // 11: pips.world.v1.WorldService.Buy:input_type -> pips.world.v1.BuyRequest
+	1,  // 12: pips.world.v1.WorldService.JoinWorld:output_type -> pips.world.v1.JoinWorldResponse
+	3,  // 13: pips.world.v1.WorldService.StreamWorld:output_type -> pips.world.v1.StreamWorldResponse
+	5,  // 14: pips.world.v1.WorldService.BuildWorkplace:output_type -> pips.world.v1.BuildWorkplaceResponse
+	7,  // 15: pips.world.v1.WorldService.AssignWork:output_type -> pips.world.v1.AssignWorkResponse
+	9,  // 16: pips.world.v1.WorldService.Buy:output_type -> pips.world.v1.BuyResponse
+	12, // [12:17] is the sub-list for method output_type
+	7,  // [7:12] is the sub-list for method input_type
+	7,  // [7:7] is the sub-list for extension type_name
+	7,  // [7:7] is the sub-list for extension extendee
+	0,  // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_pips_world_v1_world_proto_init() }
@@ -575,7 +711,7 @@ func file_pips_world_v1_world_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pips_world_v1_world_proto_rawDesc), len(file_pips_world_v1_world_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   8,
+			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

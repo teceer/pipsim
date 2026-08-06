@@ -36,6 +36,12 @@ service WorkplaceService {
 
   // A pip ends the shift, voluntarily or not.
   rpc EndShift(EndShiftRequest) returns (EndShiftResponse);
+
+  // A pip buys one unit of something this workplace sells. The workplace only
+  // confirms the kind and the price it advertises in `Describe.sells` — it
+  // never moves money itself. The gateway does that through the bank, then
+  // tells sim-core what the resource does to the pip via a TransferIntent.
+  rpc Buy(BuyRequest) returns (BuyResponse);
 }
 
 message ListRequest {}
@@ -59,6 +65,21 @@ message DescribeResponse {
   pips.sim.v1.Vec2 position = 6;
   repeated ResourceKind produces = 7;
   repeated ResourceKind consumes = 8;
+  // What a shift here pays, per tick worked. 0 means unpaid.
+  int64 wage = 9;
+  // How demanding the work is. A scalar the building declares about the
+  // work, not a need delta — sim-core decides what effort costs, the same
+  // way it already prices Activity::Working. If this ever grows a per-need
+  // shape, it has become need_deltas again.
+  int32 effort = 10;
+  // What this workplace sells to pips, and at what price. Empty if it
+  // doesn't sell anything.
+  repeated Offer sells = 11;
+}
+
+message Offer {
+  ResourceKind kind = 1;
+  int64 price = 2;
 }
 
 enum ResourceKind {
@@ -102,6 +123,9 @@ message WorkResponse {
   map<int32, int32> need_deltas = 2;
   // The workplace can ask for the shift to end (materials ran out, night fell).
   bool shift_should_end = 3;
+  // What this tick of work paid, proportional to elapsed ticks. The gateway
+  // moves it through the bank; the workplace only declares it.
+  int64 wage = 4;
 }
 
 message ResourceAmount {
@@ -117,3 +141,20 @@ message EndShiftRequest {
 }
 
 message EndShiftResponse {}
+
+message BuyRequest {
+  uint64 workplace_id = 1;
+  uint64 pip_id = 2;
+  ResourceKind kind = 3;
+  uint64 tick = 4;
+}
+
+message BuyResponse {
+  bool ok = 1;
+  string reason = 2;
+  // The price at the moment of sale — matches Describe.sells, but pinned to
+  // this response so a caller never has to re-fetch Describe to know what it
+  // was charged.
+  int64 price = 3;
+  ResourceAmount produced = 4;
+}

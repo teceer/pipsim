@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file pips/sim/v1/sim.proto.
  */
 export const file_pips_sim_v1_sim: GenFile = /*@__PURE__*/
-  fileDesc("ChVwaXBzL3NpbS92MS9zaW0ucHJvdG8SC3BpcHMuc2ltLnYxIigKBFZlYzISDwoHeF9taWxsaRgBIAEoBRIPCgd5X21pbGxpGAIgASgFIsICCgNQaXASCgoCaWQYASABKAQSDAoEbmFtZRgCIAEoCRIjCghwb3NpdGlvbhgDIAEoCzIRLnBpcHMuc2ltLnYxLlZlYzISKgoIYWN0aXZpdHkYBCABKA4yGC5waXBzLnNpbS52MS5QaXBBY3Rpdml0eRIqCgVuZWVkcxgFIAMoCzIbLnBpcHMuc2ltLnYxLlBpcC5OZWVkc0VudHJ5EiIKFWVtcGxveWVyX3dvcmtwbGFjZV9pZBgGIAEoBEgAiAEBEiAKE2luc2lkZV93b3JrcGxhY2VfaWQYByABKARIAYgBARosCgpOZWVkc0VudHJ5EgsKA2tleRgBIAEoBRINCgV2YWx1ZRgCIAEoBToCOAFCGAoWX2VtcGxveWVyX3dvcmtwbGFjZV9pZEIWChRfaW5zaWRlX3dvcmtwbGFjZV9pZCJvCglXb3JrcGxhY2USCgoCaWQYASABKAQSDAoEa2luZBgCIAEoCRIjCghwb3NpdGlvbhgDIAEoCzIRLnBpcHMuc2ltLnYxLlZlYzISEAoIY2FwYWNpdHkYBCABKA0SEQoJb2NjdXBhbnRzGAUgASgNIhsKC1N0ZXBSZXF1ZXN0EgwKBHRpY2sYASABKAQiWwoMU3RlcFJlc3BvbnNlEgwKBHRpY2sYASABKAQSJgoFZGVsdGEYAiABKAsyFy5waXBzLnNpbS52MS5Xb3JsZERlbHRhEhUKDWRvbWFpbl9ldmVudHMYAyADKAwihAEKCldvcmxkRGVsdGESDAoEdGljaxgBIAEoBBIjCgRwaXBzGAIgAygLMhUucGlwcy5zaW0udjEuUGlwRGVsdGESFwoPcmVtb3ZlZF9waXBfaWRzGAMgAygEEioKCndvcmtwbGFjZXMYBCADKAsyFi5waXBzLnNpbS52MS5Xb3JrcGxhY2UipAIKCFBpcERlbHRhEgoKAmlkGAEgASgEEigKCHBvc2l0aW9uGAIgASgLMhEucGlwcy5zaW0udjEuVmVjMkgAiAEBEi8KCGFjdGl2aXR5GAMgASgOMhgucGlwcy5zaW0udjEuUGlwQWN0aXZpdHlIAYgBARIvCgVuZWVkcxgEIAMoCzIgLnBpcHMuc2ltLnYxLlBpcERlbHRhLk5lZWRzRW50cnkSIAoTaW5zaWRlX3dvcmtwbGFjZV9pZBgFIAEoBEgCiAEBGiwKCk5lZWRzRW50cnkSCwoDa2V5GAEgASgFEg0KBXZhbHVlGAIgASgFOgI4AUILCglfcG9zaXRpb25CCwoJX2FjdGl2aXR5QhYKFF9pbnNpZGVfd29ya3BsYWNlX2lkIhEKD1NuYXBzaG90UmVxdWVzdCKAAQoQU25hcHNob3RSZXNwb25zZRIMCgR0aWNrGAEgASgEEh4KBHBpcHMYAiADKAsyEC5waXBzLnNpbS52MS5QaXASEgoKc3RhdGVfaGFzaBgDIAEoDBIqCgp3b3JrcGxhY2VzGAQgAygLMhYucGlwcy5zaW0udjEuV29ya3BsYWNlIicKEldhdGNoRGVsdGFzUmVxdWVzdBIRCglmcm9tX3RpY2sYASABKAQiPQoTV2F0Y2hEZWx0YXNSZXNwb25zZRImCgVkZWx0YRgBIAEoCzIXLnBpcHMuc2ltLnYxLldvcmxkRGVsdGEi1QIKE1N1Ym1pdEludGVudFJlcXVlc3QSJwoEaGlyZRgBIAEoCzIXLnBpcHMuc2ltLnYxLkhpcmVJbnRlbnRIABInCgRtb3ZlGAIgASgLMhcucGlwcy5zaW0udjEuTW92ZUludGVudEgAEiwKBXNwYXduGAMgASgLMhsucGlwcy5zaW0udjEuU3Bhd25QaXBJbnRlbnRIABI0CgthcHBseV9uZWVkcxgEIAEoCzIdLnBpcHMuc2ltLnYxLkFwcGx5TmVlZHNJbnRlbnRIABJCChJyZWdpc3Rlcl93b3JrcGxhY2UYBSABKAsyJC5waXBzLnNpbS52MS5SZWdpc3RlcldvcmtwbGFjZUludGVudEgAEjoKDmVuZF9lbXBsb3ltZW50GAYgASgLMiAucGlwcy5zaW0udjEuRW5kRW1wbG95bWVudEludGVudEgAQggKBmludGVudCJaChRTdWJtaXRJbnRlbnRSZXNwb25zZRIQCghhY2NlcHRlZBgBIAEoCBIYChByZWplY3Rpb25fcmVhc29uGAIgASgJEhYKDnNjaGVkdWxlZF90aWNrGAMgASgEIjIKCkhpcmVJbnRlbnQSDgoGcGlwX2lkGAEgASgEEhQKDHdvcmtwbGFjZV9pZBgCIAEoBCIlChNFbmRFbXBsb3ltZW50SW50ZW50Eg4KBnBpcF9pZBgBIAEoBCJ0ChdSZWdpc3RlcldvcmtwbGFjZUludGVudBIUCgx3b3JrcGxhY2VfaWQYASABKAQSDAoEa2luZBgCIAEoCRIjCghwb3NpdGlvbhgDIAEoCzIRLnBpcHMuc2ltLnYxLlZlYzISEAoIY2FwYWNpdHkYBCABKA0iRAoKTW92ZUludGVudBIOCgZwaXBfaWQYASABKAQSJgoLZGVzdGluYXRpb24YAiABKAsyES5waXBzLnNpbS52MS5WZWMyIkMKDlNwYXduUGlwSW50ZW50EgwKBG5hbWUYASABKAkSIwoIcG9zaXRpb24YAiABKAsyES5waXBzLnNpbS52MS5WZWMyIpkBChBBcHBseU5lZWRzSW50ZW50Eg4KBnBpcF9pZBgBIAEoBBJCCgtuZWVkX2RlbHRhcxgCIAMoCzItLnBpcHMuc2ltLnYxLkFwcGx5TmVlZHNJbnRlbnQuTmVlZERlbHRhc0VudHJ5GjEKD05lZWREZWx0YXNFbnRyeRILCgNrZXkYASABKAUSDQoFdmFsdWUYAiABKAU6AjgBKksKBE5lZWQSFAoQTkVFRF9VTlNQRUNJRklFRBAAEg0KCU5FRURfRk9PRBABEg0KCU5FRURfUkVTVBACEg8KC05FRURfU09DSUFMEAMqxgEKC1BpcEFjdGl2aXR5EhwKGFBJUF9BQ1RJVklUWV9VTlNQRUNJRklFRBAAEhUKEVBJUF9BQ1RJVklUWV9JRExFEAESGAoUUElQX0FDVElWSVRZX1dBTEtJTkcQAhIYChRQSVBfQUNUSVZJVFlfV09SS0lORxADEhcKE1BJUF9BQ1RJVklUWV9FQVRJTkcQBBIZChVQSVBfQUNUSVZJVFlfU0xFRVBJTkcQBRIaChZQSVBfQUNUSVZJVFlfQ09NTVVUSU5HEAYyuwIKClNpbVNlcnZpY2USOwoEU3RlcBIYLnBpcHMuc2ltLnYxLlN0ZXBSZXF1ZXN0GhkucGlwcy5zaW0udjEuU3RlcFJlc3BvbnNlEkcKCFNuYXBzaG90EhwucGlwcy5zaW0udjEuU25hcHNob3RSZXF1ZXN0Gh0ucGlwcy5zaW0udjEuU25hcHNob3RSZXNwb25zZRJSCgtXYXRjaERlbHRhcxIfLnBpcHMuc2ltLnYxLldhdGNoRGVsdGFzUmVxdWVzdBogLnBpcHMuc2ltLnYxLldhdGNoRGVsdGFzUmVzcG9uc2UwARJTCgxTdWJtaXRJbnRlbnQSIC5waXBzLnNpbS52MS5TdWJtaXRJbnRlbnRSZXF1ZXN0GiEucGlwcy5zaW0udjEuU3VibWl0SW50ZW50UmVzcG9uc2VCnAEKD2NvbS5waXBzLnNpbS52MUIIU2ltUHJvdG9QAVoxZ2l0aHViLmNvbS90ZWNlZXIvcGlwc2ltL2dlbi9nby9waXBzL3NpbS92MTtzaW12MaICA1BTWKoCC1BpcHMuU2ltLlYxygILUGlwc1xTaW1cVjHiAhdQaXBzXFNpbVxWMVxHUEJNZXRhZGF0YeoCDVBpcHM6OlNpbTo6VjFiBnByb3RvMw");
+  fileDesc("ChVwaXBzL3NpbS92MS9zaW0ucHJvdG8SC3BpcHMuc2ltLnYxIigKBFZlYzISDwoHeF9taWxsaRgBIAEoBRIPCgd5X21pbGxpGAIgASgFIsICCgNQaXASCgoCaWQYASABKAQSDAoEbmFtZRgCIAEoCRIjCghwb3NpdGlvbhgDIAEoCzIRLnBpcHMuc2ltLnYxLlZlYzISKgoIYWN0aXZpdHkYBCABKA4yGC5waXBzLnNpbS52MS5QaXBBY3Rpdml0eRIqCgVuZWVkcxgFIAMoCzIbLnBpcHMuc2ltLnYxLlBpcC5OZWVkc0VudHJ5EiIKFWVtcGxveWVyX3dvcmtwbGFjZV9pZBgGIAEoBEgAiAEBEiAKE2luc2lkZV93b3JrcGxhY2VfaWQYByABKARIAYgBARosCgpOZWVkc0VudHJ5EgsKA2tleRgBIAEoBRINCgV2YWx1ZRgCIAEoBToCOAFCGAoWX2VtcGxveWVyX3dvcmtwbGFjZV9pZEIWChRfaW5zaWRlX3dvcmtwbGFjZV9pZCJvCglXb3JrcGxhY2USCgoCaWQYASABKAQSDAoEa2luZBgCIAEoCRIjCghwb3NpdGlvbhgDIAEoCzIRLnBpcHMuc2ltLnYxLlZlYzISEAoIY2FwYWNpdHkYBCABKA0SEQoJb2NjdXBhbnRzGAUgASgNIhsKC1N0ZXBSZXF1ZXN0EgwKBHRpY2sYASABKAQiWwoMU3RlcFJlc3BvbnNlEgwKBHRpY2sYASABKAQSJgoFZGVsdGEYAiABKAsyFy5waXBzLnNpbS52MS5Xb3JsZERlbHRhEhUKDWRvbWFpbl9ldmVudHMYAyADKAwihAEKCldvcmxkRGVsdGESDAoEdGljaxgBIAEoBBIjCgRwaXBzGAIgAygLMhUucGlwcy5zaW0udjEuUGlwRGVsdGESFwoPcmVtb3ZlZF9waXBfaWRzGAMgAygEEioKCndvcmtwbGFjZXMYBCADKAsyFi5waXBzLnNpbS52MS5Xb3JrcGxhY2UipAIKCFBpcERlbHRhEgoKAmlkGAEgASgEEigKCHBvc2l0aW9uGAIgASgLMhEucGlwcy5zaW0udjEuVmVjMkgAiAEBEi8KCGFjdGl2aXR5GAMgASgOMhgucGlwcy5zaW0udjEuUGlwQWN0aXZpdHlIAYgBARIvCgVuZWVkcxgEIAMoCzIgLnBpcHMuc2ltLnYxLlBpcERlbHRhLk5lZWRzRW50cnkSIAoTaW5zaWRlX3dvcmtwbGFjZV9pZBgFIAEoBEgCiAEBGiwKCk5lZWRzRW50cnkSCwoDa2V5GAEgASgFEg0KBXZhbHVlGAIgASgFOgI4AUILCglfcG9zaXRpb25CCwoJX2FjdGl2aXR5QhYKFF9pbnNpZGVfd29ya3BsYWNlX2lkIhEKD1NuYXBzaG90UmVxdWVzdCKAAQoQU25hcHNob3RSZXNwb25zZRIMCgR0aWNrGAEgASgEEh4KBHBpcHMYAiADKAsyEC5waXBzLnNpbS52MS5QaXASEgoKc3RhdGVfaGFzaBgDIAEoDBIqCgp3b3JrcGxhY2VzGAQgAygLMhYucGlwcy5zaW0udjEuV29ya3BsYWNlIicKEldhdGNoRGVsdGFzUmVxdWVzdBIRCglmcm9tX3RpY2sYASABKAQiPQoTV2F0Y2hEZWx0YXNSZXNwb25zZRImCgVkZWx0YRgBIAEoCzIXLnBpcHMuc2ltLnYxLldvcmxkRGVsdGEixAMKE1N1Ym1pdEludGVudFJlcXVlc3QSJwoEaGlyZRgBIAEoCzIXLnBpcHMuc2ltLnYxLkhpcmVJbnRlbnRIABInCgRtb3ZlGAIgASgLMhcucGlwcy5zaW0udjEuTW92ZUludGVudEgAEiwKBXNwYXduGAMgASgLMhsucGlwcy5zaW0udjEuU3Bhd25QaXBJbnRlbnRIABI0CgthcHBseV9uZWVkcxgEIAEoCzIdLnBpcHMuc2ltLnYxLkFwcGx5TmVlZHNJbnRlbnRIABJCChJyZWdpc3Rlcl93b3JrcGxhY2UYBSABKAsyJC5waXBzLnNpbS52MS5SZWdpc3RlcldvcmtwbGFjZUludGVudEgAEjoKDmVuZF9lbXBsb3ltZW50GAYgASgLMiAucGlwcy5zaW0udjEuRW5kRW1wbG95bWVudEludGVudEgAEi8KCHRyYW5zZmVyGAcgASgLMhsucGlwcy5zaW0udjEuVHJhbnNmZXJJbnRlbnRIABI8Cg9jcmVkaXRfYmFsYW5jZXMYCCABKAsyIS5waXBzLnNpbS52MS5DcmVkaXRCYWxhbmNlc0ludGVudEgAQggKBmludGVudCJaChRTdWJtaXRJbnRlbnRSZXNwb25zZRIQCghhY2NlcHRlZBgBIAEoCBIYChByZWplY3Rpb25fcmVhc29uGAIgASgJEhYKDnNjaGVkdWxlZF90aWNrGAMgASgEIjIKCkhpcmVJbnRlbnQSDgoGcGlwX2lkGAEgASgEEhQKDHdvcmtwbGFjZV9pZBgCIAEoBCIlChNFbmRFbXBsb3ltZW50SW50ZW50Eg4KBnBpcF9pZBgBIAEoBCJ0ChdSZWdpc3RlcldvcmtwbGFjZUludGVudBIUCgx3b3JrcGxhY2VfaWQYASABKAQSDAoEa2luZBgCIAEoCRIjCghwb3NpdGlvbhgDIAEoCzIRLnBpcHMuc2ltLnYxLlZlYzISEAoIY2FwYWNpdHkYBCABKA0iRAoKTW92ZUludGVudBIOCgZwaXBfaWQYASABKAQSJgoLZGVzdGluYXRpb24YAiABKAsyES5waXBzLnNpbS52MS5WZWMyIkMKDlNwYXduUGlwSW50ZW50EgwKBG5hbWUYASABKAkSIwoIcG9zaXRpb24YAiABKAsyES5waXBzLnNpbS52MS5WZWMyIpkBChBBcHBseU5lZWRzSW50ZW50Eg4KBnBpcF9pZBgBIAEoBBJCCgtuZWVkX2RlbHRhcxgCIAMoCzItLnBpcHMuc2ltLnYxLkFwcGx5TmVlZHNJbnRlbnQuTmVlZERlbHRhc0VudHJ5GjEKD05lZWREZWx0YXNFbnRyeRILCgNrZXkYASABKAUSDQoFdmFsdWUYAiABKAU6AjgBInkKDlRyYW5zZmVySW50ZW50EhgKEHBheWVyX2FjY291bnRfaWQYASABKAkSGAoQcGF5ZWVfYWNjb3VudF9pZBgCIAEoCRIOCgZhbW91bnQYAyABKAMSFQoNcmVzb3VyY2Vfa2luZBgEIAEoBRIMCgR0aWNrGAUgASgEIqMBChRDcmVkaXRCYWxhbmNlc0ludGVudBIYChBwYXllcl9hY2NvdW50X2lkGAEgASgJEjkKB2NyZWRpdHMYAiADKAsyKC5waXBzLnNpbS52MS5DcmVkaXRCYWxhbmNlc0ludGVudC5DcmVkaXQSDAoEdGljaxgDIAEoBBooCgZDcmVkaXQSDgoGcGlwX2lkGAEgASgEEg4KBmFtb3VudBgCIAEoAypLCgROZWVkEhQKEE5FRURfVU5TUEVDSUZJRUQQABINCglORUVEX0ZPT0QQARINCglORUVEX1JFU1QQAhIPCgtORUVEX1NPQ0lBTBADKsYBCgtQaXBBY3Rpdml0eRIcChhQSVBfQUNUSVZJVFlfVU5TUEVDSUZJRUQQABIVChFQSVBfQUNUSVZJVFlfSURMRRABEhgKFFBJUF9BQ1RJVklUWV9XQUxLSU5HEAISGAoUUElQX0FDVElWSVRZX1dPUktJTkcQAxIXChNQSVBfQUNUSVZJVFlfRUFUSU5HEAQSGQoVUElQX0FDVElWSVRZX1NMRUVQSU5HEAUSGgoWUElQX0FDVElWSVRZX0NPTU1VVElORxAGMrsCCgpTaW1TZXJ2aWNlEjsKBFN0ZXASGC5waXBzLnNpbS52MS5TdGVwUmVxdWVzdBoZLnBpcHMuc2ltLnYxLlN0ZXBSZXNwb25zZRJHCghTbmFwc2hvdBIcLnBpcHMuc2ltLnYxLlNuYXBzaG90UmVxdWVzdBodLnBpcHMuc2ltLnYxLlNuYXBzaG90UmVzcG9uc2USUgoLV2F0Y2hEZWx0YXMSHy5waXBzLnNpbS52MS5XYXRjaERlbHRhc1JlcXVlc3QaIC5waXBzLnNpbS52MS5XYXRjaERlbHRhc1Jlc3BvbnNlMAESUwoMU3VibWl0SW50ZW50EiAucGlwcy5zaW0udjEuU3VibWl0SW50ZW50UmVxdWVzdBohLnBpcHMuc2ltLnYxLlN1Ym1pdEludGVudFJlc3BvbnNlQpwBCg9jb20ucGlwcy5zaW0udjFCCFNpbVByb3RvUAFaMWdpdGh1Yi5jb20vdGVjZWVyL3BpcHNpbS9nZW4vZ28vcGlwcy9zaW0vdjE7c2ltdjGiAgNQU1iqAgtQaXBzLlNpbS5WMcoCC1BpcHNcU2ltXFYx4gIXUGlwc1xTaW1cVjFcR1BCTWV0YWRhdGHqAg1QaXBzOjpTaW06OlYxYgZwcm90bzM");
 
 /**
  * @generated from message pips.sim.v1.Vec2
@@ -389,6 +389,18 @@ export type SubmitIntentRequest = Message<"pips.sim.v1.SubmitIntentRequest"> & {
      */
     value: EndEmploymentIntent;
     case: "endEmployment";
+  } | {
+    /**
+     * @generated from field: pips.sim.v1.TransferIntent transfer = 7;
+     */
+    value: TransferIntent;
+    case: "transfer";
+  } | {
+    /**
+     * @generated from field: pips.sim.v1.CreditBalancesIntent credit_balances = 8;
+     */
+    value: CreditBalancesIntent;
+    case: "creditBalances";
   } | { case: undefined; value?: undefined };
 };
 
@@ -586,6 +598,111 @@ export type ApplyNeedsIntent = Message<"pips.sim.v1.ApplyNeedsIntent"> & {
  */
 export const ApplyNeedsIntentSchema: GenMessage<ApplyNeedsIntent> = /*@__PURE__*/
   messageDesc(file_pips_sim_v1_sim, 18);
+
+/**
+ * Moves money between two accounts the core knows about — a pip, a
+ * workplace, or the treasury. The bank has already made this transfer (or
+ * this intent originates one for it, on the purchase path where the pip's
+ * decision is made inside a tick); this is the copy that lets step() answer
+ * "can this pip afford it" without a network call. The core is authoritative
+ * for the moment of purchase, the bank for history and solvency.
+ *
+ * @generated from message pips.sim.v1.TransferIntent
+ */
+export type TransferIntent = Message<"pips.sim.v1.TransferIntent"> & {
+  /**
+   * Namespaced: "pip:412", "workplace:3", "treasury".
+   *
+   * @generated from field: string payer_account_id = 1;
+   */
+  payerAccountId: string;
+
+  /**
+   * @generated from field: string payee_account_id = 2;
+   */
+  payeeAccountId: string;
+
+  /**
+   * @generated from field: int64 amount = 3;
+   */
+  amount: bigint;
+
+  /**
+   * 0 (RESOURCE_KIND_UNSPECIFIED) for a pure money move, e.g. a wage credit.
+   * Set when the payer is buying pips.workplace.v1.ResourceKind — the core
+   * also runs Consume for the payer in the same intent. Declared as int32,
+   * not pips.workplace.v1.ResourceKind, because workplace.proto already
+   * imports this file and a back-import would be circular.
+   *
+   * @generated from field: int32 resource_kind = 4;
+   */
+  resourceKind: number;
+
+  /**
+   * @generated from field: uint64 tick = 5;
+   */
+  tick: bigint;
+};
+
+/**
+ * Describes the message pips.sim.v1.TransferIntent.
+ * Use `create(TransferIntentSchema)` to create a new message.
+ */
+export const TransferIntentSchema: GenMessage<TransferIntent> = /*@__PURE__*/
+  messageDesc(file_pips_sim_v1_sim, 19);
+
+/**
+ * Payroll, batched. A workplace's shift population is paid in one intent
+ * carrying every pip's credit, rather than one intent per pip — the number
+ * of pips employed does not get to set the tick budget.
+ *
+ * @generated from message pips.sim.v1.CreditBalancesIntent
+ */
+export type CreditBalancesIntent = Message<"pips.sim.v1.CreditBalancesIntent"> & {
+  /**
+   * @generated from field: string payer_account_id = 1;
+   */
+  payerAccountId: string;
+
+  /**
+   * @generated from field: repeated pips.sim.v1.CreditBalancesIntent.Credit credits = 2;
+   */
+  credits: CreditBalancesIntent_Credit[];
+
+  /**
+   * @generated from field: uint64 tick = 3;
+   */
+  tick: bigint;
+};
+
+/**
+ * Describes the message pips.sim.v1.CreditBalancesIntent.
+ * Use `create(CreditBalancesIntentSchema)` to create a new message.
+ */
+export const CreditBalancesIntentSchema: GenMessage<CreditBalancesIntent> = /*@__PURE__*/
+  messageDesc(file_pips_sim_v1_sim, 20);
+
+/**
+ * @generated from message pips.sim.v1.CreditBalancesIntent.Credit
+ */
+export type CreditBalancesIntent_Credit = Message<"pips.sim.v1.CreditBalancesIntent.Credit"> & {
+  /**
+   * @generated from field: uint64 pip_id = 1;
+   */
+  pipId: bigint;
+
+  /**
+   * @generated from field: int64 amount = 2;
+   */
+  amount: bigint;
+};
+
+/**
+ * Describes the message pips.sim.v1.CreditBalancesIntent.Credit.
+ * Use `create(CreditBalancesIntent_CreditSchema)` to create a new message.
+ */
+export const CreditBalancesIntent_CreditSchema: GenMessage<CreditBalancesIntent_Credit> = /*@__PURE__*/
+  messageDesc(file_pips_sim_v1_sim, 20, 0);
 
 /**
  * @generated from enum pips.sim.v1.Need
