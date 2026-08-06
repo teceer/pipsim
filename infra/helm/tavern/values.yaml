@@ -6,19 +6,36 @@ image:
   # reports success.
   pullPolicy: Always
 
-workplace:
-  # 1 is the farm. Ids are configuration until BuildWorkplace exists.
-  id: 2
+# The taverns this deployment hosts.
+#
+# A list, because the service owns a *kind* of building rather than one
+# building. Adding a second tavern is another entry here, not another Helm
+# release — see ADR 0005.
+#
+# 1 is the farm. Ids are configuration until BuildWorkplace exists.
+workplaces:
+  - id: 2
   # Named in full because YAML 1.1 — which Helm parses — reads a bare `y`
   # key as the boolean true. The farm carried that bug silently for weeks:
   # WORKPLACE_Y rendered empty and Go fell back to a default that happened
   # to match, so nothing looked wrong. Deliberately far from the
   # farm: the commute is the point, and two buildings on top of each other would
   # hide whether pips actually walk to the one that hired them.
-  xMilli: 32000
-  yMilli: 20000
+    xMilli: 32000
+    yMilli: 20000
 
 platformNamespace: pipsim-platform
+
+# Off by default, because it needs the Dapr control plane installed and this
+# chart must stand up without one.
+#
+# On, shift state leaves the GenServer for the Dapr actor state store, and the
+# replicaCount note below stops applying: the actor runtime allows one
+# invocation at a time per building wherever the caller landed, which is exactly
+# what the GenServer was providing within a single node. See ADR 0005.
+dapr:
+  enabled: false
+  apiLogging: false
 
 # One, and unlike the farm this is not yet a solved problem.
 #

@@ -14,6 +14,26 @@ defmodule Pips.Workplace.V1.ResourceKind do
   field :RESOURCE_KIND_ALE, 4
 end
 
+defmodule Pips.Workplace.V1.ListRequest do
+  @moduledoc false
+
+  use Protobuf,
+    full_name: "pips.workplace.v1.ListRequest",
+    protoc_gen_elixir_version: "0.17.0",
+    syntax: :proto3
+end
+
+defmodule Pips.Workplace.V1.ListResponse do
+  @moduledoc false
+
+  use Protobuf,
+    full_name: "pips.workplace.v1.ListResponse",
+    protoc_gen_elixir_version: "0.17.0",
+    syntax: :proto3
+
+  field :workplaces, 1, repeated: true, type: Pips.Workplace.V1.DescribeResponse
+end
+
 defmodule Pips.Workplace.V1.DescribeRequest do
   @moduledoc false
 

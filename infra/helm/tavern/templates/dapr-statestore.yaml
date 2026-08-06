@@ -1,0 +1,32 @@
+{{- if .Values.dapr.enabled }}
+# The tavern's actor state store.
+#
+# Its own component rather than the farm's, and scoped to this app. Dapr
+# components are namespace-wide by default, so two workplaces both shipping an
+# unscoped `statestore` would fight over one name; `scopes` says which app-id
+# each belongs to and removes the question.
+#
+# `actorStateStore: "true"` is the whole difference between a general state
+# store and one actors may use. Without it the sidecar starts, registers the
+# entity, and then fails every write with a message about the actor instance
+# being missing — which reads like a routing problem and is not.
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: statestore-tavern
+  labels:
+    app.kubernetes.io/name: tavern
+    app.kubernetes.io/part-of: pipsim
+spec:
+  type: state.redis
+  version: v1
+  metadata:
+    - name: redisHost
+      value: "redis.{{ .Values.platformNamespace }}.svc.cluster.local:6379"
+    - name: redisPassword
+      value: ""
+    - name: actorStateStore
+      value: "true"
+scopes:
+  - tavern
+{{- end }}

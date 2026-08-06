@@ -19,7 +19,11 @@ defmodule Tavern.MixProject do
   def application do
     [
       mod: {Tavern.Application, []},
-      extra_applications: [:logger]
+      # :inets for :httpc, which is how Tavern.Dapr talks to the sidecar. OTP
+      # ships it, so speaking Dapr's HTTP API costs no dependency — the same
+      # argument Tavern.Connect makes about not taking a gRPC stack to serve
+      # what is really just POST.
+      extra_applications: [:logger, :inets]
     ]
   end
 

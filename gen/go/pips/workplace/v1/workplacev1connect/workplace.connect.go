@@ -33,6 +33,8 @@ const (
 // reflection-formatted method names, remove the leading slash and convert the remaining slash to a
 // period.
 const (
+	// WorkplaceServiceListProcedure is the fully-qualified name of the WorkplaceService's List RPC.
+	WorkplaceServiceListProcedure = "/pips.workplace.v1.WorkplaceService/List"
 	// WorkplaceServiceDescribeProcedure is the fully-qualified name of the WorkplaceService's Describe
 	// RPC.
 	WorkplaceServiceDescribeProcedure = "/pips.workplace.v1.WorkplaceService/Describe"
@@ -51,7 +53,16 @@ const (
 
 // WorkplaceServiceClient is a client for the pips.workplace.v1.WorkplaceService service.
 type WorkplaceServiceClient interface {
-	// Static description: what it is, how many it employs, what it produces.
+	// Every building this service hosts.
+	//
+	// A service owns a *kind* of building, not one building, so "who are you" has
+	// no answer and `Describe` with no id has nothing to return. The gateway
+	// enumerates here and then addresses each instance by id. A service hosting a
+	// single building answers with one entry, which is why this is additive
+	// rather than a replacement.
+	List(context.Context, *connect.Request[v1.ListRequest]) (*connect.Response[v1.ListResponse], error)
+	// Static description of one building. `workplace_id` is required as soon as a
+	// service hosts more than one.
 	Describe(context.Context, *connect.Request[v1.DescribeRequest]) (*connect.Response[v1.DescribeResponse], error)
 	// Can this pip work here right now? Called by the gateway before hiring.
 	CanEmploy(context.Context, *connect.Request[v1.CanEmployRequest]) (*connect.Response[v1.CanEmployResponse], error)
@@ -75,6 +86,12 @@ func NewWorkplaceServiceClient(httpClient connect.HTTPClient, baseURL string, op
 	baseURL = strings.TrimRight(baseURL, "/")
 	workplaceServiceMethods := v1.File_pips_workplace_v1_workplace_proto.Services().ByName("WorkplaceService").Methods()
 	return &workplaceServiceClient{
+		list: connect.NewClient[v1.ListRequest, v1.ListResponse](
+			httpClient,
+			baseURL+WorkplaceServiceListProcedure,
+			connect.WithSchema(workplaceServiceMethods.ByName("List")),
+			connect.WithClientOptions(opts...),
+		),
 		describe: connect.NewClient[v1.DescribeRequest, v1.DescribeResponse](
 			httpClient,
 			baseURL+WorkplaceServiceDescribeProcedure,
@@ -110,11 +127,17 @@ func NewWorkplaceServiceClient(httpClient connect.HTTPClient, baseURL string, op
 
 // workplaceServiceClient implements WorkplaceServiceClient.
 type workplaceServiceClient struct {
+	list       *connect.Client[v1.ListRequest, v1.ListResponse]
 	describe   *connect.Client[v1.DescribeRequest, v1.DescribeResponse]
 	canEmploy  *connect.Client[v1.CanEmployRequest, v1.CanEmployResponse]
 	startShift *connect.Client[v1.StartShiftRequest, v1.StartShiftResponse]
 	work       *connect.Client[v1.WorkRequest, v1.WorkResponse]
 	endShift   *connect.Client[v1.EndShiftRequest, v1.EndShiftResponse]
+}
+
+// List calls pips.workplace.v1.WorkplaceService.List.
+func (c *workplaceServiceClient) List(ctx context.Context, req *connect.Request[v1.ListRequest]) (*connect.Response[v1.ListResponse], error) {
+	return c.list.CallUnary(ctx, req)
 }
 
 // Describe calls pips.workplace.v1.WorkplaceService.Describe.
@@ -144,7 +167,16 @@ func (c *workplaceServiceClient) EndShift(ctx context.Context, req *connect.Requ
 
 // WorkplaceServiceHandler is an implementation of the pips.workplace.v1.WorkplaceService service.
 type WorkplaceServiceHandler interface {
-	// Static description: what it is, how many it employs, what it produces.
+	// Every building this service hosts.
+	//
+	// A service owns a *kind* of building, not one building, so "who are you" has
+	// no answer and `Describe` with no id has nothing to return. The gateway
+	// enumerates here and then addresses each instance by id. A service hosting a
+	// single building answers with one entry, which is why this is additive
+	// rather than a replacement.
+	List(context.Context, *connect.Request[v1.ListRequest]) (*connect.Response[v1.ListResponse], error)
+	// Static description of one building. `workplace_id` is required as soon as a
+	// service hosts more than one.
 	Describe(context.Context, *connect.Request[v1.DescribeRequest]) (*connect.Response[v1.DescribeResponse], error)
 	// Can this pip work here right now? Called by the gateway before hiring.
 	CanEmploy(context.Context, *connect.Request[v1.CanEmployRequest]) (*connect.Response[v1.CanEmployResponse], error)
@@ -164,6 +196,12 @@ type WorkplaceServiceHandler interface {
 // and JSON codecs. They also support gzip compression.
 func NewWorkplaceServiceHandler(svc WorkplaceServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
 	workplaceServiceMethods := v1.File_pips_workplace_v1_workplace_proto.Services().ByName("WorkplaceService").Methods()
+	workplaceServiceListHandler := connect.NewUnaryHandler(
+		WorkplaceServiceListProcedure,
+		svc.List,
+		connect.WithSchema(workplaceServiceMethods.ByName("List")),
+		connect.WithHandlerOptions(opts...),
+	)
 	workplaceServiceDescribeHandler := connect.NewUnaryHandler(
 		WorkplaceServiceDescribeProcedure,
 		svc.Describe,
@@ -196,6 +234,8 @@ func NewWorkplaceServiceHandler(svc WorkplaceServiceHandler, opts ...connect.Han
 	)
 	return "/pips.workplace.v1.WorkplaceService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
+		case WorkplaceServiceListProcedure:
+			workplaceServiceListHandler.ServeHTTP(w, r)
 		case WorkplaceServiceDescribeProcedure:
 			workplaceServiceDescribeHandler.ServeHTTP(w, r)
 		case WorkplaceServiceCanEmployProcedure:
@@ -214,6 +254,10 @@ func NewWorkplaceServiceHandler(svc WorkplaceServiceHandler, opts ...connect.Han
 
 // UnimplementedWorkplaceServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedWorkplaceServiceHandler struct{}
+
+func (UnimplementedWorkplaceServiceHandler) List(context.Context, *connect.Request[v1.ListRequest]) (*connect.Response[v1.ListResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pips.workplace.v1.WorkplaceService.List is not implemented"))
+}
 
 func (UnimplementedWorkplaceServiceHandler) Describe(context.Context, *connect.Request[v1.DescribeRequest]) (*connect.Response[v1.DescribeResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pips.workplace.v1.WorkplaceService.Describe is not implemented"))

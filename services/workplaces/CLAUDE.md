@@ -30,6 +30,31 @@ the Elixir tavern failed on a response content type of
 The tavern's own tests all passed, because both sides of them shared the bug.
 That is the class of thing only a cross-implementation check finds.
 
+## A service is a kind of building, not a building
+
+`farm` does not mean "the farm". It means "farms", and one process holds however
+many the world has. `List` reports them; every other RPC routes on the
+`workplace_id` the contract already carried.
+
+This is why `Describe` with no id is now allowed to fail. It answered "who are
+you" back when a process hosted one building, and that question has no answer
+once it hosts three. A service hosting exactly one still answers it, so nothing
+written before this change had to move — the Elixir tavern hosts one building
+and does not implement `List` at all.
+
+The rule that matters when adding buildings: **capacity, shifts and occupancy
+belong to a building, never to the process.** One store per building, keyed by
+id. A store shared across two of them enforces one headcount over the pair,
+which is the same bug as sharing state between replicas, one level up.
+
+What is *not* per building: the offer queue. `pipsim.work.<kind>` is keyed by
+kind, so an offer arriving at a host is not addressed to any particular
+building — the host picks one, in rotation. A fixed order would fill the lowest
+id to capacity before the next building saw a candidate, making configuration
+order the hiring policy.
+
+See ADR 0005 for why this replaced one-deployment-per-building.
+
 ## The rule that keeps this working
 
 **If you want to extend `workplace.proto` for one specific building, stop.**
@@ -43,7 +68,10 @@ in any language and touches neither sim-core nor the gateway.
 
 ## What every workplace must do
 
-- implement all five RPCs (`Describe`, `CanEmploy`, `StartShift`, `Work`, `EndShift`)
+- implement the five shift RPCs (`Describe`, `CanEmploy`, `StartShift`, `Work`,
+  `EndShift`), and `List` if it hosts more than one building — a service with
+  one building may answer `List` with Unimplemented and identify itself through
+  `Describe` instead
 - own its own Postgres schema; never read another service's tables
 - publish `ResourceProduced` facts through the gateway, not directly
 - expose `/healthz`, JSON logs, and OTel spans named `pipsim.<kind>.<operation>`
@@ -77,6 +105,29 @@ identical in every workplace.
 Whatever backs it, `Claim` must be atomic across reap-check-insert. Splitting it
 into "is there room" and "take the room" reintroduces the race the store exists
 to remove.
+
+There are now three backings, and they differ only in *who* provides that
+atomicity:
+
+| Store | Atomicity from | Correct at |
+|---|---|---|
+| memory | a mutex | one replica |
+| Redis | two Lua scripts | any number |
+| Dapr actors | the actor runtime, one invocation at a time per building | any number |
+
+The rules themselves — reaping, the lease, elapsed-tick pricing — live once, in
+`shiftSet`. Memory wraps it in a mutex; the Dapr store loads it, calls one
+method and writes it back. Only the Redis store restates them, in Lua, because
+that is where its serialisation has to happen. If you add a fourth backing, wrap
+`shiftSet`; do not write the rules again.
+
+**Under Dapr the Connect handler stops holding logic.** State may only be
+touched inside an invocation the sidecar routed — anywhere else Dapr answers
+`ERR_ACTOR_INSTANCE_MISSING` — so the handler becomes an adapter that hands each
+call to the building's actor and waits, and the actor endpoint on the same mux
+runs the work. The trip out through the sidecar and back costs about 1.6 ms and
+is not avoidable: it is what earns the right to write. Note that `/healthz`
+counts through the actors too, for the same reason.
 
 **`Work` pays for elapsed ticks, not per call.** The driver batches — it calls
 `Work` once a second while the world ticks ten times. Flat per-call amounts made

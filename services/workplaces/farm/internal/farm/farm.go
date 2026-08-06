@@ -20,6 +20,7 @@ package farm
 import (
 	"context"
 	"log/slog"
+	"strconv"
 	"time"
 
 	"connectrpc.com/connect"
@@ -108,9 +109,11 @@ func (s *Service) Describe(
 	}
 
 	return connect.NewResponse(&workplacev1.DescribeResponse{
-		WorkplaceId:    s.id,
-		Kind:           "farm",
-		DisplayName:    "Farm",
+		WorkplaceId: s.id,
+		Kind:        "farm",
+		// Carries the id: several farms now share a process, and "Farm" three
+		// times over is unreadable in a log line or on the map.
+		DisplayName:    "Farm #" + strconv.FormatUint(s.id, 10),
 		MaxWorkers:     MaxWorkers,
 		CurrentWorkers: int32(workers),
 		Position:       s.position,

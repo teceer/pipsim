@@ -230,9 +230,60 @@ bought: turn-based concurrency per building id, so the atomic reap-check-claim t
    running service is invisible until the gateway restarts. Acceptable while ids are
    configuration; not acceptable once `BuildWorkplace` exists.
 
-4. **Swap the store for Dapr actors.** The remaining half of the original step 2: split
-   `internal/farm` along the boundary the spike exposed — Connect adapter on one side, actor
-   handler owning state on the other — and delete the two Lua scripts. Durability is proven
-   (2a).
-5. **`tavern` in Elixir** against the hand-written actor contract — the test of whether the
-   polyglot claim survives without an SDK.
+4. ~~**Swap the store for Dapr actors**~~ — done, as a fourth `Store` rather than a
+   replacement. `farm.NewDaprStore` keeps a building's shifts in the actor state store;
+   `farm.ActorHost` is the Connect adapter, and `Host.Handler()` serves what the sidecar
+   calls back into. Selected by the presence of `DAPR_HTTP_PORT`, which the sidecar injects
+   — so there is no separate flag to fall out of step with reality.
+
+   Verified against `daprd` 1.15.4: conformance 6/6 through the actors with two buildings,
+   and occupancy of 3 and 2 survived killing both the farm process and the sidecar
+   container. State lands in Redis under `farm||farm||<id>||shifts`.
+
+   Two things came out differently from the plan:
+
+   - **The Lua stayed.** The rules moved into `shiftSet`, shared by the memory and Dapr
+     stores, and the Redis store still restates them in Lua because that is where *its*
+     serialisation has to happen. Deleting it would mean deleting the ability to run without
+     a Dapr control plane, which `make test` and `make dev` depend on. Three backings, one
+     set of rules, three sources of atomicity — mutex, Lua, actor runtime.
+   - **`/healthz` had to change too.** Counting workers through the inner host reads the
+     state store outside an invocation, so a perfectly healthy service reported a failure.
+     There is no shortcut round the sidecar, not even for a health endpoint.
+
+   Off by default in the chart (`dapr.enabled`), because it needs the control plane
+   installed and the chart must stand up without one.
+5. ~~**`tavern` in Elixir** against the hand-written actor contract~~ — done. The claim
+   survives.
+
+   `Tavern.Dapr` is the whole integration: about 170 lines and **no new dependency**,
+   because `:httpc` ships with OTP. Three HTTP calls, one JSON body declaring the entity,
+   and two routes on a `Plug` that already existed. Conformance 6/6 through the actors with
+   two taverns, and 3 and 2 occupants survived killing both the release and the sidecar
+   container.
+
+   So the answer to "does a building type stay an hour of work in any language once Dapr is
+   in the picture" is yes — and notably, the language without an SDK needed *less* glue than
+   the one with one, because Go's SDK was never used either and the hand-written path is
+   simply what both do.
+
+   Three things cost real time and are worth carrying forward:
+
+   - **The sidecar calls the app with `PUT`.** A caller invokes an actor with `POST`; the
+     callback into the app is `PUT`. The Go host never noticed because its handler ignored
+     the verb; Elixir pattern-matched on `POST` and returned 404, which Dapr reports back as
+     `ERR_ACTOR_INVOKE_METHOD` "actor method not found" — indistinguishable, from the
+     caller's side, from an entity that was never registered.
+   - **Persisted lease time must be wall clock.** `System.monotonic_time/1` is right for
+     state that dies with the process and wrong the moment it is written down: a lease
+     stored before a restart is compared against a reading taken after one. Caught before
+     it ran, but only because the durability test was already the acceptance criterion.
+   - **Dapr components are namespace-wide.** Two workplace charts each shipping an unscoped
+     `statestore` collide. Both are now named apart and carry `scopes`.
+
+   And one thing worth stating plainly, because it is the honest cost of this ADR: a
+   `GenServer` per building under a `DynamicSupervisor` already *is* the actor model, and it
+   is better than Dapr at everything except surviving the node — 2 KiB per building,
+   microsecond activation, no network hop, real crash isolation. What Dapr buys the tavern
+   is placement, and it charges a sidecar round trip for it. For the farm that trade is
+   clear, because Go had nothing equivalent. For the tavern it is a trade, not an upgrade.

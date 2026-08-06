@@ -6,16 +6,40 @@ image:
   # reports success.
   pullPolicy: Always
 
-workplace:
-  id: 1
-  # Named in full because YAML 1.1 — which Helm parses — reads a bare `y`
-  # key as the boolean true. The farm carried that bug silently for weeks:
-  # WORKPLACE_Y rendered empty and Go fell back to a default that happened
-  # to match, so nothing looked wrong.
-  xMilli: 12000
-  yMilli: 8000
+# The farms this deployment hosts.
+#
+# A list, because the service owns a *kind* of building rather than one
+# building. Adding a second farm is another entry here, not another Helm
+# release — see ADR 0005. The chart renders these into WORKPLACES; the older
+# single WORKPLACE_ID/X/Y triple is still read by the binary, so a values file
+# that predates this list keeps working.
+#
+# Named in full because YAML 1.1 — which Helm parses — reads a bare `y`
+# key as the boolean true. The farm carried that bug silently for weeks:
+# WORKPLACE_Y rendered empty and Go fell back to a default that happened
+# to match, so nothing looked wrong.
+workplaces:
+  - id: 1
+    xMilli: 12000
+    yMilli: 8000
 
 platformNamespace: pipsim-platform
+
+# Off by default, because it needs the Dapr control plane installed in the
+# cluster and this chart must stand up without one.
+#
+# On, shift state moves from the Redis store in store.go to the Dapr actor
+# state store — which is the same Redis underneath, reached a different way.
+# What changes is not where the bytes land but who serialises the writes: the
+# actor runtime allows one invocation at a time per building, so the atomic
+# reap-check-claim the Lua exists to provide comes from the runtime instead.
+# See ADR 0005.
+dapr:
+  enabled: false
+  # Every actor call logged by the sidecar. Useful the first time the split
+  # between the Connect adapter and the actor handler surprises you; far too
+  # loud to leave on.
+  apiLogging: false
 
 # Two, and what it took to get here is worth knowing.
 #

@@ -11,7 +11,17 @@ import "pips/sim/v1/sim.proto";
 // touches nothing in the core. If you find yourself wanting to extend this
 // service for one specific building, that is a signal the abstraction is wrong.
 service WorkplaceService {
-  // Static description: what it is, how many it employs, what it produces.
+  // Every building this service hosts.
+  //
+  // A service owns a *kind* of building, not one building, so "who are you" has
+  // no answer and `Describe` with no id has nothing to return. The gateway
+  // enumerates here and then addresses each instance by id. A service hosting a
+  // single building answers with one entry, which is why this is additive
+  // rather than a replacement.
+  rpc List(ListRequest) returns (ListResponse);
+
+  // Static description of one building. `workplace_id` is required as soon as a
+  // service hosts more than one.
   rpc Describe(DescribeRequest) returns (DescribeResponse);
 
   // Can this pip work here right now? Called by the gateway before hiring.
@@ -26,6 +36,14 @@ service WorkplaceService {
 
   // A pip ends the shift, voluntarily or not.
   rpc EndShift(EndShiftRequest) returns (EndShiftResponse);
+}
+
+message ListRequest {}
+
+message ListResponse {
+  // Sent in full. A service hosts a handful of buildings, not a page of them,
+  // and the gateway registers every one on a loop anyway.
+  repeated DescribeResponse workplaces = 1;
 }
 
 message DescribeRequest {

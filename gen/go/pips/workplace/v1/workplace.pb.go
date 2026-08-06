@@ -77,6 +77,88 @@ func (ResourceKind) EnumDescriptor() ([]byte, []int) {
 	return file_pips_workplace_v1_workplace_proto_rawDescGZIP(), []int{0}
 }
 
+type ListRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListRequest) Reset() {
+	*x = ListRequest{}
+	mi := &file_pips_workplace_v1_workplace_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListRequest) ProtoMessage() {}
+
+func (x *ListRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_pips_workplace_v1_workplace_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListRequest.ProtoReflect.Descriptor instead.
+func (*ListRequest) Descriptor() ([]byte, []int) {
+	return file_pips_workplace_v1_workplace_proto_rawDescGZIP(), []int{0}
+}
+
+type ListResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Sent in full. A service hosts a handful of buildings, not a page of them,
+	// and the gateway registers every one on a loop anyway.
+	Workplaces    []*DescribeResponse `protobuf:"bytes,1,rep,name=workplaces,proto3" json:"workplaces,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListResponse) Reset() {
+	*x = ListResponse{}
+	mi := &file_pips_workplace_v1_workplace_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListResponse) ProtoMessage() {}
+
+func (x *ListResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_pips_workplace_v1_workplace_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListResponse.ProtoReflect.Descriptor instead.
+func (*ListResponse) Descriptor() ([]byte, []int) {
+	return file_pips_workplace_v1_workplace_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *ListResponse) GetWorkplaces() []*DescribeResponse {
+	if x != nil {
+		return x.Workplaces
+	}
+	return nil
+}
+
 type DescribeRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	WorkplaceId   uint64                 `protobuf:"varint,1,opt,name=workplace_id,json=workplaceId,proto3" json:"workplace_id,omitempty"`
@@ -86,7 +168,7 @@ type DescribeRequest struct {
 
 func (x *DescribeRequest) Reset() {
 	*x = DescribeRequest{}
-	mi := &file_pips_workplace_v1_workplace_proto_msgTypes[0]
+	mi := &file_pips_workplace_v1_workplace_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -98,7 +180,7 @@ func (x *DescribeRequest) String() string {
 func (*DescribeRequest) ProtoMessage() {}
 
 func (x *DescribeRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pips_workplace_v1_workplace_proto_msgTypes[0]
+	mi := &file_pips_workplace_v1_workplace_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -111,7 +193,7 @@ func (x *DescribeRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DescribeRequest.ProtoReflect.Descriptor instead.
 func (*DescribeRequest) Descriptor() ([]byte, []int) {
-	return file_pips_workplace_v1_workplace_proto_rawDescGZIP(), []int{0}
+	return file_pips_workplace_v1_workplace_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *DescribeRequest) GetWorkplaceId() uint64 {
@@ -137,7 +219,7 @@ type DescribeResponse struct {
 
 func (x *DescribeResponse) Reset() {
 	*x = DescribeResponse{}
-	mi := &file_pips_workplace_v1_workplace_proto_msgTypes[1]
+	mi := &file_pips_workplace_v1_workplace_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -149,7 +231,7 @@ func (x *DescribeResponse) String() string {
 func (*DescribeResponse) ProtoMessage() {}
 
 func (x *DescribeResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pips_workplace_v1_workplace_proto_msgTypes[1]
+	mi := &file_pips_workplace_v1_workplace_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -162,7 +244,7 @@ func (x *DescribeResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DescribeResponse.ProtoReflect.Descriptor instead.
 func (*DescribeResponse) Descriptor() ([]byte, []int) {
-	return file_pips_workplace_v1_workplace_proto_rawDescGZIP(), []int{1}
+	return file_pips_workplace_v1_workplace_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *DescribeResponse) GetWorkplaceId() uint64 {
@@ -231,7 +313,7 @@ type CanEmployRequest struct {
 
 func (x *CanEmployRequest) Reset() {
 	*x = CanEmployRequest{}
-	mi := &file_pips_workplace_v1_workplace_proto_msgTypes[2]
+	mi := &file_pips_workplace_v1_workplace_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -243,7 +325,7 @@ func (x *CanEmployRequest) String() string {
 func (*CanEmployRequest) ProtoMessage() {}
 
 func (x *CanEmployRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pips_workplace_v1_workplace_proto_msgTypes[2]
+	mi := &file_pips_workplace_v1_workplace_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -256,7 +338,7 @@ func (x *CanEmployRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CanEmployRequest.ProtoReflect.Descriptor instead.
 func (*CanEmployRequest) Descriptor() ([]byte, []int) {
-	return file_pips_workplace_v1_workplace_proto_rawDescGZIP(), []int{2}
+	return file_pips_workplace_v1_workplace_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *CanEmployRequest) GetWorkplaceId() uint64 {
@@ -283,7 +365,7 @@ type CanEmployResponse struct {
 
 func (x *CanEmployResponse) Reset() {
 	*x = CanEmployResponse{}
-	mi := &file_pips_workplace_v1_workplace_proto_msgTypes[3]
+	mi := &file_pips_workplace_v1_workplace_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -295,7 +377,7 @@ func (x *CanEmployResponse) String() string {
 func (*CanEmployResponse) ProtoMessage() {}
 
 func (x *CanEmployResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pips_workplace_v1_workplace_proto_msgTypes[3]
+	mi := &file_pips_workplace_v1_workplace_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -308,7 +390,7 @@ func (x *CanEmployResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CanEmployResponse.ProtoReflect.Descriptor instead.
 func (*CanEmployResponse) Descriptor() ([]byte, []int) {
-	return file_pips_workplace_v1_workplace_proto_rawDescGZIP(), []int{3}
+	return file_pips_workplace_v1_workplace_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *CanEmployResponse) GetAllowed() bool {
@@ -336,7 +418,7 @@ type StartShiftRequest struct {
 
 func (x *StartShiftRequest) Reset() {
 	*x = StartShiftRequest{}
-	mi := &file_pips_workplace_v1_workplace_proto_msgTypes[4]
+	mi := &file_pips_workplace_v1_workplace_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -348,7 +430,7 @@ func (x *StartShiftRequest) String() string {
 func (*StartShiftRequest) ProtoMessage() {}
 
 func (x *StartShiftRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pips_workplace_v1_workplace_proto_msgTypes[4]
+	mi := &file_pips_workplace_v1_workplace_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -361,7 +443,7 @@ func (x *StartShiftRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StartShiftRequest.ProtoReflect.Descriptor instead.
 func (*StartShiftRequest) Descriptor() ([]byte, []int) {
-	return file_pips_workplace_v1_workplace_proto_rawDescGZIP(), []int{4}
+	return file_pips_workplace_v1_workplace_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *StartShiftRequest) GetWorkplaceId() uint64 {
@@ -395,7 +477,7 @@ type StartShiftResponse struct {
 
 func (x *StartShiftResponse) Reset() {
 	*x = StartShiftResponse{}
-	mi := &file_pips_workplace_v1_workplace_proto_msgTypes[5]
+	mi := &file_pips_workplace_v1_workplace_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -407,7 +489,7 @@ func (x *StartShiftResponse) String() string {
 func (*StartShiftResponse) ProtoMessage() {}
 
 func (x *StartShiftResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pips_workplace_v1_workplace_proto_msgTypes[5]
+	mi := &file_pips_workplace_v1_workplace_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -420,7 +502,7 @@ func (x *StartShiftResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StartShiftResponse.ProtoReflect.Descriptor instead.
 func (*StartShiftResponse) Descriptor() ([]byte, []int) {
-	return file_pips_workplace_v1_workplace_proto_rawDescGZIP(), []int{5}
+	return file_pips_workplace_v1_workplace_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *StartShiftResponse) GetAccepted() bool {
@@ -448,7 +530,7 @@ type WorkRequest struct {
 
 func (x *WorkRequest) Reset() {
 	*x = WorkRequest{}
-	mi := &file_pips_workplace_v1_workplace_proto_msgTypes[6]
+	mi := &file_pips_workplace_v1_workplace_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -460,7 +542,7 @@ func (x *WorkRequest) String() string {
 func (*WorkRequest) ProtoMessage() {}
 
 func (x *WorkRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pips_workplace_v1_workplace_proto_msgTypes[6]
+	mi := &file_pips_workplace_v1_workplace_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -473,7 +555,7 @@ func (x *WorkRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WorkRequest.ProtoReflect.Descriptor instead.
 func (*WorkRequest) Descriptor() ([]byte, []int) {
-	return file_pips_workplace_v1_workplace_proto_rawDescGZIP(), []int{6}
+	return file_pips_workplace_v1_workplace_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *WorkRequest) GetWorkplaceId() uint64 {
@@ -510,7 +592,7 @@ type WorkResponse struct {
 
 func (x *WorkResponse) Reset() {
 	*x = WorkResponse{}
-	mi := &file_pips_workplace_v1_workplace_proto_msgTypes[7]
+	mi := &file_pips_workplace_v1_workplace_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -522,7 +604,7 @@ func (x *WorkResponse) String() string {
 func (*WorkResponse) ProtoMessage() {}
 
 func (x *WorkResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pips_workplace_v1_workplace_proto_msgTypes[7]
+	mi := &file_pips_workplace_v1_workplace_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -535,7 +617,7 @@ func (x *WorkResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WorkResponse.ProtoReflect.Descriptor instead.
 func (*WorkResponse) Descriptor() ([]byte, []int) {
-	return file_pips_workplace_v1_workplace_proto_rawDescGZIP(), []int{7}
+	return file_pips_workplace_v1_workplace_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *WorkResponse) GetProduced() []*ResourceAmount {
@@ -569,7 +651,7 @@ type ResourceAmount struct {
 
 func (x *ResourceAmount) Reset() {
 	*x = ResourceAmount{}
-	mi := &file_pips_workplace_v1_workplace_proto_msgTypes[8]
+	mi := &file_pips_workplace_v1_workplace_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -581,7 +663,7 @@ func (x *ResourceAmount) String() string {
 func (*ResourceAmount) ProtoMessage() {}
 
 func (x *ResourceAmount) ProtoReflect() protoreflect.Message {
-	mi := &file_pips_workplace_v1_workplace_proto_msgTypes[8]
+	mi := &file_pips_workplace_v1_workplace_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -594,7 +676,7 @@ func (x *ResourceAmount) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResourceAmount.ProtoReflect.Descriptor instead.
 func (*ResourceAmount) Descriptor() ([]byte, []int) {
-	return file_pips_workplace_v1_workplace_proto_rawDescGZIP(), []int{8}
+	return file_pips_workplace_v1_workplace_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *ResourceAmount) GetKind() ResourceKind {
@@ -623,7 +705,7 @@ type EndShiftRequest struct {
 
 func (x *EndShiftRequest) Reset() {
 	*x = EndShiftRequest{}
-	mi := &file_pips_workplace_v1_workplace_proto_msgTypes[9]
+	mi := &file_pips_workplace_v1_workplace_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -635,7 +717,7 @@ func (x *EndShiftRequest) String() string {
 func (*EndShiftRequest) ProtoMessage() {}
 
 func (x *EndShiftRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pips_workplace_v1_workplace_proto_msgTypes[9]
+	mi := &file_pips_workplace_v1_workplace_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -648,7 +730,7 @@ func (x *EndShiftRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EndShiftRequest.ProtoReflect.Descriptor instead.
 func (*EndShiftRequest) Descriptor() ([]byte, []int) {
-	return file_pips_workplace_v1_workplace_proto_rawDescGZIP(), []int{9}
+	return file_pips_workplace_v1_workplace_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *EndShiftRequest) GetWorkplaceId() uint64 {
@@ -687,7 +769,7 @@ type EndShiftResponse struct {
 
 func (x *EndShiftResponse) Reset() {
 	*x = EndShiftResponse{}
-	mi := &file_pips_workplace_v1_workplace_proto_msgTypes[10]
+	mi := &file_pips_workplace_v1_workplace_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -699,7 +781,7 @@ func (x *EndShiftResponse) String() string {
 func (*EndShiftResponse) ProtoMessage() {}
 
 func (x *EndShiftResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pips_workplace_v1_workplace_proto_msgTypes[10]
+	mi := &file_pips_workplace_v1_workplace_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -712,14 +794,19 @@ func (x *EndShiftResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EndShiftResponse.ProtoReflect.Descriptor instead.
 func (*EndShiftResponse) Descriptor() ([]byte, []int) {
-	return file_pips_workplace_v1_workplace_proto_rawDescGZIP(), []int{10}
+	return file_pips_workplace_v1_workplace_proto_rawDescGZIP(), []int{12}
 }
 
 var File_pips_workplace_v1_workplace_proto protoreflect.FileDescriptor
 
 const file_pips_workplace_v1_workplace_proto_rawDesc = "" +
 	"\n" +
-	"!pips/workplace/v1/workplace.proto\x12\x11pips.workplace.v1\x1a\x15pips/sim/v1/sim.proto\"4\n" +
+	"!pips/workplace/v1/workplace.proto\x12\x11pips.workplace.v1\x1a\x15pips/sim/v1/sim.proto\"\r\n" +
+	"\vListRequest\"S\n" +
+	"\fListResponse\x12C\n" +
+	"\n" +
+	"workplaces\x18\x01 \x03(\v2#.pips.workplace.v1.DescribeResponseR\n" +
+	"workplaces\"4\n" +
 	"\x0fDescribeRequest\x12!\n" +
 	"\fworkplace_id\x18\x01 \x01(\x04R\vworkplaceId\"\xdf\x02\n" +
 	"\x10DescribeResponse\x12!\n" +
@@ -771,8 +858,9 @@ const file_pips_workplace_v1_workplace_proto_rawDesc = "" +
 	"\x13RESOURCE_KIND_GRAIN\x10\x01\x12\x16\n" +
 	"\x12RESOURCE_KIND_FOOD\x10\x02\x12\x16\n" +
 	"\x12RESOURCE_KIND_TOOL\x10\x03\x12\x15\n" +
-	"\x11RESOURCE_KIND_ALE\x10\x042\xb8\x03\n" +
-	"\x10WorkplaceService\x12S\n" +
+	"\x11RESOURCE_KIND_ALE\x10\x042\x81\x04\n" +
+	"\x10WorkplaceService\x12G\n" +
+	"\x04List\x12\x1e.pips.workplace.v1.ListRequest\x1a\x1f.pips.workplace.v1.ListResponse\x12S\n" +
 	"\bDescribe\x12\".pips.workplace.v1.DescribeRequest\x1a#.pips.workplace.v1.DescribeResponse\x12V\n" +
 	"\tCanEmploy\x12#.pips.workplace.v1.CanEmployRequest\x1a$.pips.workplace.v1.CanEmployResponse\x12Y\n" +
 	"\n" +
@@ -794,45 +882,50 @@ func file_pips_workplace_v1_workplace_proto_rawDescGZIP() []byte {
 }
 
 var file_pips_workplace_v1_workplace_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_pips_workplace_v1_workplace_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
+var file_pips_workplace_v1_workplace_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
 var file_pips_workplace_v1_workplace_proto_goTypes = []any{
 	(ResourceKind)(0),          // 0: pips.workplace.v1.ResourceKind
-	(*DescribeRequest)(nil),    // 1: pips.workplace.v1.DescribeRequest
-	(*DescribeResponse)(nil),   // 2: pips.workplace.v1.DescribeResponse
-	(*CanEmployRequest)(nil),   // 3: pips.workplace.v1.CanEmployRequest
-	(*CanEmployResponse)(nil),  // 4: pips.workplace.v1.CanEmployResponse
-	(*StartShiftRequest)(nil),  // 5: pips.workplace.v1.StartShiftRequest
-	(*StartShiftResponse)(nil), // 6: pips.workplace.v1.StartShiftResponse
-	(*WorkRequest)(nil),        // 7: pips.workplace.v1.WorkRequest
-	(*WorkResponse)(nil),       // 8: pips.workplace.v1.WorkResponse
-	(*ResourceAmount)(nil),     // 9: pips.workplace.v1.ResourceAmount
-	(*EndShiftRequest)(nil),    // 10: pips.workplace.v1.EndShiftRequest
-	(*EndShiftResponse)(nil),   // 11: pips.workplace.v1.EndShiftResponse
-	nil,                        // 12: pips.workplace.v1.WorkResponse.NeedDeltasEntry
-	(*v1.Vec2)(nil),            // 13: pips.sim.v1.Vec2
+	(*ListRequest)(nil),        // 1: pips.workplace.v1.ListRequest
+	(*ListResponse)(nil),       // 2: pips.workplace.v1.ListResponse
+	(*DescribeRequest)(nil),    // 3: pips.workplace.v1.DescribeRequest
+	(*DescribeResponse)(nil),   // 4: pips.workplace.v1.DescribeResponse
+	(*CanEmployRequest)(nil),   // 5: pips.workplace.v1.CanEmployRequest
+	(*CanEmployResponse)(nil),  // 6: pips.workplace.v1.CanEmployResponse
+	(*StartShiftRequest)(nil),  // 7: pips.workplace.v1.StartShiftRequest
+	(*StartShiftResponse)(nil), // 8: pips.workplace.v1.StartShiftResponse
+	(*WorkRequest)(nil),        // 9: pips.workplace.v1.WorkRequest
+	(*WorkResponse)(nil),       // 10: pips.workplace.v1.WorkResponse
+	(*ResourceAmount)(nil),     // 11: pips.workplace.v1.ResourceAmount
+	(*EndShiftRequest)(nil),    // 12: pips.workplace.v1.EndShiftRequest
+	(*EndShiftResponse)(nil),   // 13: pips.workplace.v1.EndShiftResponse
+	nil,                        // 14: pips.workplace.v1.WorkResponse.NeedDeltasEntry
+	(*v1.Vec2)(nil),            // 15: pips.sim.v1.Vec2
 }
 var file_pips_workplace_v1_workplace_proto_depIdxs = []int32{
-	13, // 0: pips.workplace.v1.DescribeResponse.position:type_name -> pips.sim.v1.Vec2
-	0,  // 1: pips.workplace.v1.DescribeResponse.produces:type_name -> pips.workplace.v1.ResourceKind
-	0,  // 2: pips.workplace.v1.DescribeResponse.consumes:type_name -> pips.workplace.v1.ResourceKind
-	9,  // 3: pips.workplace.v1.WorkResponse.produced:type_name -> pips.workplace.v1.ResourceAmount
-	12, // 4: pips.workplace.v1.WorkResponse.need_deltas:type_name -> pips.workplace.v1.WorkResponse.NeedDeltasEntry
-	0,  // 5: pips.workplace.v1.ResourceAmount.kind:type_name -> pips.workplace.v1.ResourceKind
-	1,  // 6: pips.workplace.v1.WorkplaceService.Describe:input_type -> pips.workplace.v1.DescribeRequest
-	3,  // 7: pips.workplace.v1.WorkplaceService.CanEmploy:input_type -> pips.workplace.v1.CanEmployRequest
-	5,  // 8: pips.workplace.v1.WorkplaceService.StartShift:input_type -> pips.workplace.v1.StartShiftRequest
-	7,  // 9: pips.workplace.v1.WorkplaceService.Work:input_type -> pips.workplace.v1.WorkRequest
-	10, // 10: pips.workplace.v1.WorkplaceService.EndShift:input_type -> pips.workplace.v1.EndShiftRequest
-	2,  // 11: pips.workplace.v1.WorkplaceService.Describe:output_type -> pips.workplace.v1.DescribeResponse
-	4,  // 12: pips.workplace.v1.WorkplaceService.CanEmploy:output_type -> pips.workplace.v1.CanEmployResponse
-	6,  // 13: pips.workplace.v1.WorkplaceService.StartShift:output_type -> pips.workplace.v1.StartShiftResponse
-	8,  // 14: pips.workplace.v1.WorkplaceService.Work:output_type -> pips.workplace.v1.WorkResponse
-	11, // 15: pips.workplace.v1.WorkplaceService.EndShift:output_type -> pips.workplace.v1.EndShiftResponse
-	11, // [11:16] is the sub-list for method output_type
-	6,  // [6:11] is the sub-list for method input_type
-	6,  // [6:6] is the sub-list for extension type_name
-	6,  // [6:6] is the sub-list for extension extendee
-	0,  // [0:6] is the sub-list for field type_name
+	4,  // 0: pips.workplace.v1.ListResponse.workplaces:type_name -> pips.workplace.v1.DescribeResponse
+	15, // 1: pips.workplace.v1.DescribeResponse.position:type_name -> pips.sim.v1.Vec2
+	0,  // 2: pips.workplace.v1.DescribeResponse.produces:type_name -> pips.workplace.v1.ResourceKind
+	0,  // 3: pips.workplace.v1.DescribeResponse.consumes:type_name -> pips.workplace.v1.ResourceKind
+	11, // 4: pips.workplace.v1.WorkResponse.produced:type_name -> pips.workplace.v1.ResourceAmount
+	14, // 5: pips.workplace.v1.WorkResponse.need_deltas:type_name -> pips.workplace.v1.WorkResponse.NeedDeltasEntry
+	0,  // 6: pips.workplace.v1.ResourceAmount.kind:type_name -> pips.workplace.v1.ResourceKind
+	1,  // 7: pips.workplace.v1.WorkplaceService.List:input_type -> pips.workplace.v1.ListRequest
+	3,  // 8: pips.workplace.v1.WorkplaceService.Describe:input_type -> pips.workplace.v1.DescribeRequest
+	5,  // 9: pips.workplace.v1.WorkplaceService.CanEmploy:input_type -> pips.workplace.v1.CanEmployRequest
+	7,  // 10: pips.workplace.v1.WorkplaceService.StartShift:input_type -> pips.workplace.v1.StartShiftRequest
+	9,  // 11: pips.workplace.v1.WorkplaceService.Work:input_type -> pips.workplace.v1.WorkRequest
+	12, // 12: pips.workplace.v1.WorkplaceService.EndShift:input_type -> pips.workplace.v1.EndShiftRequest
+	2,  // 13: pips.workplace.v1.WorkplaceService.List:output_type -> pips.workplace.v1.ListResponse
+	4,  // 14: pips.workplace.v1.WorkplaceService.Describe:output_type -> pips.workplace.v1.DescribeResponse
+	6,  // 15: pips.workplace.v1.WorkplaceService.CanEmploy:output_type -> pips.workplace.v1.CanEmployResponse
+	8,  // 16: pips.workplace.v1.WorkplaceService.StartShift:output_type -> pips.workplace.v1.StartShiftResponse
+	10, // 17: pips.workplace.v1.WorkplaceService.Work:output_type -> pips.workplace.v1.WorkResponse
+	13, // 18: pips.workplace.v1.WorkplaceService.EndShift:output_type -> pips.workplace.v1.EndShiftResponse
+	13, // [13:19] is the sub-list for method output_type
+	7,  // [7:13] is the sub-list for method input_type
+	7,  // [7:7] is the sub-list for extension type_name
+	7,  // [7:7] is the sub-list for extension extendee
+	0,  // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_pips_workplace_v1_workplace_proto_init() }
@@ -846,7 +939,7 @@ func file_pips_workplace_v1_workplace_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pips_workplace_v1_workplace_proto_rawDesc), len(file_pips_workplace_v1_workplace_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   12,
+			NumMessages:   14,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -90,9 +90,11 @@ defmodule Tavern.ConnectTest do
 
     assert start.status == 200
 
-    before = Tavern.Workplace.describe(%DescribeRequest{})
+    before = Tavern.Workplace.describe(%DescribeRequest{workplace_id: 2})
     assert before.current_workers >= 1
 
-    Tavern.Shifts.release(pip)
+    # Addressed by building now: shifts live in a process per tavern, reached
+    # through the registry rather than under one global name.
+    Tavern.Store.Process.release(2, pip)
   end
 end
