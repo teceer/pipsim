@@ -54,8 +54,11 @@ pub fn init() -> Result<(SdkMeterProvider, Metrics)> {
         .with_description("Pips currently alive in the world")
         .build();
 
-    Ok((provider, Metrics {
-        tick_duration,
-        pips_alive,
-    }))
+    Ok((
+        provider,
+        Metrics {
+            tick_duration,
+            pips_alive,
+        },
+    ))
 }

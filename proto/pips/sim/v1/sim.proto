@@ -153,6 +153,8 @@ message SubmitIntentRequest {
     ApplyNeedsIntent apply_needs = 4;
     RegisterWorkplaceIntent register_workplace = 5;
     EndEmploymentIntent end_employment = 6;
+    TransferIntent transfer = 7;
+    CreditBalancesIntent credit_balances = 8;
   }
 }
 
@@ -209,4 +211,38 @@ message ApplyNeedsIntent {
   uint64 pip_id = 1;
   // Keyed by Need. Signed: work drains rest and a meal restores food.
   map<int32, int32> need_deltas = 2;
+}
+
+// Moves money between two accounts the core knows about — a pip, a
+// workplace, or the treasury. The bank has already made this transfer (or
+// this intent originates one for it, on the purchase path where the pip's
+// decision is made inside a tick); this is the copy that lets step() answer
+// "can this pip afford it" without a network call. The core is authoritative
+// for the moment of purchase, the bank for history and solvency.
+message TransferIntent {
+  // Namespaced: "pip:412", "workplace:3", "treasury".
+  string payer_account_id = 1;
+  string payee_account_id = 2;
+  int64 amount = 3;
+  // 0 (RESOURCE_KIND_UNSPECIFIED) for a pure money move, e.g. a wage credit.
+  // Set when the payer is buying pips.workplace.v1.ResourceKind — the core
+  // also runs Consume for the payer in the same intent. Declared as int32,
+  // not pips.workplace.v1.ResourceKind, because workplace.proto already
+  // imports this file and a back-import would be circular.
+  int32 resource_kind = 4;
+  uint64 tick = 5;
+}
+
+// Payroll, batched. A workplace's shift population is paid in one intent
+// carrying every pip's credit, rather than one intent per pip — the number
+// of pips employed does not get to set the tick budget.
+message CreditBalancesIntent {
+  string payer_account_id = 1;
+
+  message Credit {
+    uint64 pip_id = 1;
+    int64 amount = 2;
+  }
+  repeated Credit credits = 2;
+  uint64 tick = 3;
 }

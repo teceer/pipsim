@@ -59,6 +59,16 @@ const (
 	foodPerTick = 5
 	restPerTick = -1
 
+	// What a shift here pays, per tick worked. Alongside NeedDeltas, not
+	// instead of it — ADR 0006 adds money without removing the old channel
+	// yet, so wages can be tuned against a living world before need_deltas
+	// is retired.
+	wagePerTick = 6
+
+	// How demanding the work is. A scalar the farm declares about itself;
+	// sim-core, not the farm, decides what effort costs.
+	effort = 1
+
 	// One Work call is never credited for more than this, so a driver that
 	// stalls and resumes cannot hand out a windfall.
 	MaxTicksPerWork = 40
@@ -118,6 +128,8 @@ func (s *Service) Describe(
 		CurrentWorkers: int32(workers),
 		Position:       s.position,
 		Produces:       []workplacev1.ResourceKind{workplacev1.ResourceKind_RESOURCE_KIND_GRAIN},
+		Wage:           wagePerTick,
+		Effort:         effort,
 	}), nil
 }
 
@@ -193,6 +205,7 @@ func (s *Service) Work(
 			needFood: foodPerTick * elapsed,
 			needRest: restPerTick * elapsed,
 		},
+		Wage: int64(wagePerTick * elapsed),
 	}), nil
 }
 
@@ -211,6 +224,19 @@ func (s *Service) EndShift(
 			"ticks_worked", req.Msg.GetTick()-started)
 	}
 	return connect.NewResponse(&workplacev1.EndShiftResponse{}), nil
+}
+
+// Buy always declines: the farm produces grain for workplaces to consume, it
+// does not sell anything to a pip. Declared here rather than left unhandled,
+// so a caller gets a reason instead of Unimplemented.
+func (s *Service) Buy(
+	_ context.Context,
+	_ *connect.Request[workplacev1.BuyRequest],
+) (*connect.Response[workplacev1.BuyResponse], error) {
+	return connect.NewResponse(&workplacev1.BuyResponse{
+		Ok:     false,
+		Reason: "the farm sells nothing",
+	}), nil
 }
 
 // ConsiderOffer answers a work offer taken off the queue.

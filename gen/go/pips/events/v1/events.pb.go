@@ -43,6 +43,10 @@ type EventEnvelope struct {
 	//	*EventEnvelope_ResourceProduced
 	//	*EventEnvelope_WorkplaceBuilt
 	//	*EventEnvelope_WorkplaceDemolished
+	//	*EventEnvelope_WagePaid
+	//	*EventEnvelope_PurchaseMade
+	//	*EventEnvelope_AccountOverdrawn
+	//	*EventEnvelope_MoneyIssued
 	Payload       isEventEnvelope_Payload `protobuf_oneof:"payload"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -192,6 +196,42 @@ func (x *EventEnvelope) GetWorkplaceDemolished() *WorkplaceDemolished {
 	return nil
 }
 
+func (x *EventEnvelope) GetWagePaid() *WagePaid {
+	if x != nil {
+		if x, ok := x.Payload.(*EventEnvelope_WagePaid); ok {
+			return x.WagePaid
+		}
+	}
+	return nil
+}
+
+func (x *EventEnvelope) GetPurchaseMade() *PurchaseMade {
+	if x != nil {
+		if x, ok := x.Payload.(*EventEnvelope_PurchaseMade); ok {
+			return x.PurchaseMade
+		}
+	}
+	return nil
+}
+
+func (x *EventEnvelope) GetAccountOverdrawn() *AccountOverdrawn {
+	if x != nil {
+		if x, ok := x.Payload.(*EventEnvelope_AccountOverdrawn); ok {
+			return x.AccountOverdrawn
+		}
+	}
+	return nil
+}
+
+func (x *EventEnvelope) GetMoneyIssued() *MoneyIssued {
+	if x != nil {
+		if x, ok := x.Payload.(*EventEnvelope_MoneyIssued); ok {
+			return x.MoneyIssued
+		}
+	}
+	return nil
+}
+
 type isEventEnvelope_Payload interface {
 	isEventEnvelope_Payload()
 }
@@ -228,6 +268,22 @@ type EventEnvelope_WorkplaceDemolished struct {
 	WorkplaceDemolished *WorkplaceDemolished `protobuf:"bytes,22,opt,name=workplace_demolished,json=workplaceDemolished,proto3,oneof"`
 }
 
+type EventEnvelope_WagePaid struct {
+	WagePaid *WagePaid `protobuf:"bytes,23,opt,name=wage_paid,json=wagePaid,proto3,oneof"`
+}
+
+type EventEnvelope_PurchaseMade struct {
+	PurchaseMade *PurchaseMade `protobuf:"bytes,24,opt,name=purchase_made,json=purchaseMade,proto3,oneof"`
+}
+
+type EventEnvelope_AccountOverdrawn struct {
+	AccountOverdrawn *AccountOverdrawn `protobuf:"bytes,25,opt,name=account_overdrawn,json=accountOverdrawn,proto3,oneof"`
+}
+
+type EventEnvelope_MoneyIssued struct {
+	MoneyIssued *MoneyIssued `protobuf:"bytes,26,opt,name=money_issued,json=moneyIssued,proto3,oneof"`
+}
+
 func (*EventEnvelope_PipSpawned) isEventEnvelope_Payload() {}
 
 func (*EventEnvelope_PipStartedWork) isEventEnvelope_Payload() {}
@@ -243,6 +299,14 @@ func (*EventEnvelope_ResourceProduced) isEventEnvelope_Payload() {}
 func (*EventEnvelope_WorkplaceBuilt) isEventEnvelope_Payload() {}
 
 func (*EventEnvelope_WorkplaceDemolished) isEventEnvelope_Payload() {}
+
+func (*EventEnvelope_WagePaid) isEventEnvelope_Payload() {}
+
+func (*EventEnvelope_PurchaseMade) isEventEnvelope_Payload() {}
+
+func (*EventEnvelope_AccountOverdrawn) isEventEnvelope_Payload() {}
+
+func (*EventEnvelope_MoneyIssued) isEventEnvelope_Payload() {}
 
 type PipSpawned struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -732,11 +796,251 @@ func (x *WorkplaceDemolished) GetReason() string {
 	return ""
 }
 
+type WagePaid struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Payer         string                 `protobuf:"bytes,1,opt,name=payer,proto3" json:"payer,omitempty"`
+	Payee         string                 `protobuf:"bytes,2,opt,name=payee,proto3" json:"payee,omitempty"`
+	Amount        int64                  `protobuf:"varint,3,opt,name=amount,proto3" json:"amount,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *WagePaid) Reset() {
+	*x = WagePaid{}
+	mi := &file_pips_events_v1_events_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *WagePaid) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*WagePaid) ProtoMessage() {}
+
+func (x *WagePaid) ProtoReflect() protoreflect.Message {
+	mi := &file_pips_events_v1_events_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use WagePaid.ProtoReflect.Descriptor instead.
+func (*WagePaid) Descriptor() ([]byte, []int) {
+	return file_pips_events_v1_events_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *WagePaid) GetPayer() string {
+	if x != nil {
+		return x.Payer
+	}
+	return ""
+}
+
+func (x *WagePaid) GetPayee() string {
+	if x != nil {
+		return x.Payee
+	}
+	return ""
+}
+
+func (x *WagePaid) GetAmount() int64 {
+	if x != nil {
+		return x.Amount
+	}
+	return 0
+}
+
+type PurchaseMade struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Payer         string                 `protobuf:"bytes,1,opt,name=payer,proto3" json:"payer,omitempty"`
+	Payee         string                 `protobuf:"bytes,2,opt,name=payee,proto3" json:"payee,omitempty"`
+	Amount        int64                  `protobuf:"varint,3,opt,name=amount,proto3" json:"amount,omitempty"`
+	Kind          v11.ResourceKind       `protobuf:"varint,4,opt,name=kind,proto3,enum=pips.workplace.v1.ResourceKind" json:"kind,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PurchaseMade) Reset() {
+	*x = PurchaseMade{}
+	mi := &file_pips_events_v1_events_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PurchaseMade) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PurchaseMade) ProtoMessage() {}
+
+func (x *PurchaseMade) ProtoReflect() protoreflect.Message {
+	mi := &file_pips_events_v1_events_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PurchaseMade.ProtoReflect.Descriptor instead.
+func (*PurchaseMade) Descriptor() ([]byte, []int) {
+	return file_pips_events_v1_events_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *PurchaseMade) GetPayer() string {
+	if x != nil {
+		return x.Payer
+	}
+	return ""
+}
+
+func (x *PurchaseMade) GetPayee() string {
+	if x != nil {
+		return x.Payee
+	}
+	return ""
+}
+
+func (x *PurchaseMade) GetAmount() int64 {
+	if x != nil {
+		return x.Amount
+	}
+	return 0
+}
+
+func (x *PurchaseMade) GetKind() v11.ResourceKind {
+	if x != nil {
+		return x.Kind
+	}
+	return v11.ResourceKind(0)
+}
+
+type AccountOverdrawn struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	Account         string                 `protobuf:"bytes,1,opt,name=account,proto3" json:"account,omitempty"`
+	AttemptedAmount int64                  `protobuf:"varint,2,opt,name=attempted_amount,json=attemptedAmount,proto3" json:"attempted_amount,omitempty"`
+	Balance         int64                  `protobuf:"varint,3,opt,name=balance,proto3" json:"balance,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *AccountOverdrawn) Reset() {
+	*x = AccountOverdrawn{}
+	mi := &file_pips_events_v1_events_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AccountOverdrawn) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AccountOverdrawn) ProtoMessage() {}
+
+func (x *AccountOverdrawn) ProtoReflect() protoreflect.Message {
+	mi := &file_pips_events_v1_events_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AccountOverdrawn.ProtoReflect.Descriptor instead.
+func (*AccountOverdrawn) Descriptor() ([]byte, []int) {
+	return file_pips_events_v1_events_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *AccountOverdrawn) GetAccount() string {
+	if x != nil {
+		return x.Account
+	}
+	return ""
+}
+
+func (x *AccountOverdrawn) GetAttemptedAmount() int64 {
+	if x != nil {
+		return x.AttemptedAmount
+	}
+	return 0
+}
+
+func (x *AccountOverdrawn) GetBalance() int64 {
+	if x != nil {
+		return x.Balance
+	}
+	return 0
+}
+
+type MoneyIssued struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Payee         string                 `protobuf:"bytes,1,opt,name=payee,proto3" json:"payee,omitempty"`
+	Amount        int64                  `protobuf:"varint,2,opt,name=amount,proto3" json:"amount,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *MoneyIssued) Reset() {
+	*x = MoneyIssued{}
+	mi := &file_pips_events_v1_events_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MoneyIssued) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MoneyIssued) ProtoMessage() {}
+
+func (x *MoneyIssued) ProtoReflect() protoreflect.Message {
+	mi := &file_pips_events_v1_events_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MoneyIssued.ProtoReflect.Descriptor instead.
+func (*MoneyIssued) Descriptor() ([]byte, []int) {
+	return file_pips_events_v1_events_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *MoneyIssued) GetPayee() string {
+	if x != nil {
+		return x.Payee
+	}
+	return ""
+}
+
+func (x *MoneyIssued) GetAmount() int64 {
+	if x != nil {
+		return x.Amount
+	}
+	return 0
+}
+
 var File_pips_events_v1_events_proto protoreflect.FileDescriptor
 
 const file_pips_events_v1_events_proto_rawDesc = "" +
 	"\n" +
-	"\x1bpips/events/v1/events.proto\x12\x0epips.events.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x15pips/sim/v1/sim.proto\x1a!pips/workplace/v1/workplace.proto\"\x80\x06\n" +
+	"\x1bpips/events/v1/events.proto\x12\x0epips.events.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x15pips/sim/v1/sim.proto\x1a!pips/workplace/v1/workplace.proto\"\x91\b\n" +
 	"\rEventEnvelope\x12\x19\n" +
 	"\bevent_id\x18\x01 \x01(\tR\aeventId\x12\x12\n" +
 	"\x04tick\x18\x02 \x01(\x04R\x04tick\x12;\n" +
@@ -753,7 +1057,11 @@ const file_pips_events_v1_events_proto_rawDesc = "" +
 	"\bpip_died\x18\x0e \x01(\v2\x17.pips.events.v1.PipDiedH\x00R\apipDied\x12O\n" +
 	"\x11resource_produced\x18\x14 \x01(\v2 .pips.events.v1.ResourceProducedH\x00R\x10resourceProduced\x12I\n" +
 	"\x0fworkplace_built\x18\x15 \x01(\v2\x1e.pips.events.v1.WorkplaceBuiltH\x00R\x0eworkplaceBuilt\x12X\n" +
-	"\x14workplace_demolished\x18\x16 \x01(\v2#.pips.events.v1.WorkplaceDemolishedH\x00R\x13workplaceDemolishedB\t\n" +
+	"\x14workplace_demolished\x18\x16 \x01(\v2#.pips.events.v1.WorkplaceDemolishedH\x00R\x13workplaceDemolished\x127\n" +
+	"\twage_paid\x18\x17 \x01(\v2\x18.pips.events.v1.WagePaidH\x00R\bwagePaid\x12C\n" +
+	"\rpurchase_made\x18\x18 \x01(\v2\x1c.pips.events.v1.PurchaseMadeH\x00R\fpurchaseMade\x12O\n" +
+	"\x11account_overdrawn\x18\x19 \x01(\v2 .pips.events.v1.AccountOverdrawnH\x00R\x10accountOverdrawn\x12@\n" +
+	"\fmoney_issued\x18\x1a \x01(\v2\x1b.pips.events.v1.MoneyIssuedH\x00R\vmoneyIssuedB\t\n" +
 	"\apayload\"f\n" +
 	"\n" +
 	"PipSpawned\x12\x15\n" +
@@ -790,7 +1098,23 @@ const file_pips_events_v1_events_proto_rawDesc = "" +
 	"maxWorkers\"P\n" +
 	"\x13WorkplaceDemolished\x12!\n" +
 	"\fworkplace_id\x18\x01 \x01(\x04R\vworkplaceId\x12\x16\n" +
-	"\x06reason\x18\x02 \x01(\tR\x06reasonB\xb4\x01\n" +
+	"\x06reason\x18\x02 \x01(\tR\x06reason\"N\n" +
+	"\bWagePaid\x12\x14\n" +
+	"\x05payer\x18\x01 \x01(\tR\x05payer\x12\x14\n" +
+	"\x05payee\x18\x02 \x01(\tR\x05payee\x12\x16\n" +
+	"\x06amount\x18\x03 \x01(\x03R\x06amount\"\x87\x01\n" +
+	"\fPurchaseMade\x12\x14\n" +
+	"\x05payer\x18\x01 \x01(\tR\x05payer\x12\x14\n" +
+	"\x05payee\x18\x02 \x01(\tR\x05payee\x12\x16\n" +
+	"\x06amount\x18\x03 \x01(\x03R\x06amount\x123\n" +
+	"\x04kind\x18\x04 \x01(\x0e2\x1f.pips.workplace.v1.ResourceKindR\x04kind\"q\n" +
+	"\x10AccountOverdrawn\x12\x18\n" +
+	"\aaccount\x18\x01 \x01(\tR\aaccount\x12)\n" +
+	"\x10attempted_amount\x18\x02 \x01(\x03R\x0fattemptedAmount\x12\x18\n" +
+	"\abalance\x18\x03 \x01(\x03R\abalance\";\n" +
+	"\vMoneyIssued\x12\x14\n" +
+	"\x05payee\x18\x01 \x01(\tR\x05payee\x12\x16\n" +
+	"\x06amount\x18\x02 \x01(\x03R\x06amountB\xb4\x01\n" +
 	"\x12com.pips.events.v1B\vEventsProtoP\x01Z7github.com/teceer/pipsim/gen/go/pips/events/v1;eventsv1\xa2\x02\x03PEX\xaa\x02\x0ePips.Events.V1\xca\x02\x0ePips\\Events\\V1\xe2\x02\x1aPips\\Events\\V1\\GPBMetadata\xea\x02\x10Pips::Events::V1b\x06proto3"
 
 var (
@@ -805,7 +1129,7 @@ func file_pips_events_v1_events_proto_rawDescGZIP() []byte {
 	return file_pips_events_v1_events_proto_rawDescData
 }
 
-var file_pips_events_v1_events_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_pips_events_v1_events_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
 var file_pips_events_v1_events_proto_goTypes = []any{
 	(*EventEnvelope)(nil),         // 0: pips.events.v1.EventEnvelope
 	(*PipSpawned)(nil),            // 1: pips.events.v1.PipSpawned
@@ -816,12 +1140,16 @@ var file_pips_events_v1_events_proto_goTypes = []any{
 	(*ResourceProduced)(nil),      // 6: pips.events.v1.ResourceProduced
 	(*WorkplaceBuilt)(nil),        // 7: pips.events.v1.WorkplaceBuilt
 	(*WorkplaceDemolished)(nil),   // 8: pips.events.v1.WorkplaceDemolished
-	(*timestamppb.Timestamp)(nil), // 9: google.protobuf.Timestamp
-	(*v1.Vec2)(nil),               // 10: pips.sim.v1.Vec2
-	(v11.ResourceKind)(0),         // 11: pips.workplace.v1.ResourceKind
+	(*WagePaid)(nil),              // 9: pips.events.v1.WagePaid
+	(*PurchaseMade)(nil),          // 10: pips.events.v1.PurchaseMade
+	(*AccountOverdrawn)(nil),      // 11: pips.events.v1.AccountOverdrawn
+	(*MoneyIssued)(nil),           // 12: pips.events.v1.MoneyIssued
+	(*timestamppb.Timestamp)(nil), // 13: google.protobuf.Timestamp
+	(*v1.Vec2)(nil),               // 14: pips.sim.v1.Vec2
+	(v11.ResourceKind)(0),         // 15: pips.workplace.v1.ResourceKind
 }
 var file_pips_events_v1_events_proto_depIdxs = []int32{
-	9,  // 0: pips.events.v1.EventEnvelope.occurred_at:type_name -> google.protobuf.Timestamp
+	13, // 0: pips.events.v1.EventEnvelope.occurred_at:type_name -> google.protobuf.Timestamp
 	1,  // 1: pips.events.v1.EventEnvelope.pip_spawned:type_name -> pips.events.v1.PipSpawned
 	2,  // 2: pips.events.v1.EventEnvelope.pip_started_work:type_name -> pips.events.v1.PipStartedWork
 	3,  // 3: pips.events.v1.EventEnvelope.pip_ended_work:type_name -> pips.events.v1.PipEndedWork
@@ -830,14 +1158,19 @@ var file_pips_events_v1_events_proto_depIdxs = []int32{
 	6,  // 6: pips.events.v1.EventEnvelope.resource_produced:type_name -> pips.events.v1.ResourceProduced
 	7,  // 7: pips.events.v1.EventEnvelope.workplace_built:type_name -> pips.events.v1.WorkplaceBuilt
 	8,  // 8: pips.events.v1.EventEnvelope.workplace_demolished:type_name -> pips.events.v1.WorkplaceDemolished
-	10, // 9: pips.events.v1.PipSpawned.position:type_name -> pips.sim.v1.Vec2
-	11, // 10: pips.events.v1.ResourceProduced.kind:type_name -> pips.workplace.v1.ResourceKind
-	10, // 11: pips.events.v1.WorkplaceBuilt.position:type_name -> pips.sim.v1.Vec2
-	12, // [12:12] is the sub-list for method output_type
-	12, // [12:12] is the sub-list for method input_type
-	12, // [12:12] is the sub-list for extension type_name
-	12, // [12:12] is the sub-list for extension extendee
-	0,  // [0:12] is the sub-list for field type_name
+	9,  // 9: pips.events.v1.EventEnvelope.wage_paid:type_name -> pips.events.v1.WagePaid
+	10, // 10: pips.events.v1.EventEnvelope.purchase_made:type_name -> pips.events.v1.PurchaseMade
+	11, // 11: pips.events.v1.EventEnvelope.account_overdrawn:type_name -> pips.events.v1.AccountOverdrawn
+	12, // 12: pips.events.v1.EventEnvelope.money_issued:type_name -> pips.events.v1.MoneyIssued
+	14, // 13: pips.events.v1.PipSpawned.position:type_name -> pips.sim.v1.Vec2
+	15, // 14: pips.events.v1.ResourceProduced.kind:type_name -> pips.workplace.v1.ResourceKind
+	14, // 15: pips.events.v1.WorkplaceBuilt.position:type_name -> pips.sim.v1.Vec2
+	15, // 16: pips.events.v1.PurchaseMade.kind:type_name -> pips.workplace.v1.ResourceKind
+	17, // [17:17] is the sub-list for method output_type
+	17, // [17:17] is the sub-list for method input_type
+	17, // [17:17] is the sub-list for extension type_name
+	17, // [17:17] is the sub-list for extension extendee
+	0,  // [0:17] is the sub-list for field type_name
 }
 
 func init() { file_pips_events_v1_events_proto_init() }
@@ -854,6 +1187,10 @@ func file_pips_events_v1_events_proto_init() {
 		(*EventEnvelope_ResourceProduced)(nil),
 		(*EventEnvelope_WorkplaceBuilt)(nil),
 		(*EventEnvelope_WorkplaceDemolished)(nil),
+		(*EventEnvelope_WagePaid)(nil),
+		(*EventEnvelope_PurchaseMade)(nil),
+		(*EventEnvelope_AccountOverdrawn)(nil),
+		(*EventEnvelope_MoneyIssued)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -861,7 +1198,7 @@ func file_pips_events_v1_events_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pips_events_v1_events_proto_rawDesc), len(file_pips_events_v1_events_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   9,
+			NumMessages:   13,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

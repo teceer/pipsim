@@ -46,6 +46,16 @@ defmodule Pips.Events.V1.EventEnvelope do
     type: Pips.Events.V1.WorkplaceDemolished,
     json_name: "workplaceDemolished",
     oneof: 0
+
+  field :wage_paid, 23, type: Pips.Events.V1.WagePaid, json_name: "wagePaid", oneof: 0
+  field :purchase_made, 24, type: Pips.Events.V1.PurchaseMade, json_name: "purchaseMade", oneof: 0
+
+  field :account_overdrawn, 25,
+    type: Pips.Events.V1.AccountOverdrawn,
+    json_name: "accountOverdrawn",
+    oneof: 0
+
+  field :money_issued, 26, type: Pips.Events.V1.MoneyIssued, json_name: "moneyIssued", oneof: 0
 end
 
 defmodule Pips.Events.V1.PipSpawned do
@@ -151,4 +161,56 @@ defmodule Pips.Events.V1.WorkplaceDemolished do
 
   field :workplace_id, 1, type: :uint64, json_name: "workplaceId"
   field :reason, 2, type: :string
+end
+
+defmodule Pips.Events.V1.WagePaid do
+  @moduledoc false
+
+  use Protobuf,
+    full_name: "pips.events.v1.WagePaid",
+    protoc_gen_elixir_version: "0.17.0",
+    syntax: :proto3
+
+  field :payer, 1, type: :string
+  field :payee, 2, type: :string
+  field :amount, 3, type: :int64
+end
+
+defmodule Pips.Events.V1.PurchaseMade do
+  @moduledoc false
+
+  use Protobuf,
+    full_name: "pips.events.v1.PurchaseMade",
+    protoc_gen_elixir_version: "0.17.0",
+    syntax: :proto3
+
+  field :payer, 1, type: :string
+  field :payee, 2, type: :string
+  field :amount, 3, type: :int64
+  field :kind, 4, type: Pips.Workplace.V1.ResourceKind, enum: true
+end
+
+defmodule Pips.Events.V1.AccountOverdrawn do
+  @moduledoc false
+
+  use Protobuf,
+    full_name: "pips.events.v1.AccountOverdrawn",
+    protoc_gen_elixir_version: "0.17.0",
+    syntax: :proto3
+
+  field :account, 1, type: :string
+  field :attempted_amount, 2, type: :int64, json_name: "attemptedAmount"
+  field :balance, 3, type: :int64
+end
+
+defmodule Pips.Events.V1.MoneyIssued do
+  @moduledoc false
+
+  use Protobuf,
+    full_name: "pips.events.v1.MoneyIssued",
+    protoc_gen_elixir_version: "0.17.0",
+    syntax: :proto3
+
+  field :payee, 1, type: :string
+  field :amount, 2, type: :int64
 end

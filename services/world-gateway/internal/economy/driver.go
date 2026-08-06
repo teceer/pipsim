@@ -311,38 +311,45 @@ func (d *Driver) offer(ctx context.Context, pip, tick uint64) bool {
 // reap a shift the pip is on its way to. Only the *effects* are withheld — and
 // because a shift is priced by elapsed ticks, the walk is not paid
 // retroactively either.
-func (d *Driver) work(ctx context.Context, pip, tick uint64, inside bool) bool {
+// work exercises the shift and reports what it paid, so the caller can fold
+// it into this cycle's payroll batch. Wage is 0 whenever the pip is not
+// actually inside — a shift keeps its lease alive during a commute, but pays
+// nothing for it, the same rule that already applies to need deltas.
+func (d *Driver) work(ctx context.Context, pip, tick uint64, inside bool) (ok bool, wage int64) {
 	res, err := d.workplace.Work(ctx, connect.NewRequest(&workplacev1.WorkRequest{
 		WorkplaceId: d.ID(),
 		PipId:       pip,
 		Tick:        tick,
 	}))
 	if err != nil {
-		return false
+		return false, 0
 	}
 
 	if res.Msg.GetShiftShouldEnd() {
 		d.endShift(ctx, pip, tick, "workplace ended the shift")
-		return false
+		return false, 0
+	}
+
+	if !inside {
+		return true, 0
 	}
 
 	deltas := res.Msg.GetNeedDeltas()
-	if len(deltas) == 0 || !inside {
-		return true
+	if len(deltas) > 0 {
+		// The workplace says what the shift did; sim-core decides what that
+		// means, and clamps it. Nothing here validates the numbers on
+		// purpose — putting a second opinion in the middle is how two
+		// services end up disagreeing about the rules.
+		if _, err := d.sim.SubmitIntent(ctx, connect.NewRequest(&simv1.SubmitIntentRequest{
+			Intent: &simv1.SubmitIntentRequest_ApplyNeeds{
+				ApplyNeeds: &simv1.ApplyNeedsIntent{PipId: pip, NeedDeltas: deltas},
+			},
+		})); err != nil {
+			return false, 0
+		}
 	}
 
-	// The workplace says what the shift did; sim-core decides what that means,
-	// and clamps it. Nothing here validates the numbers on purpose — putting a
-	// second opinion in the middle is how two services end up disagreeing about
-	// the rules.
-	if _, err := d.sim.SubmitIntent(ctx, connect.NewRequest(&simv1.SubmitIntentRequest{
-		Intent: &simv1.SubmitIntentRequest_ApplyNeeds{
-			ApplyNeeds: &simv1.ApplyNeedsIntent{PipId: pip, NeedDeltas: deltas},
-		},
-	})); err != nil {
-		return false
-	}
-	return true
+	return true, res.Msg.GetWage()
 }
 
 func (d *Driver) endShift(ctx context.Context, pip, tick uint64, reason string) {

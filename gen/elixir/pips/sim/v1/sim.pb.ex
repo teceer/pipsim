@@ -232,6 +232,13 @@ defmodule Pips.Sim.V1.SubmitIntentRequest do
     type: Pips.Sim.V1.EndEmploymentIntent,
     json_name: "endEmployment",
     oneof: 0
+
+  field :transfer, 7, type: Pips.Sim.V1.TransferIntent, oneof: 0
+
+  field :credit_balances, 8,
+    type: Pips.Sim.V1.CreditBalancesIntent,
+    json_name: "creditBalances",
+    oneof: 0
 end
 
 defmodule Pips.Sim.V1.SubmitIntentResponse do
@@ -336,4 +343,44 @@ defmodule Pips.Sim.V1.ApplyNeedsIntent do
     type: Pips.Sim.V1.ApplyNeedsIntent.NeedDeltasEntry,
     json_name: "needDeltas",
     map: true
+end
+
+defmodule Pips.Sim.V1.TransferIntent do
+  @moduledoc false
+
+  use Protobuf,
+    full_name: "pips.sim.v1.TransferIntent",
+    protoc_gen_elixir_version: "0.17.0",
+    syntax: :proto3
+
+  field :payer_account_id, 1, type: :string, json_name: "payerAccountId"
+  field :payee_account_id, 2, type: :string, json_name: "payeeAccountId"
+  field :amount, 3, type: :int64
+  field :resource_kind, 4, type: :int32, json_name: "resourceKind"
+  field :tick, 5, type: :uint64
+end
+
+defmodule Pips.Sim.V1.CreditBalancesIntent.Credit do
+  @moduledoc false
+
+  use Protobuf,
+    full_name: "pips.sim.v1.CreditBalancesIntent.Credit",
+    protoc_gen_elixir_version: "0.17.0",
+    syntax: :proto3
+
+  field :pip_id, 1, type: :uint64, json_name: "pipId"
+  field :amount, 2, type: :int64
+end
+
+defmodule Pips.Sim.V1.CreditBalancesIntent do
+  @moduledoc false
+
+  use Protobuf,
+    full_name: "pips.sim.v1.CreditBalancesIntent",
+    protoc_gen_elixir_version: "0.17.0",
+    syntax: :proto3
+
+  field :payer_account_id, 1, type: :string, json_name: "payerAccountId"
+  field :credits, 2, repeated: true, type: Pips.Sim.V1.CreditBalancesIntent.Credit
+  field :tick, 3, type: :uint64
 end

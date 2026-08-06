@@ -42,6 +42,10 @@ type Server struct {
 	// carries no payroll view, and the buildings still come through from
 	// sim-core.
 	describe func(context.Context) []*workplacev1.DescribeResponse
+
+	// Runs a purchase end to end against the bank and sim-core. Nil means no
+	// economy is wired up, the same posture `describe` takes.
+	buy func(ctx context.Context, pip, workplace uint64, kind workplacev1.ResourceKind, tick uint64) (ok bool, reason string, price int64, err error)
 }
 
 func New(sim simv1connect.SimServiceClient, simSeed uint64, tickHz int32) *Server {
@@ -51,6 +55,12 @@ func New(sim simv1connect.SimServiceClient, simSeed uint64, tickHz int32) *Serve
 // WithWorkplaces supplies the payroll view returned by JoinWorld.
 func (s *Server) WithWorkplaces(describe func(context.Context) []*workplacev1.DescribeResponse) *Server {
 	s.describe = describe
+	return s
+}
+
+// WithBuy wires a purchase handler, normally economy.Fleet.Buy.
+func (s *Server) WithBuy(buy func(ctx context.Context, pip, workplace uint64, kind workplacev1.ResourceKind, tick uint64) (bool, string, int64, error)) *Server {
+	s.buy = buy
 	return s
 }
 
@@ -148,6 +158,35 @@ func (s *Server) AssignWork(
 	return connect.NewResponse(&worldv1.AssignWorkResponse{
 		Accepted: res.Msg.GetAccepted(),
 		Reason:   res.Msg.GetRejectionReason(),
+	}), nil
+}
+
+func (s *Server) Buy(
+	ctx context.Context,
+	req *connect.Request[worldv1.BuyRequest],
+) (*connect.Response[worldv1.BuyResponse], error) {
+	if s.buy == nil {
+		return nil, connect.NewError(connect.CodeUnimplemented, errors.New("no economy wired up"))
+	}
+
+	// Buy is a player action, not part of the tick loop, so there is no tick
+	// already in hand the way a cycle carries one — one Snapshot call to
+	// learn the current tick is the cost of a purchase being a rare,
+	// player-initiated RPC rather than something on the hot path.
+	snap, err := s.sim.Snapshot(ctx, connect.NewRequest(&simv1.SnapshotRequest{}))
+	if err != nil {
+		return nil, connect.NewError(connect.CodeUnavailable, err)
+	}
+
+	ok, reason, price, err := s.buy(ctx, req.Msg.GetPipId(), req.Msg.GetWorkplaceId(), req.Msg.GetKind(), snap.Msg.GetTick())
+	if err != nil {
+		return nil, connect.NewError(connect.CodeUnavailable, err)
+	}
+
+	return connect.NewResponse(&worldv1.BuyResponse{
+		Ok:     ok,
+		Reason: reason,
+		Price:  price,
 	}), nil
 }
 
