@@ -300,166 +300,59 @@ resource "helm_release" "redpanda" {
 #
 # With six languages in the repo, distributed tracing is not an optimisation —
 # it is the only way to follow a request that crosses Rust, Go, Elixir and
-# TypeScript in one chain. Every service exports to this collector; the
-# collector is the only thing that knows where traces actually go.
+# TypeScript in one chain. Every service exports to this collector.
+#
+# grafana/otel-lgtm bundles the OTel Collector with Loki + Grafana + Tempo +
+# Mimir/Prometheus in one image, with datasources and trace<->log<->metric
+# correlation provisioned out of the box — it replaces the separate Jaeger
+# deployment and the hand-rolled collector ConfigMap that used to live here
+# (and used to drift from infra/otel/collector.yaml, its compose twin).
+# The Service keeps the name `otel-collector` so OTEL_EXPORTER_OTLP_ENDPOINT
+# in every chart needs no change.
 # ---------------------------------------------------------------------------
 
-resource "kubernetes_deployment" "jaeger" {
+resource "kubernetes_config_map" "grafana_dashboards" {
   metadata {
-    name      = "jaeger"
-    namespace = kubernetes_namespace.platform.metadata[0].name
-    labels    = { app = "jaeger" }
-  }
-
-  spec {
-    replicas = 1
-    selector {
-      match_labels = { app = "jaeger" }
-    }
-    template {
-      metadata {
-        labels = { app = "jaeger" }
-      }
-      spec {
-        container {
-          name  = "jaeger"
-          image = "jaegertracing/all-in-one:1.76.0"
-
-          # In-memory storage: traces vanish on restart, which is correct for a
-          # cluster that is torn down daily.
-          env {
-            name  = "SPAN_STORAGE_TYPE"
-            value = "memory"
-          }
-          env {
-            name  = "COLLECTOR_OTLP_ENABLED"
-            value = "true"
-          }
-
-          port {
-            name           = "ui"
-            container_port = 16686
-          }
-          port {
-            name           = "otlp-grpc"
-            container_port = 4317
-          }
-
-          resources {
-            requests = {
-              cpu    = "100m"
-              memory = "256Mi"
-            }
-          }
-        }
-      }
-    }
-  }
-}
-
-resource "kubernetes_service" "jaeger" {
-  metadata {
-    name      = "jaeger"
-    namespace = kubernetes_namespace.platform.metadata[0].name
-  }
-  spec {
-    selector = { app = "jaeger" }
-    port {
-      name        = "ui"
-      port        = 16686
-      target_port = 16686
-    }
-    port {
-      name        = "otlp-grpc"
-      port        = 4317
-      target_port = 4317
-    }
-  }
-}
-
-resource "kubernetes_config_map" "otel_collector" {
-  metadata {
-    name      = "otel-collector-config"
+    name      = "pipsim-grafana-dashboards"
     namespace = kubernetes_namespace.platform.metadata[0].name
   }
 
   data = {
-    "config.yaml" = yamlencode({
-      receivers = {
-        otlp = {
-          protocols = {
-            grpc = { endpoint = "0.0.0.0:4317" }
-            http = { endpoint = "0.0.0.0:4318" }
-          }
-        }
-      }
-      processors = {
-        batch = { timeout = "1s" }
-        # Every service tags itself identically, so traces are filterable by
-        # service regardless of which language emitted them.
-        resource = {
-          attributes = [
-            { key = "deployment.environment", value = "local", action = "upsert" },
-          ]
-        }
-      }
-      exporters = {
-        "otlp/jaeger" = {
-          endpoint = "jaeger.${var.namespace}.svc.cluster.local:4317"
-          tls      = { insecure = true }
-        }
-        debug = { verbosity = "normal" }
-      }
-      service = {
-        pipelines = {
-          traces = {
-            receivers  = ["otlp"]
-            processors = ["resource", "batch"]
-            exporters  = ["otlp/jaeger"]
-          }
-          metrics = {
-            receivers  = ["otlp"]
-            processors = ["resource", "batch"]
-            exporters  = ["debug"]
-          }
-        }
-      }
-    })
+    "pipsim.yaml" = file("${path.module}/../../grafana/dashboards-provisioning.yaml")
+    "pipsim.json" = file("${path.module}/../../grafana/dashboards/pipsim.json")
   }
 }
 
-resource "kubernetes_deployment" "otel_collector" {
+resource "kubernetes_deployment" "observability" {
   metadata {
-    name      = "otel-collector"
+    name      = "otel-lgtm"
     namespace = kubernetes_namespace.platform.metadata[0].name
-    labels    = { app = "otel-collector" }
+    labels    = { app = "otel-lgtm" }
   }
 
   spec {
     replicas = 1
     selector {
-      match_labels = { app = "otel-collector" }
+      match_labels = { app = "otel-lgtm" }
     }
     template {
       metadata {
-        labels = { app = "otel-collector" }
+        labels = { app = "otel-lgtm" }
         annotations = {
-          # Roll the pod when the config changes; a ConfigMap edit alone does
+          # Roll the pod when a dashboard changes; a ConfigMap edit alone does
           # not restart anything.
-          "pipsim.dev/config-hash" = sha256(kubernetes_config_map.otel_collector.data["config.yaml"])
+          "pipsim.dev/dashboards-hash" = sha256(join("", values(kubernetes_config_map.grafana_dashboards.data)))
         }
       }
       spec {
         container {
-          name  = "otel-collector"
-          image = "otel/opentelemetry-collector-contrib:0.158.0"
-          args  = ["--config=/etc/otel/config.yaml"]
+          name  = "otel-lgtm"
+          image = "grafana/otel-lgtm:0.30.0"
 
-          volume_mount {
-            name       = "config"
-            mount_path = "/etc/otel"
+          port {
+            name           = "grafana"
+            container_port = 3000
           }
-
           port {
             name           = "otlp-grpc"
             container_port = 4317
@@ -469,18 +362,32 @@ resource "kubernetes_deployment" "otel_collector" {
             container_port = 4318
           }
 
+          # The provisioning YAML must land next to the dashboard JSON it
+          # provisions, both under grafana/conf/provisioning/dashboards/pipsim
+          # — Grafana's file provider does not look outside that directory.
+          volume_mount {
+            name       = "dashboards"
+            mount_path = "/otel-lgtm/grafana/conf/provisioning/dashboards/pipsim.yaml"
+            sub_path   = "pipsim.yaml"
+          }
+          volume_mount {
+            name       = "dashboards"
+            mount_path = "/otel-lgtm/grafana/conf/provisioning/dashboards/pipsim/pipsim.json"
+            sub_path   = "pipsim.json"
+          }
+
           resources {
             requests = {
-              cpu    = "100m"
-              memory = "256Mi"
+              cpu    = "250m"
+              memory = "1Gi"
             }
           }
         }
 
         volume {
-          name = "config"
+          name = "dashboards"
           config_map {
-            name = kubernetes_config_map.otel_collector.metadata[0].name
+            name = kubernetes_config_map.grafana_dashboards.metadata[0].name
           }
         }
       }
@@ -494,7 +401,12 @@ resource "kubernetes_service" "otel_collector" {
     namespace = kubernetes_namespace.platform.metadata[0].name
   }
   spec {
-    selector = { app = "otel-collector" }
+    selector = { app = "otel-lgtm" }
+    port {
+      name        = "grafana"
+      port        = 3000
+      target_port = 3000
+    }
     port {
       name        = "otlp-grpc"
       port        = 4317

@@ -20,6 +20,7 @@ defmodule Tavern.Connect do
   @behaviour Plug
 
   import Plug.Conn
+  require OpenTelemetry.Tracer, as: Tracer
 
   @proto "application/proto"
   @json "application/json"
@@ -30,17 +31,24 @@ defmodule Tavern.Connect do
   @impl true
   # Two segments, because the service name contains dots but not slashes:
   # /pips.workplace.v1.WorkplaceService/Describe
+  #
+  # Span named pipsim.tavern.<method>, matching the pipsim.<kind>.<operation>
+  # convention every workplace's CLAUDE.md requires. This is the one hop that
+  # would otherwise have no code emitting it: Go gets otelconnect and Rust gets
+  # tracing-opentelemetry, but a hand-rolled Plug has to say so itself.
   def call(%Plug.Conn{method: "POST", path_info: [service, method]} = conn, opts) do
-    handler = Keyword.fetch!(opts, :handler)
+    Tracer.with_span "pipsim.tavern.#{method}" do
+      handler = Keyword.fetch!(opts, :handler)
 
-    with true <- service == handler.service_name() || {:error, :unimplemented},
-         {:ok, {request_module, response_module, fun}} <- handler.route(method),
-         {:ok, body, conn} <- read_body(conn),
-         {:ok, message} <- decode(body, request_module, content_type(conn)) do
-      reply(conn, response_module, fun.(message))
-    else
-      {:error, reason} -> error(conn, reason)
-      false -> error(conn, :unimplemented)
+      with true <- service == handler.service_name() || {:error, :unimplemented},
+           {:ok, {request_module, response_module, fun}} <- handler.route(method),
+           {:ok, body, conn} <- read_body(conn),
+           {:ok, message} <- decode(body, request_module, content_type(conn)) do
+        reply(conn, response_module, fun.(message))
+      else
+        {:error, reason} -> error(conn, reason)
+        false -> error(conn, :unimplemented)
+      end
     end
   catch
     # Handlers signal a routing failure by throwing rather than by threading an

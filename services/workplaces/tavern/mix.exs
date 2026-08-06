@@ -51,6 +51,12 @@ defmodule Tavern.MixProject do
 
       # Competing consumers on pipsim.work.tavern, same as the farm.
       {:amqp, "~> 4.0"},
+
+      # No opentelemetry_phoenix: this service has no Phoenix telemetry events
+      # to attach to, so the span in Tavern.Connect is written by hand instead.
+      {:opentelemetry, "~> 1.5"},
+      {:opentelemetry_api, "~> 1.4"},
+      {:opentelemetry_exporter, "~> 1.8"},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false}
     ]
   end

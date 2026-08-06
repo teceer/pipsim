@@ -21,4 +21,11 @@ config :logger, metadata: :all
 # which is exactly what happened the first time this was run next to a farm.
 config :tavern, start_server: true
 
+# Batched OTLP export, matching every other service in the repo — see
+# crates/server/src/telemetry.rs for the Rust equivalent. The endpoint itself
+# is environment-specific, so it is set in runtime.exs, not here.
+config :opentelemetry,
+  span_processor: :batch,
+  traces_exporter: :otlp
+
 import_config "#{config_env()}.exs"
