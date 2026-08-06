@@ -840,13 +840,21 @@ mod tests {
     fn a_hired_pip_walks_to_work_before_it_starts_working() {
         let mut w = World::new(9);
         w.step(&spawn(1));
-        let events = w.step(&[build(77, 4), Intent::Hire { pip: 1, workplace: 77 }]);
+        let events = w.step(&[
+            build(77, 4),
+            Intent::Hire {
+                pip: 1,
+                workplace: 77,
+            },
+        ]);
 
         assert_eq!(w.employers[0], Some(77));
         assert_eq!(w.inside[0], None, "hired and already inside");
         assert_eq!(w.activities[0], Activity::Commuting);
         assert!(
-            !events.iter().any(|e| matches!(e, DomainEvent::PipStartedWork { .. })),
+            !events
+                .iter()
+                .any(|e| matches!(e, DomainEvent::PipStartedWork { .. })),
             "work cannot have started before the pip arrived"
         );
 
@@ -908,8 +916,14 @@ mod tests {
         w.step(&spawn(2));
         w.step(&[build(5, 1)]);
         w.step(&[
-            Intent::Hire { pip: 1, workplace: 5 },
-            Intent::Hire { pip: 2, workplace: 5 },
+            Intent::Hire {
+                pip: 1,
+                workplace: 5,
+            },
+            Intent::Hire {
+                pip: 2,
+                workplace: 5,
+            },
         ]);
 
         for _ in 0..200 {
@@ -935,7 +949,10 @@ mod tests {
         let mut w = World::new(23);
         w.step(&spawn(1));
         w.step(&[build(5, 1)]);
-        w.step(&[Intent::Hire { pip: 1, workplace: 5 }]);
+        w.step(&[Intent::Hire {
+            pip: 1,
+            workplace: 5,
+        }]);
 
         for _ in 0..200 {
             w.step(&[]);
