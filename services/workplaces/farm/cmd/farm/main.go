@@ -47,6 +47,27 @@ func workplaceSpecs() ([]farm.Spec, error) {
 	}}, nil
 }
 
+// workplaceService is what main needs of a host, whichever half it is talking
+// to: the contract itself, plus the two things the queue consumer and the
+// health endpoint ask for.
+type workplaceService interface {
+	workplacev1connect.WorkplaceServiceHandler
+	ConsiderOffer(ctx context.Context, pipID, tick uint64) (bool, string)
+	Workers() int
+}
+
+// daprSidecar reports where this pod's sidecar is, or "" if there is none.
+//
+// DAPR_HTTP_PORT is injected by the sidecar itself, so its presence is the
+// signal — there is no separate flag to get out of step with reality.
+func daprSidecar() string {
+	port := strings.TrimSpace(os.Getenv("DAPR_HTTP_PORT"))
+	if port == "" {
+		return ""
+	}
+	return "http://localhost:" + port
+}
+
 func main() {
 	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
 
@@ -64,16 +85,22 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Shift state goes to Redis when there is a Redis, because Work and EndShift
-	// are load-balanced RPCs: a pip hired by one replica has to be known to the
-	// next one the gateway happens to reach. Without a URL the farm keeps its
-	// shifts in memory and is correct at exactly one replica.
+	// Three places shifts can live, in order of preference.
+	//
+	// A Dapr sidecar wins: the actor runtime serialises invocations per
+	// building, so reap-check-claim is indivisible without the Lua the Redis
+	// store needs. Redis is the answer without one — Work and EndShift are
+	// load-balanced RPCs, so a pip hired by one replica has to be known to the
+	// next. Memory is correct at exactly one replica and is what tests and
+	// `make run` use.
 	//
 	// One store per building, never one shared: capacity is a property of a
 	// building, and a store spanning two of them would enforce 24 workers
 	// across the pair.
+	daprBase := daprSidecar()
+
 	var rdb *redis.Client
-	if redisURL := os.Getenv("REDIS_URL"); redisURL != "" {
+	if redisURL := os.Getenv("REDIS_URL"); redisURL != "" && daprBase == "" {
 		opts, err := redis.ParseURL(redisURL)
 		if err != nil {
 			slog.Error("bad REDIS_URL", "err", err)
@@ -81,23 +108,42 @@ func main() {
 		}
 		rdb = redis.NewClient(opts)
 		slog.Info("shift state in redis", "addr", opts.Addr)
-	} else {
-		slog.Info("no REDIS_URL set; shift state is per-replica")
+	}
+	if daprBase == "" && rdb == nil {
+		slog.Info("no sidecar and no REDIS_URL; shift state is per-replica")
 	}
 
 	buildings := make([]*farm.Service, 0, len(specs))
 	for _, sp := range specs {
-		if rdb == nil {
+		switch {
+		case daprBase != "":
+			buildings = append(buildings, farm.NewWithStore(
+				farm.NewDaprStore(daprBase, sp.ID, farm.MaxWorkers,
+					farm.ShiftLease, farm.MaxTicksPerWork),
+				sp.ID, sp.X, sp.Y,
+			))
+		case rdb != nil:
+			buildings = append(buildings, farm.NewWithStore(
+				farm.NewRedisStore(rdb, sp.ID, farm.MaxWorkers,
+					farm.ShiftLease, farm.MaxTicksPerWork),
+				sp.ID, sp.X, sp.Y,
+			))
+		default:
 			buildings = append(buildings, farm.New(sp.ID, sp.X, sp.Y))
-			continue
 		}
-		buildings = append(buildings, farm.NewWithStore(
-			farm.NewRedisStore(rdb, sp.ID, farm.MaxWorkers,
-				farm.ShiftLease, farm.MaxTicksPerWork),
-			sp.ID, sp.X, sp.Y,
-		))
 	}
-	svc := farm.NewHost(buildings...)
+	host := farm.NewHost(buildings...)
+
+	// Under Dapr the Connect handler is an adapter: it hands each call to the
+	// building's actor through the sidecar, and the actor endpoints on the same
+	// mux answer on the other side. Without a sidecar the host serves the
+	// contract directly, which is what keeps `make test` and `make run`
+	// cluster-free.
+	var svc workplaceService = host
+	if daprBase != "" {
+		svc = farm.NewActorHost(host, daprBase)
+		slog.Info("shift state in the dapr actor store", "sidecar", daprBase)
+	}
 
 	// Competing consumers: several replicas share pipsim.work.farm, so an offer
 	// goes to exactly one of them. Without a broker URL the farm still serves
@@ -122,6 +168,12 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.Handle(workplacev1connect.NewWorkplaceServiceHandler(svc))
+
+	// The endpoints the sidecar calls back into. Disjoint paths from Connect's,
+	// so both contracts live on one port. Registered unconditionally: without a
+	// sidecar nothing ever calls them, and a mux entry costs nothing.
+	mux.Handle("/dapr/", host.Handler())
+	mux.Handle("/actors/", host.Handler())
 
 	// Part of the operational contract every service in this repo implements,
 	// whatever the language.

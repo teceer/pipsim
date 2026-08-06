@@ -106,6 +106,29 @@ Whatever backs it, `Claim` must be atomic across reap-check-insert. Splitting it
 into "is there room" and "take the room" reintroduces the race the store exists
 to remove.
 
+There are now three backings, and they differ only in *who* provides that
+atomicity:
+
+| Store | Atomicity from | Correct at |
+|---|---|---|
+| memory | a mutex | one replica |
+| Redis | two Lua scripts | any number |
+| Dapr actors | the actor runtime, one invocation at a time per building | any number |
+
+The rules themselves — reaping, the lease, elapsed-tick pricing — live once, in
+`shiftSet`. Memory wraps it in a mutex; the Dapr store loads it, calls one
+method and writes it back. Only the Redis store restates them, in Lua, because
+that is where its serialisation has to happen. If you add a fourth backing, wrap
+`shiftSet`; do not write the rules again.
+
+**Under Dapr the Connect handler stops holding logic.** State may only be
+touched inside an invocation the sidecar routed — anywhere else Dapr answers
+`ERR_ACTOR_INSTANCE_MISSING` — so the handler becomes an adapter that hands each
+call to the building's actor and waits, and the actor endpoint on the same mux
+runs the work. The trip out through the sidecar and back costs about 1.6 ms and
+is not avoidable: it is what earns the right to write. Note that `/healthz`
+counts through the actors too, for the same reason.
+
 **`Work` pays for elapsed ticks, not per call.** The driver batches — it calls
 `Work` once a second while the world ticks ten times. Flat per-call amounts made
 employment a *slower death* than idling, because a working pip drains food every

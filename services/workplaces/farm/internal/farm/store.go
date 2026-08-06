@@ -37,16 +37,20 @@ type Store interface {
 	Count(ctx context.Context) (int, error)
 }
 
-// --- In memory ---------------------------------------------------------------
+// --- The rules, with nowhere to keep them -----------------------------------
 
-// memStore is the single-replica implementation, and the one the tests use.
+// shiftSet is what a store *decides*, separated from where it keeps it.
 //
-// It is not a mock. Without a Redis URL the farm runs on it and behaves exactly
-// as it did before this file existed — one replica, correct; several replicas,
-// divergent. That is the honest default: the store is what makes horizontal
-// scaling possible, not something that pretends to.
-type memStore struct {
-	mu     sync.Mutex
+// Reap-then-check-then-take, the lease, and elapsed-tick pricing are one set of
+// rules. Every backing that serialises access can share them: memStore holds a
+// mutex around this, and daprStore loads it, calls one method and writes it
+// back, relying on the actor runtime for the same exclusion. The Redis store
+// below is the exception and says so — its rules live in Lua because Redis is
+// where the serialisation has to happen.
+//
+// Extracting this is the difference between one rule with three homes and three
+// implementations that drift.
+type shiftSet struct {
 	shifts map[uint64]*shift
 	max    int
 	lease  time.Duration
@@ -60,8 +64,8 @@ type shift struct {
 	lastWork     time.Time
 }
 
-func newMemStore(max int, lease time.Duration, maxGap uint64, now func() time.Time) *memStore {
-	return &memStore{
+func newShiftSet(max int, lease time.Duration, maxGap uint64, now func() time.Time) *shiftSet {
+	return &shiftSet{
 		shifts: make(map[uint64]*shift),
 		max:    max,
 		lease:  lease,
@@ -70,68 +74,99 @@ func newMemStore(max int, lease time.Duration, maxGap uint64, now func() time.Ti
 	}
 }
 
-// reapLocked drops shifts whose lease has expired. Callers hold mu.
-func (m *memStore) reapLocked() {
-	for pip, sh := range m.shifts {
-		if m.now().Sub(sh.lastWork) > m.lease {
-			delete(m.shifts, pip)
-			slog.Info("shift lease expired", "pip", pip, "workers", len(m.shifts))
+// reap drops shifts whose lease has expired.
+func (s *shiftSet) reap() {
+	for pip, sh := range s.shifts {
+		if s.now().Sub(sh.lastWork) > s.lease {
+			delete(s.shifts, pip)
+			slog.Info("shift lease expired", "pip", pip, "workers", len(s.shifts))
 		}
 	}
+}
+
+func (s *shiftSet) claim(pip, tick uint64) (bool, string) {
+	// Reap first: a full-looking workplace may be full of expired leases.
+	s.reap()
+
+	if _, already := s.shifts[pip]; already {
+		return false, "already on shift here"
+	}
+	if len(s.shifts) >= s.max {
+		return false, "no free positions"
+	}
+
+	s.shifts[pip] = &shift{startedTick: tick, lastWorkTick: tick, lastWork: s.now()}
+	return true, ""
+}
+
+func (s *shiftSet) touch(pip, tick uint64) (int32, bool) {
+	sh, working := s.shifts[pip]
+	if !working {
+		return 0, false
+	}
+
+	var elapsed int32
+	if tick > sh.lastWorkTick {
+		elapsed = int32(min(tick-sh.lastWorkTick, s.maxGap))
+	}
+	sh.lastWorkTick = tick
+	sh.lastWork = s.now()
+	return elapsed, true
+}
+
+func (s *shiftSet) release(pip uint64) (uint64, bool) {
+	sh, ok := s.shifts[pip]
+	if !ok {
+		return 0, false
+	}
+	delete(s.shifts, pip)
+	return sh.startedTick, true
+}
+
+func (s *shiftSet) count() int { return len(s.shifts) }
+
+// --- In memory ---------------------------------------------------------------
+
+// memStore is the single-replica implementation, and the one the tests use.
+//
+// It is not a mock. Without a Redis URL the farm runs on it and behaves exactly
+// as it did before this file existed — one replica, correct; several replicas,
+// divergent. That is the honest default: the store is what makes horizontal
+// scaling possible, not something that pretends to.
+type memStore struct {
+	mu  sync.Mutex
+	set *shiftSet
+}
+
+func newMemStore(max int, lease time.Duration, maxGap uint64, now func() time.Time) *memStore {
+	return &memStore{set: newShiftSet(max, lease, maxGap, now)}
 }
 
 func (m *memStore) Claim(_ context.Context, pip, tick uint64) (bool, string, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-
-	// Reap first: a full-looking workplace may be full of expired leases.
-	m.reapLocked()
-
-	if _, already := m.shifts[pip]; already {
-		return false, "already on shift here", nil
-	}
-	if len(m.shifts) >= m.max {
-		return false, "no free positions", nil
-	}
-
-	m.shifts[pip] = &shift{startedTick: tick, lastWorkTick: tick, lastWork: m.now()}
-	return true, "", nil
+	accepted, reason := m.set.claim(pip, tick)
+	return accepted, reason, nil
 }
 
 func (m *memStore) Touch(_ context.Context, pip, tick uint64) (int32, bool, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-
-	sh, working := m.shifts[pip]
-	if !working {
-		return 0, false, nil
-	}
-
-	var elapsed int32
-	if tick > sh.lastWorkTick {
-		elapsed = int32(min(tick-sh.lastWorkTick, m.maxGap))
-	}
-	sh.lastWorkTick = tick
-	sh.lastWork = m.now()
-	return elapsed, true, nil
+	elapsed, ok := m.set.touch(pip, tick)
+	return elapsed, ok, nil
 }
 
 func (m *memStore) Release(_ context.Context, pip, _ uint64) (uint64, bool, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-
-	sh, ok := m.shifts[pip]
-	if !ok {
-		return 0, false, nil
-	}
-	delete(m.shifts, pip)
-	return sh.startedTick, true, nil
+	started, found := m.set.release(pip)
+	return started, found, nil
 }
 
 func (m *memStore) Count(_ context.Context) (int, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	return len(m.shifts), nil
+	return m.set.count(), nil
 }
 
 // --- Redis ------------------------------------------------------------------

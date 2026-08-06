@@ -230,9 +230,28 @@ bought: turn-based concurrency per building id, so the atomic reap-check-claim t
    running service is invisible until the gateway restarts. Acceptable while ids are
    configuration; not acceptable once `BuildWorkplace` exists.
 
-4. **Swap the store for Dapr actors.** The remaining half of the original step 2: split
-   `internal/farm` along the boundary the spike exposed — Connect adapter on one side, actor
-   handler owning state on the other — and delete the two Lua scripts. Durability is proven
-   (2a).
+4. ~~**Swap the store for Dapr actors**~~ — done, as a fourth `Store` rather than a
+   replacement. `farm.NewDaprStore` keeps a building's shifts in the actor state store;
+   `farm.ActorHost` is the Connect adapter, and `Host.Handler()` serves what the sidecar
+   calls back into. Selected by the presence of `DAPR_HTTP_PORT`, which the sidecar injects
+   — so there is no separate flag to fall out of step with reality.
+
+   Verified against `daprd` 1.15.4: conformance 6/6 through the actors with two buildings,
+   and occupancy of 3 and 2 survived killing both the farm process and the sidecar
+   container. State lands in Redis under `farm||farm||<id>||shifts`.
+
+   Two things came out differently from the plan:
+
+   - **The Lua stayed.** The rules moved into `shiftSet`, shared by the memory and Dapr
+     stores, and the Redis store still restates them in Lua because that is where *its*
+     serialisation has to happen. Deleting it would mean deleting the ability to run without
+     a Dapr control plane, which `make test` and `make dev` depend on. Three backings, one
+     set of rules, three sources of atomicity — mutex, Lua, actor runtime.
+   - **`/healthz` had to change too.** Counting workers through the inner host reads the
+     state store outside an invocation, so a perfectly healthy service reported a failure.
+     There is no shortcut round the sidecar, not even for a health endpoint.
+
+   Off by default in the chart (`dapr.enabled`), because it needs the control plane
+   installed and the chart must stand up without one.
 5. **`tavern` in Elixir** against the hand-written actor contract — the test of whether the
    polyglot claim survives without an SDK.

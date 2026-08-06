@@ -18,6 +18,18 @@ spec:
       labels:
         app.kubernetes.io/name: farm
         app.kubernetes.io/part-of: pipsim
+      {{- if .Values.dapr.enabled }}
+      # The sidecar is injected from these, by the Dapr control plane — which
+      # has to be installed in the cluster first. With it, shift state moves to
+      # the actor state store and the binary notices through DAPR_HTTP_PORT,
+      # which the sidecar sets. Nothing else in the pod changes.
+      annotations:
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "farm"
+        dapr.io/app-port: "8090"
+        dapr.io/app-protocol: "http"
+        dapr.io/enable-api-logging: "{{ .Values.dapr.apiLogging }}"
+      {{- end }}
     spec:
       containers:
         - name: farm
