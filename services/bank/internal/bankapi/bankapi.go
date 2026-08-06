@@ -150,6 +150,8 @@ func kindFromProto(k bankv1.TransferKind) ledger.Kind {
 		return ledger.KindPurchase
 	case bankv1.TransferKind_TRANSFER_KIND_ISSUANCE:
 		return ledger.KindIssuance
+	case bankv1.TransferKind_TRANSFER_KIND_ESCHEAT:
+		return ledger.KindEscheat
 	default:
 		slog.Warn("transfer with unspecified kind")
 		return ledger.Kind("")

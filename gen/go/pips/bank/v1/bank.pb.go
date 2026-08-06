@@ -32,6 +32,12 @@ const (
 	// from the treasury account, visible as such in the journal rather than a
 	// separate mechanism.
 	TransferKind_TRANSFER_KIND_ISSUANCE TransferKind = 3
+	// A dead pip's balance returning to the treasury. Not issuance in reverse
+	// — no money is destroyed, it changes hands — but worth its own kind so
+	// that "where did the supply go" is answerable from the journal alone.
+	// Starvation is the ordinary way a pip leaves the world, so without this
+	// the supply would drain one purse at a time.
+	TransferKind_TRANSFER_KIND_ESCHEAT TransferKind = 4
 )
 
 // Enum value maps for TransferKind.
@@ -41,12 +47,14 @@ var (
 		1: "TRANSFER_KIND_WAGE",
 		2: "TRANSFER_KIND_PURCHASE",
 		3: "TRANSFER_KIND_ISSUANCE",
+		4: "TRANSFER_KIND_ESCHEAT",
 	}
 	TransferKind_value = map[string]int32{
 		"TRANSFER_KIND_UNSPECIFIED": 0,
 		"TRANSFER_KIND_WAGE":        1,
 		"TRANSFER_KIND_PURCHASE":    2,
 		"TRANSFER_KIND_ISSUANCE":    3,
+		"TRANSFER_KIND_ESCHEAT":     4,
 	}
 )
 
@@ -663,12 +671,13 @@ const file_pips_bank_v1_bank_proto_rawDesc = "" +
 	"\n" +
 	"account_id\x18\x01 \x01(\tR\taccountId\".\n" +
 	"\x12GetBalanceResponse\x12\x18\n" +
-	"\abalance\x18\x01 \x01(\x03R\abalance*}\n" +
+	"\abalance\x18\x01 \x01(\x03R\abalance*\x98\x01\n" +
 	"\fTransferKind\x12\x1d\n" +
 	"\x19TRANSFER_KIND_UNSPECIFIED\x10\x00\x12\x16\n" +
 	"\x12TRANSFER_KIND_WAGE\x10\x01\x12\x1a\n" +
 	"\x16TRANSFER_KIND_PURCHASE\x10\x02\x12\x1a\n" +
-	"\x16TRANSFER_KIND_ISSUANCE\x10\x032\xd7\x02\n" +
+	"\x16TRANSFER_KIND_ISSUANCE\x10\x03\x12\x19\n" +
+	"\x15TRANSFER_KIND_ESCHEAT\x10\x042\xd7\x02\n" +
 	"\vBankService\x12R\n" +
 	"\vOpenAccount\x12 .pips.bank.v1.OpenAccountRequest\x1a!.pips.bank.v1.OpenAccountResponse\x12I\n" +
 	"\bTransfer\x12\x1d.pips.bank.v1.TransferRequest\x1a\x1e.pips.bank.v1.TransferResponse\x12X\n" +

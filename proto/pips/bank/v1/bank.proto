@@ -37,6 +37,12 @@ enum TransferKind {
   // from the treasury account, visible as such in the journal rather than a
   // separate mechanism.
   TRANSFER_KIND_ISSUANCE = 3;
+  // A dead pip's balance returning to the treasury. Not issuance in reverse
+  // — no money is destroyed, it changes hands — but worth its own kind so
+  // that "where did the supply go" is answerable from the journal alone.
+  // Starvation is the ordinary way a pip leaves the world, so without this
+  // the supply would drain one purse at a time.
+  TRANSFER_KIND_ESCHEAT = 4;
 }
 
 message Account {

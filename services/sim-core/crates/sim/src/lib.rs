@@ -588,7 +588,19 @@ impl World {
                     }
                 }
                 Intent::CreditBalances { payer, credits } => {
-                    let total: i64 = credits.iter().map(|(_, amount)| *amount).sum();
+                    // Only pips that still exist are paid, and the payer is
+                    // debited only for those. `adjust_balance` is a no-op for
+                    // an unknown pip, so summing the whole list first would
+                    // debit the workplace for a wage nobody receives — money
+                    // destroyed, which the closed-supply invariant forbids.
+                    // The gap is real: the gateway builds this list from a
+                    // snapshot, and a pip can starve before the intent lands.
+                    let payable: Vec<(PipId, i64)> = credits
+                        .iter()
+                        .filter(|(pip, _)| self.index_of(*pip).is_some())
+                        .copied()
+                        .collect();
+                    let total: i64 = payable.iter().map(|(_, amount)| *amount).sum();
                     let Some(payer_balance) = self.balance_of(AccountId::Workplace(*payer)) else {
                         continue;
                     };
@@ -596,7 +608,7 @@ impl World {
                         continue;
                     }
                     self.adjust_balance(AccountId::Workplace(*payer), -total);
-                    for (pip, amount) in credits {
+                    for (pip, amount) in &payable {
                         self.adjust_balance(AccountId::Pip(*pip), *amount);
                     }
                 }
@@ -657,6 +669,17 @@ impl World {
         // building slowly fills with the dead — the same class of bug the
         // farm's shift lease exists to catch on the other side of the wire.
         self.leave_building(i);
+
+        // A dead pip's money goes back to the treasury rather than out of
+        // existence. Money supply is closed (ADR 0006): the sum of every
+        // balance is constant except at an explicit issuance, and dying is
+        // routine here — starvation is the main way a pip leaves the world,
+        // so leaking a purse per death would drain the supply steadily.
+        //
+        // Here rather than at the death site, so that any future way of
+        // removing a pip inherits it. `services/bank` does the same on its
+        // side, off the same PipDied fact.
+        self.treasury_balance += self.balances[i];
 
         self.ids.remove(i);
         self.names.remove(i);
@@ -1359,5 +1382,100 @@ mod tests {
         }]);
 
         assert_ne!(before, w.state_hash());
+    }
+
+    /// Every balance the core replicates, summed. Issuance is the treasury
+    /// paying out, so its balance goes negative by exactly what everyone else
+    /// holds — a closed supply sums to zero, always.
+    fn total_money(w: &World) -> i64 {
+        w.balances.iter().sum::<i64>()
+            + w.workplace_balances.iter().sum::<i64>()
+            + w.treasury_balance
+    }
+
+    /// The invariant the whole ledger design rests on, stated as a test.
+    ///
+    /// It failed before the escheat in `remove_at`: a pip that starved took
+    /// its balance out of existence, and since starvation is the ordinary way
+    /// to die here, the supply drained a purse at a time.
+    #[test]
+    fn a_dying_pip_returns_its_money_to_the_treasury() {
+        let mut w = World::new(40);
+        w.step(&spawn(1));
+        w.step(&[Intent::Transfer {
+            payer: AccountId::Treasury,
+            payee: AccountId::Pip(1),
+            amount: 500,
+            resource_kind: None,
+        }]);
+        assert_eq!(w.balances[0], 500);
+        assert_eq!(total_money(&w), 0, "issuance keeps the supply closed");
+
+        // Starve it. Food drains every tick and nothing feeds it.
+        for _ in 0..2_000 {
+            if w.is_empty() {
+                break;
+            }
+            w.step(&[]);
+        }
+
+        assert!(w.is_empty(), "the pip should have starved");
+        assert_eq!(w.treasury_balance, 0, "the purse came back");
+        assert_eq!(total_money(&w), 0, "money did not vanish with the pip");
+    }
+
+    /// The gateway builds payroll from a snapshot, so a pip can die between
+    /// being listed and the intent being applied. Paying it must not debit the
+    /// workplace for a wage that lands nowhere.
+    #[test]
+    fn payroll_skips_a_pip_that_no_longer_exists() {
+        let mut w = World::new(40);
+        w.step(&spawn(1));
+        w.step(&[build(9, 4)]);
+        w.step(&[Intent::Transfer {
+            payer: AccountId::Treasury,
+            payee: AccountId::Workplace(9),
+            amount: 1_000,
+            resource_kind: None,
+        }]);
+        let before = total_money(&w);
+
+        w.step(&[Intent::CreditBalances {
+            payer: 9,
+            credits: vec![(1, 10), (99_999, 10)],
+        }]);
+
+        assert_eq!(w.balances[0], 10, "the living pip is paid");
+        assert_eq!(
+            w.workplace_balances[0], 990,
+            "the workplace is debited only for the wage that was actually paid"
+        );
+        assert_eq!(total_money(&w), before, "no money created or destroyed");
+    }
+
+    /// Payroll is all-or-nothing against what is payable, and the check runs
+    /// after the dead are filtered out — a workplace that can afford its live
+    /// workers is not blocked by names on the list that no longer exist.
+    #[test]
+    fn payroll_affordability_is_checked_after_filtering_the_dead() {
+        let mut w = World::new(40);
+        w.step(&spawn(1));
+        w.step(&[build(9, 4)]);
+        w.step(&[Intent::Transfer {
+            payer: AccountId::Treasury,
+            payee: AccountId::Workplace(9),
+            amount: 10,
+            resource_kind: None,
+        }]);
+
+        // 10 covers the living pip alone; it would not cover both entries.
+        w.step(&[Intent::CreditBalances {
+            payer: 9,
+            credits: vec![(1, 10), (99_999, 10)],
+        }]);
+
+        assert_eq!(w.balances[0], 10, "the living pip is paid");
+        assert_eq!(w.workplace_balances[0], 0);
+        assert_eq!(total_money(&w), 0);
     }
 }

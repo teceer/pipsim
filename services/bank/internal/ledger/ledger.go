@@ -22,6 +22,7 @@ const (
 	KindWage     Kind = "WAGE"
 	KindPurchase Kind = "PURCHASE"
 	KindIssuance Kind = "ISSUANCE"
+	KindEscheat  Kind = "ESCHEAT"
 )
 
 // Credit is one payee's share of a BatchTransfer — payroll, one workplace
