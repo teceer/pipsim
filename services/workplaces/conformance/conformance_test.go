@@ -159,10 +159,13 @@ func TestAShiftCanBeStartedWorkedAndEnded(t *testing.T) {
 	if work.Msg.GetShiftShouldEnd() {
 		t.Fatal("a shift started a moment ago should not be over")
 	}
-	if len(work.Msg.GetNeedDeltas()) == 0 {
-		t.Error("Work over ten ticks returned no need deltas; the shift did nothing")
+	// A shift is worth something. Since ADR 0006 a workplace reports what it
+	// produced and what it paid, and says nothing about the worker's needs —
+	// so "did the shift do anything" is asked of those two.
+	tenTicks := produced(work.Msg)
+	if len(tenTicks) == 0 && work.Msg.GetWage() == 0 {
+		t.Error("Work over ten ticks produced nothing and paid nothing; the shift did nothing")
 	}
-	tenTicks := work.Msg.GetNeedDeltas()
 
 	// Same tick again: paying twice would let a chatty caller mint resources.
 	again, err := c.Work(ctx, connect.NewRequest(&workplacev1.WorkRequest{
@@ -171,8 +174,9 @@ func TestAShiftCanBeStartedWorkedAndEnded(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Work (repeat): %v", err)
 	}
-	if len(again.Msg.GetNeedDeltas()) != 0 {
-		t.Errorf("a repeated call in the same tick paid again: %v", again.Msg.GetNeedDeltas())
+	if len(produced(again.Msg)) != 0 || again.Msg.GetWage() != 0 {
+		t.Errorf("a repeated call in the same tick paid again: produced %v, wage %d",
+			produced(again.Msg), again.Msg.GetWage())
 	}
 
 	// One tick on should be worth about a tenth of ten.
@@ -182,16 +186,25 @@ func TestAShiftCanBeStartedWorkedAndEnded(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Work (one tick): %v", err)
 	}
-	for need, ten := range tenTicks {
-		got := one.Msg.GetNeedDeltas()[need]
+	oneTick := produced(one.Msg)
+	for kind, ten := range tenTicks {
 		if ten == 0 {
 			continue
 		}
-		if got*10 != ten {
-			t.Errorf("need %d: one tick gave %d, ten ticks gave %d — not proportional",
-				need, got, ten)
+		if got := oneTick[kind]; got*10 != ten {
+			t.Errorf("%v: one tick produced %d, ten ticks produced %d — not proportional",
+				kind, got, ten)
 		}
 	}
+}
+
+// produced flattens a WorkResponse's output into kind -> amount.
+func produced(res *workplacev1.WorkResponse) map[workplacev1.ResourceKind]int32 {
+	out := make(map[workplacev1.ResourceKind]int32, len(res.GetProduced()))
+	for _, r := range res.GetProduced() {
+		out[r.GetKind()] += r.GetAmount()
+	}
+	return out
 }
 
 func TestWorkForAPipItNeverHiredEndsTheShift(t *testing.T) {
@@ -236,11 +249,14 @@ func TestALongGapIsCapped(t *testing.T) {
 		t.Fatalf("Work: %v", err)
 	}
 
-	for need, delta := range huge.Msg.GetNeedDeltas() {
-		if delta > 10_000 || delta < -10_000 {
-			t.Errorf("need %d moved by %d after a million ticks — the gap is not capped",
-				need, delta)
+	for kind, amount := range produced(huge.Msg) {
+		if amount > 10_000 || amount < -10_000 {
+			t.Errorf("%v moved by %d after a million ticks — the gap is not capped",
+				kind, amount)
 		}
+	}
+	if wage := huge.Msg.GetWage(); wage > 10_000 || wage < -10_000 {
+		t.Errorf("wage of %d after a million ticks — the gap is not capped", wage)
 	}
 }
 

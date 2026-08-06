@@ -168,6 +168,11 @@ func (d *Driver) Register(ctx context.Context) error {
 				Kind:        desc.GetKind(),
 				Position:    desc.GetPosition(),
 				Capacity:    uint32(desc.GetMaxWorkers()),
+				// Prices travel the same road as capacity: the workplace owns
+				// the number, the gateway carries it, the core enforces it. A
+				// pip deciding inside a tick whether it can afford lunch has
+				// no way to ask over the network.
+				Sells: offers(desc.GetSells()),
 			},
 		},
 	})); err != nil {
@@ -375,4 +380,20 @@ func (d *Driver) endShift(ctx context.Context, pip, tick uint64, reason string) 
 	delete(d.employed, pip)
 	delete(d.pending, pip)
 	d.mu.Unlock()
+}
+
+
+// offers converts a workplace's own price list into the core's copy of it.
+func offers(sells []*workplacev1.Offer) []*simv1.WorkplaceOffer {
+	if len(sells) == 0 {
+		return nil
+	}
+	out := make([]*simv1.WorkplaceOffer, 0, len(sells))
+	for _, o := range sells {
+		out = append(out, &simv1.WorkplaceOffer{
+			ResourceKind: int32(o.GetKind()),
+			Price:        o.GetPrice(),
+		})
+	}
+	return out
 }

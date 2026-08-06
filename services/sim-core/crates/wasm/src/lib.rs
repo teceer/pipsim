@@ -79,6 +79,51 @@ impl SimHandle {
             kind,
             position: Vec2 { x, y },
             capacity,
+            sells: Vec::new(),
+        });
+    }
+
+    /// Registers one thing a building sells.
+    ///
+    /// Separate from `queue_register_workplace` rather than a parameter on it,
+    /// because a list of pairs does not cross the wasm-bindgen boundary
+    /// cleanly — and because leaving that signature alone keeps every existing
+    /// caller working. Call it after registering the building; it re-registers
+    /// with the offer appended.
+    pub fn queue_workplace_offer(&mut self, id: u32, resource_kind: i32, price: i32) {
+        let Some(kind) = (match resource_kind {
+            1 => Some(sim::ResourceKind::Grain),
+            2 => Some(sim::ResourceKind::Food),
+            3 => Some(sim::ResourceKind::Tool),
+            4 => Some(sim::ResourceKind::Ale),
+            _ => None,
+        }) else {
+            return;
+        };
+
+        let id = id as u64;
+        let mut sells = self
+            .world
+            .workplace_index(id)
+            .map(|wi| self.world.workplace_sells[wi].clone())
+            .unwrap_or_default();
+        sells.push((kind, price as i64));
+
+        let (kind_name, position, capacity) = match self.world.workplace_index(id) {
+            Some(wi) => (
+                self.world.workplace_kinds[wi].clone(),
+                self.world.workplace_positions[wi],
+                self.world.workplace_capacities[wi],
+            ),
+            None => return,
+        };
+
+        self.pending.push(Intent::RegisterWorkplace {
+            id,
+            kind: kind_name,
+            position,
+            capacity,
+            sells,
         });
     }
 

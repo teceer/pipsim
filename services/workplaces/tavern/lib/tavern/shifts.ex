@@ -33,33 +33,7 @@ defmodule Tavern.Shifts do
   # workplaces compete for the same pips.
   @max_workers 8
 
-  # Keyed by pips.sim.v1.Need.
-  @need_food 1
-  @need_rest 2
-  @need_social 3
-
   @ale_per_tick 2
-
-  # What a shift here does to the worker, per tick.
-  #
-  # This is the only workplace that gives more than it takes, and the only one
-  # that touches `social` at all — until now that need decayed toward nothing
-  # with nothing in the world able to restore it. Pulling ale is sociable work;
-  # it is also tiring, and it does not feed you.
-  @social_per_tick 6
-  @rest_per_tick 2
-
-  # Positive, and it was not at first.
-  #
-  # At -1 the tavern killed everyone it employed: a working pip loses 2 food a
-  # tick to the world, so a shift here was -3 a tick against the farm's +3.
-  # Measured in the cluster within minutes of the first deploy — tavern staff
-  # fell from 456 food to 221 while farm staff sat at 990.
-  #
-  # +3 makes the trade real rather than fatal: worse for food than the farm,
-  # better for everything else. Like the farm's, this food is conjured rather
-  # than drawn from stock, and stops being so when a granary exists.
-  @food_per_tick 3
 
   # What a shift here pays, per tick worked. Alongside need_deltas, not instead
   # of it — ADR 0006 adds money without removing the old channel yet, so wages
@@ -130,14 +104,20 @@ defmodule Tavern.Shifts do
   def count(server \\ __MODULE__), do: GenServer.call(server, :count)
 
   @doc "What a tick of work here does, given how many ticks elapsed."
+  @doc """
+  What `elapsed` ticks of work here produced and earned.
+
+  No need deltas any more. The tavern used to hand its staff food, which is
+  how it once shipped a number that starved them: at -1 a shift here was worse
+  than idling, and nobody noticed until the cluster showed tavern staff at 221
+  food against the farm's 990. The tavern was never wrong about taverns — it
+  was wrong about a number that belongs to the world's metabolism, and it can
+  no longer name one. It sells ale and pays wages; what ale does to a pip is
+  sim-core's (ADR 0006).
+  """
   def effects(elapsed) do
     %{
       produced: @ale_per_tick * elapsed,
-      needs: %{
-        @need_social => @social_per_tick * elapsed,
-        @need_rest => @rest_per_tick * elapsed,
-        @need_food => @food_per_tick * elapsed
-      },
       wage: @wage_per_tick * elapsed
     }
   end

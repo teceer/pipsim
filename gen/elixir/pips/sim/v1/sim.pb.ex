@@ -109,6 +109,7 @@ defmodule Pips.Sim.V1.Workplace do
   field :position, 3, type: Pips.Sim.V1.Vec2
   field :capacity, 4, type: :uint32
   field :occupants, 5, type: :uint32
+  field :sells, 6, repeated: true, type: Pips.Sim.V1.WorkplaceOffer
 end
 
 defmodule Pips.Sim.V1.StepRequest do
@@ -307,6 +308,19 @@ defmodule Pips.Sim.V1.RegisterWorkplaceIntent do
   field :kind, 2, type: :string
   field :position, 3, type: Pips.Sim.V1.Vec2
   field :capacity, 4, type: :uint32
+  field :sells, 5, repeated: true, type: Pips.Sim.V1.WorkplaceOffer
+end
+
+defmodule Pips.Sim.V1.WorkplaceOffer do
+  @moduledoc false
+
+  use Protobuf,
+    full_name: "pips.sim.v1.WorkplaceOffer",
+    protoc_gen_elixir_version: "0.17.0",
+    syntax: :proto3
+
+  field :resource_kind, 1, type: :int32, json_name: "resourceKind"
+  field :price, 2, type: :int64
 end
 
 defmodule Pips.Sim.V1.MoveIntent do

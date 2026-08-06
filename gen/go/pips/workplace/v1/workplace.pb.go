@@ -665,7 +665,21 @@ func (x *WorkRequest) GetTick() uint64 {
 type WorkResponse struct {
 	state    protoimpl.MessageState `protogen:"open.v1"`
 	Produced []*ResourceAmount      `protobuf:"bytes,1,rep,name=produced,proto3" json:"produced,omitempty"`
-	// Deltas applied to the pip's needs, e.g. work makes it hungrier.
+	// Deprecated, and now always empty.
+	//
+	// ADR 0006 step 7 asked for this to be reserved. It cannot be: `make
+	// proto-lint` runs `buf breaking`, which refuses the deletion, and that
+	// rule is load-bearing — a topic with a week's retention holds messages
+	// that must still decode. So the field stays on the wire and dies by
+	// disuse instead.
+	//
+	// Nothing populates it. A workplace no longer has any opinion about a
+	// pip's needs: it reports what it produced and what it paid, and sim-core
+	// owns what a resource does to a body. A workplace that starts filling
+	// this in again has reintroduced the bug that let the tavern starve its
+	// own staff.
+	//
+	// Deprecated: Marked as deprecated in pips/workplace/v1/workplace.proto.
 	NeedDeltas map[int32]int32 `protobuf:"bytes,2,rep,name=need_deltas,json=needDeltas,proto3" json:"need_deltas,omitempty" protobuf_key:"varint,1,opt,name=key" protobuf_val:"varint,2,opt,name=value"`
 	// The workplace can ask for the shift to end (materials ran out, night fell).
 	ShiftShouldEnd bool `protobuf:"varint,3,opt,name=shift_should_end,json=shiftShouldEnd,proto3" json:"shift_should_end,omitempty"`
@@ -713,6 +727,7 @@ func (x *WorkResponse) GetProduced() []*ResourceAmount {
 	return nil
 }
 
+// Deprecated: Marked as deprecated in pips/workplace/v1/workplace.proto.
 func (x *WorkResponse) GetNeedDeltas() map[int32]int32 {
 	if x != nil {
 		return x.NeedDeltas
@@ -1074,10 +1089,10 @@ const file_pips_workplace_v1_workplace_proto_rawDesc = "" +
 	"\vWorkRequest\x12!\n" +
 	"\fworkplace_id\x18\x01 \x01(\x04R\vworkplaceId\x12\x15\n" +
 	"\x06pip_id\x18\x02 \x01(\x04R\x05pipId\x12\x12\n" +
-	"\x04tick\x18\x03 \x01(\x04R\x04tick\"\x9c\x02\n" +
+	"\x04tick\x18\x03 \x01(\x04R\x04tick\"\xa0\x02\n" +
 	"\fWorkResponse\x12=\n" +
-	"\bproduced\x18\x01 \x03(\v2!.pips.workplace.v1.ResourceAmountR\bproduced\x12P\n" +
-	"\vneed_deltas\x18\x02 \x03(\v2/.pips.workplace.v1.WorkResponse.NeedDeltasEntryR\n" +
+	"\bproduced\x18\x01 \x03(\v2!.pips.workplace.v1.ResourceAmountR\bproduced\x12T\n" +
+	"\vneed_deltas\x18\x02 \x03(\v2/.pips.workplace.v1.WorkResponse.NeedDeltasEntryB\x02\x18\x01R\n" +
 	"needDeltas\x12(\n" +
 	"\x10shift_should_end\x18\x03 \x01(\bR\x0eshiftShouldEnd\x12\x12\n" +
 	"\x04wage\x18\x04 \x01(\x03R\x04wage\x1a=\n" +

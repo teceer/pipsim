@@ -83,6 +83,10 @@ message Workplace {
   Vec2 position = 3;
   uint32 capacity = 4;
   uint32 occupants = 5;
+  // What it sells, so a client predicting with the same core can predict a
+  // hungry pip walking here. Prices are the workplace service's own; this is
+  // the copy the core was registered with.
+  repeated WorkplaceOffer sells = 6;
 }
 
 // ---------------------------------------------------------------------------
@@ -195,6 +199,20 @@ message RegisterWorkplaceIntent {
   string kind = 2;
   Vec2 position = 3;
   uint32 capacity = 4;
+  // What this building sells, copied from its own `Describe`. Same ownership
+  // rule as `capacity`: the workplace decides the price, the gateway carries
+  // it here, and the core only enforces it — a pip deciding inside a tick
+  // whether it can afford lunch cannot make a network call to ask.
+  repeated WorkplaceOffer sells = 5;
+}
+
+// Mirrors pips.workplace.v1.Offer. A second declaration rather than an import
+// because workplace.proto already imports this file for Vec2, and buf refuses
+// the cycle.
+message WorkplaceOffer {
+  // pips.workplace.v1.ResourceKind, as a bare int32 for the same reason.
+  int32 resource_kind = 1;
+  int64 price = 2;
 }
 
 message MoveIntent {
