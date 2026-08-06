@@ -14,23 +14,21 @@ workplace:
 
 platformNamespace: pipsim-platform
 
-# One, and the reason is worth reading before changing it.
+# Two, and what it took to get here is worth knowing.
 #
-# Allocation is now correctly distributed: two replicas do share
-# pipsim.work.farm and the broker hands each offer to exactly one of them —
-# that part works, and was measured working (27 offers to one replica, 111 to
-# the other, no double-hires).
+# Allocation was already distributed: replicas share pipsim.work.farm and the
+# broker hands each offer to exactly one of them (measured: 27 offers to one,
+# 111 to the other, no double-hires). What broke at two replicas was everything
+# *after* the hire. Shift state lived in each replica's memory while Work and
+# EndShift are ordinary RPCs that the Service load-balances, so a pip hired by
+# replica A had its Work answered by replica B, which had never heard of it and
+# truthfully replied shift-should-end. The replicas held 24 and 13 shifts while
+# the gateway believed in 24 — three parties, three answers.
 #
-# What does not work at two is everything *after* the hire. Shift state lives in
-# each replica's memory, while Work and EndShift are ordinary RPCs that the
-# Service load-balances. A pip hired by replica A has its Work call answered by
-# replica B, which has never heard of it and truthfully replies
-# shift-should-end. Run at two and the replicas held 24 and 13 shifts while the
-# gateway believed in 24 — three parties, three different answers.
-#
-# The fix is shared shift state, not stickiness: Redis is already deployed and
-# doing nothing. Until then, one replica keeps the bookkeeping honest.
-replicaCount: 1
+# The fix was shared state rather than sticky routing: shifts now live in Redis
+# behind two Lua scripts, so reap-check-claim is one atomic operation and the
+# capacity limit is a property of the workplace instead of a property of a pod.
+replicaCount: 2
 
 resources:
   requests:

@@ -49,6 +49,17 @@ went on holding every position for pips that no longer existed, so nobody could
 be hired again. A lease beats a reconciliation RPC because a workplace should
 not have to ask anyone who still exists.
 
+**Shift state belongs in a store, not in the process.** `farm.Service` holds no
+map; it holds a `Store` (`Claim`, `Touch`, `Release`, `Count`). In memory it is
+correct at one replica; in Redis it is correct at any number. Copy the interface
+rather than the map — running two replicas with per-process shifts produced
+three parties with three different headcounts, and the shape of that bug is
+identical in every workplace.
+
+Whatever backs it, `Claim` must be atomic across reap-check-insert. Splitting it
+into "is there room" and "take the room" reintroduces the race the store exists
+to remove.
+
 **`Work` pays for elapsed ticks, not per call.** The driver batches — it calls
 `Work` once a second while the world ticks ten times. Flat per-call amounts made
 employment a *slower death* than idling, because a working pip drains food every

@@ -39,7 +39,23 @@ fn activity_code(a: Activity) -> i32 {
         Activity::Working => pb::PipActivity::Working as i32,
         Activity::Eating => pb::PipActivity::Eating as i32,
         Activity::Sleeping => pb::PipActivity::Sleeping as i32,
+        Activity::Commuting => pb::PipActivity::Commuting as i32,
     }
+}
+
+fn workplaces(world: &World) -> Vec<pb::Workplace> {
+    (0..world.workplace_ids.len())
+        .map(|i| pb::Workplace {
+            id: world.workplace_ids[i],
+            kind: world.workplace_kinds[i].clone(),
+            position: Some(pb::Vec2 {
+                x_milli: world.workplace_positions[i].x,
+                y_milli: world.workplace_positions[i].y,
+            }),
+            capacity: world.workplace_capacities[i],
+            occupants: world.workplace_occupants[i],
+        })
+        .collect()
 }
 
 fn needs_map(n: &sim::Needs) -> std::collections::HashMap<i32, i32> {
@@ -73,12 +89,14 @@ pub fn full_delta(world: &World) -> pb::WorldDelta {
             }),
             activity: Some(activity_code(world.activities[i])),
             needs: needs_map(&world.needs[i]),
+            inside_workplace_id: world.inside[i],
         });
     }
     pb::WorldDelta {
         tick: world.tick,
         pips,
         removed_pip_ids: Vec::new(),
+        workplaces: workplaces(world),
     }
 }
 
@@ -117,12 +135,14 @@ impl SimService for SimServiceImpl {
                 activity: activity_code(w.activities[i]),
                 needs: needs_map(&w.needs[i]),
                 employer_workplace_id: w.employers[i],
+                inside_workplace_id: w.inside[i],
             })
             .collect();
 
         Ok(Response::new(pb::SnapshotResponse {
             tick: w.tick,
             pips,
+            workplaces: workplaces(&w),
             // The client compares this against its own prediction to notice
             // that it has drifted far enough to need a resync.
             state_hash: w.state_hash().to_be_bytes().to_vec(),
@@ -189,6 +209,21 @@ impl SimService for SimServiceImpl {
                 rest: a.need_deltas.get(&NEED_REST).copied().unwrap_or(0),
                 social: a.need_deltas.get(&NEED_SOCIAL).copied().unwrap_or(0),
             },
+            pb::submit_intent_request::Intent::RegisterWorkplace(r) => Intent::RegisterWorkplace {
+                id: r.workplace_id,
+                kind: r.kind,
+                position: r
+                    .position
+                    .map(|p| Vec2 {
+                        x: p.x_milli,
+                        y: p.y_milli,
+                    })
+                    .unwrap_or(Vec2::ZERO),
+                capacity: r.capacity,
+            },
+            pb::submit_intent_request::Intent::EndEmployment(e) => {
+                Intent::EndEmployment { pip: e.pip_id }
+            }
         };
 
         // Queued, never applied here. Applying mid-tick would make the outcome

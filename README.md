@@ -22,6 +22,10 @@ its event log.
 - **A workplace is a microservice.** Farm, workshop and tavern each implement one
   shared `.proto` contract, in three different languages. Adding a building type
   touches neither the core nor the gateway.
+- **Buildings are places, not addresses.** A hired pip walks to its workplace and
+  goes inside if there is room; one that arrives at a full building queues at the
+  door. Capacity is the workplace service's own number, enforced physically by
+  the core — see [ADR 0004](docs/adr/0004-buildings-are-physical.md).
 - **Three brokers, three semantics.** Kafka for facts, RabbitMQ for task
   distribution, BullMQ for delayed jobs — see
   [ADR 0002](docs/adr/0002-three-message-buses.md) for why that is not redundancy.

@@ -4,7 +4,7 @@
 
 import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
-import type { Pip, Vec2, WorldDelta } from "../../sim/v1/sim_pb";
+import type { Pip, Vec2, Workplace, WorldDelta } from "../../sim/v1/sim_pb";
 import { file_pips_sim_v1_sim } from "../../sim/v1/sim_pb";
 import type { DescribeResponse } from "../../workplace/v1/workplace_pb";
 import { file_pips_workplace_v1_workplace } from "../../workplace/v1/workplace_pb";
@@ -14,7 +14,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file pips/world/v1/world.proto.
  */
 export const file_pips_world_v1_world: GenFile = /*@__PURE__*/
-  fileDesc("ChlwaXBzL3dvcmxkL3YxL3dvcmxkLnByb3RvEg1waXBzLndvcmxkLnYxIiUKEEpvaW5Xb3JsZFJlcXVlc3QSEQoJY2xpZW50X2lkGAEgASgJIp0BChFKb2luV29ybGRSZXNwb25zZRIMCgR0aWNrGAEgASgEEg8KB3RpY2tfaHoYAiABKAUSEAoIc2ltX3NlZWQYAyABKAQSHgoEcGlwcxgEIAMoCzIQLnBpcHMuc2ltLnYxLlBpcBI3Cgp3b3JrcGxhY2VzGAUgAygLMiMucGlwcy53b3JrcGxhY2UudjEuRGVzY3JpYmVSZXNwb25zZSI6ChJTdHJlYW1Xb3JsZFJlcXVlc3QSEQoJY2xpZW50X2lkGAEgASgJEhEKCWZyb21fdGljaxgCIAEoBCJ+ChNTdHJlYW1Xb3JsZFJlc3BvbnNlEiYKBWRlbHRhGAEgASgLMhcucGlwcy5zaW0udjEuV29ybGREZWx0YRI/ChJjaGFuZ2VkX3dvcmtwbGFjZXMYAiADKAsyIy5waXBzLndvcmtwbGFjZS52MS5EZXNjcmliZVJlc3BvbnNlIkoKFUJ1aWxkV29ya3BsYWNlUmVxdWVzdBIMCgRraW5kGAEgASgJEiMKCHBvc2l0aW9uGAIgASgLMhEucGlwcy5zaW0udjEuVmVjMiJFChZCdWlsZFdvcmtwbGFjZVJlc3BvbnNlEhQKDHdvcmtwbGFjZV9pZBgBIAEoBBIVCg1yZWFkeV9hdF90aWNrGAIgASgEIjkKEUFzc2lnbldvcmtSZXF1ZXN0Eg4KBnBpcF9pZBgBIAEoBBIUCgx3b3JrcGxhY2VfaWQYAiABKAQiNgoSQXNzaWduV29ya1Jlc3BvbnNlEhAKCGFjY2VwdGVkGAEgASgIEg4KBnJlYXNvbhgCIAEoCTLoAgoMV29ybGRTZXJ2aWNlEk4KCUpvaW5Xb3JsZBIfLnBpcHMud29ybGQudjEuSm9pbldvcmxkUmVxdWVzdBogLnBpcHMud29ybGQudjEuSm9pbldvcmxkUmVzcG9uc2USVgoLU3RyZWFtV29ybGQSIS5waXBzLndvcmxkLnYxLlN0cmVhbVdvcmxkUmVxdWVzdBoiLnBpcHMud29ybGQudjEuU3RyZWFtV29ybGRSZXNwb25zZTABEl0KDkJ1aWxkV29ya3BsYWNlEiQucGlwcy53b3JsZC52MS5CdWlsZFdvcmtwbGFjZVJlcXVlc3QaJS5waXBzLndvcmxkLnYxLkJ1aWxkV29ya3BsYWNlUmVzcG9uc2USUQoKQXNzaWduV29yaxIgLnBpcHMud29ybGQudjEuQXNzaWduV29ya1JlcXVlc3QaIS5waXBzLndvcmxkLnYxLkFzc2lnbldvcmtSZXNwb25zZUKsAQoRY29tLnBpcHMud29ybGQudjFCCldvcmxkUHJvdG9QAVo1Z2l0aHViLmNvbS90ZWNlZXIvcGlwc2ltL2dlbi9nby9waXBzL3dvcmxkL3YxO3dvcmxkdjGiAgNQV1iqAg1QaXBzLldvcmxkLlYxygINUGlwc1xXb3JsZFxWMeICGVBpcHNcV29ybGRcVjFcR1BCTWV0YWRhdGHqAg9QaXBzOjpXb3JsZDo6VjFiBnByb3RvMw", [file_pips_sim_v1_sim, file_pips_workplace_v1_workplace]);
+  fileDesc("ChlwaXBzL3dvcmxkL3YxL3dvcmxkLnByb3RvEg1waXBzLndvcmxkLnYxIiUKEEpvaW5Xb3JsZFJlcXVlc3QSEQoJY2xpZW50X2lkGAEgASgJIsgBChFKb2luV29ybGRSZXNwb25zZRIMCgR0aWNrGAEgASgEEg8KB3RpY2tfaHoYAiABKAUSEAoIc2ltX3NlZWQYAyABKAQSHgoEcGlwcxgEIAMoCzIQLnBpcHMuc2ltLnYxLlBpcBI3Cgp3b3JrcGxhY2VzGAUgAygLMiMucGlwcy53b3JrcGxhY2UudjEuRGVzY3JpYmVSZXNwb25zZRIpCglidWlsZGluZ3MYBiADKAsyFi5waXBzLnNpbS52MS5Xb3JrcGxhY2UiOgoSU3RyZWFtV29ybGRSZXF1ZXN0EhEKCWNsaWVudF9pZBgBIAEoCRIRCglmcm9tX3RpY2sYAiABKAQifgoTU3RyZWFtV29ybGRSZXNwb25zZRImCgVkZWx0YRgBIAEoCzIXLnBpcHMuc2ltLnYxLldvcmxkRGVsdGESPwoSY2hhbmdlZF93b3JrcGxhY2VzGAIgAygLMiMucGlwcy53b3JrcGxhY2UudjEuRGVzY3JpYmVSZXNwb25zZSJKChVCdWlsZFdvcmtwbGFjZVJlcXVlc3QSDAoEa2luZBgBIAEoCRIjCghwb3NpdGlvbhgCIAEoCzIRLnBpcHMuc2ltLnYxLlZlYzIiRQoWQnVpbGRXb3JrcGxhY2VSZXNwb25zZRIUCgx3b3JrcGxhY2VfaWQYASABKAQSFQoNcmVhZHlfYXRfdGljaxgCIAEoBCI5ChFBc3NpZ25Xb3JrUmVxdWVzdBIOCgZwaXBfaWQYASABKAQSFAoMd29ya3BsYWNlX2lkGAIgASgEIjYKEkFzc2lnbldvcmtSZXNwb25zZRIQCghhY2NlcHRlZBgBIAEoCBIOCgZyZWFzb24YAiABKAky6AIKDFdvcmxkU2VydmljZRJOCglKb2luV29ybGQSHy5waXBzLndvcmxkLnYxLkpvaW5Xb3JsZFJlcXVlc3QaIC5waXBzLndvcmxkLnYxLkpvaW5Xb3JsZFJlc3BvbnNlElYKC1N0cmVhbVdvcmxkEiEucGlwcy53b3JsZC52MS5TdHJlYW1Xb3JsZFJlcXVlc3QaIi5waXBzLndvcmxkLnYxLlN0cmVhbVdvcmxkUmVzcG9uc2UwARJdCg5CdWlsZFdvcmtwbGFjZRIkLnBpcHMud29ybGQudjEuQnVpbGRXb3JrcGxhY2VSZXF1ZXN0GiUucGlwcy53b3JsZC52MS5CdWlsZFdvcmtwbGFjZVJlc3BvbnNlElEKCkFzc2lnbldvcmsSIC5waXBzLndvcmxkLnYxLkFzc2lnbldvcmtSZXF1ZXN0GiEucGlwcy53b3JsZC52MS5Bc3NpZ25Xb3JrUmVzcG9uc2VCrAEKEWNvbS5waXBzLndvcmxkLnYxQgpXb3JsZFByb3RvUAFaNWdpdGh1Yi5jb20vdGVjZWVyL3BpcHNpbS9nZW4vZ28vcGlwcy93b3JsZC92MTt3b3JsZHYxogIDUFdYqgINUGlwcy5Xb3JsZC5WMcoCDVBpcHNcV29ybGRcVjHiAhlQaXBzXFdvcmxkXFYxXEdQQk1ldGFkYXRh6gIPUGlwczo6V29ybGQ6OlYxYgZwcm90bzM", [file_pips_sim_v1_sim, file_pips_workplace_v1_workplace]);
 
 /**
  * @generated from message pips.world.v1.JoinWorldRequest
@@ -60,9 +60,21 @@ export type JoinWorldResponse = Message<"pips.world.v1.JoinWorldResponse"> & {
   pips: Pip[];
 
   /**
+   * How each workplace *service* describes itself: who is on its payroll.
+   *
    * @generated from field: repeated pips.workplace.v1.DescribeResponse workplaces = 5;
    */
   workplaces: DescribeResponse[];
+
+  /**
+   * How the *world* sees the same buildings: where they stand and who is
+   * physically inside. The two headcounts differ on purpose — a pip hired a
+   * second ago is employed but still walking there — and the renderer needs
+   * this one, because it draws bodies rather than contracts.
+   *
+   * @generated from field: repeated pips.sim.v1.Workplace buildings = 6;
+   */
+  buildings: Workplace[];
 };
 
 /**

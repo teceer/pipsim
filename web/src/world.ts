@@ -6,45 +6,58 @@
  * use. See ADR 0003.
  */
 
-import { createClient, type Client } from "@connectrpc/connect";
+import { type Client, createClient } from "@connectrpc/connect";
 import { createConnectTransport } from "@connectrpc/connect-web";
 
+import type {
+	Pip,
+	Workplace,
+	WorldDelta,
+} from "../../gen/ts/pips/sim/v1/sim_pb";
 import { WorldService } from "../../gen/ts/pips/world/v1/world_pb";
-import type { Pip, WorldDelta } from "../../gen/ts/pips/sim/v1/sim_pb";
 
 export type WorldClient = Client<typeof WorldService>;
 
 export type JoinResult = {
-  tick: bigint;
-  tickHz: number;
-  /** Must seed local prediction, or the predicted world is a different world. */
-  simSeed: bigint;
-  pips: Pip[];
+	tick: bigint;
+	tickHz: number;
+	/** Must seed local prediction, or the predicted world is a different world. */
+	simSeed: bigint;
+	pips: Pip[];
+	/**
+	 * Buildings as the world sees them — where they stand and who is inside.
+	 *
+	 * Not `res.workplaces`, which is how each workplace *service* describes
+	 * itself: that headcount is the payroll, and includes pips still walking
+	 * there. The renderer draws bodies, so it wants this one.
+	 */
+	buildings: Workplace[];
 };
 
 export function connect(baseUrl: string): WorldClient {
-  return createClient(
-    WorldService,
-    createConnectTransport({
-      baseUrl,
-      // Binary rather than JSON: deltas arrive 10 times a second and carry
-      // every pip, so the encoding cost is not incidental.
-      useBinaryFormat: true,
-    }),
-  );
+	return createClient(
+		WorldService,
+		createConnectTransport({
+			baseUrl,
+			// Binary rather than JSON: deltas arrive 10 times a second and carry
+			// every pip, so the encoding cost is not incidental.
+			useBinaryFormat: true,
+		}),
+	);
 }
 
 export async function join(
-  client: WorldClient,
-  clientId: string,
+	client: WorldClient,
+	clientId: string,
 ): Promise<JoinResult> {
-  const res = await client.joinWorld({ clientId });
-  return {
-    tick: res.tick,
-    tickHz: res.tickHz || 10,
-    simSeed: res.simSeed,
-    pips: res.pips,
-  };
+	const res = await client.joinWorld({ clientId });
+	return {
+		tick: res.tick,
+		tickHz: res.tickHz || 10,
+		simSeed: res.simSeed,
+		pips: res.pips,
+		buildings: res.buildings,
+	};
 }
 
 /**
@@ -55,13 +68,13 @@ export async function join(
  * the world drift steadily further into the past.
  */
 export async function* streamDeltas(
-  client: WorldClient,
-  clientId: string,
-  fromTick: bigint,
-  signal: AbortSignal,
+	client: WorldClient,
+	clientId: string,
+	fromTick: bigint,
+	signal: AbortSignal,
 ): AsyncGenerator<WorldDelta> {
-  const stream = client.streamWorld({ clientId, fromTick }, { signal });
-  for await (const msg of stream) {
-    if (msg.delta) yield msg.delta;
-  }
+	const stream = client.streamWorld({ clientId, fromTick }, { signal });
+	for await (const msg of stream) {
+		if (msg.delta) yield msg.delta;
+	}
 }

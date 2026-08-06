@@ -37,6 +37,14 @@ pub const WORLD_H_MILLI: Milli = 30_000;
 /// readable.
 pub const WANDER_CHANCE_PER_MILLE: i32 = 15;
 
+/// Milli-tiles per tick. At 10 Hz that is 1.5 tiles a second.
+///
+/// Raised from 50 when pips started walking to work instead of teleporting
+/// there. The world is 48 tiles wide, so the worst-case commute at the old
+/// speed was 72 seconds of unpaid walking against a food drain of one per
+/// tick — employment would have killed more pips than it fed.
+pub const WALK_SPEED_MILLI: Milli = 150;
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Vec2 {
     pub x: Milli,
@@ -66,6 +74,9 @@ pub enum Activity {
     Working,
     Eating,
     Sleeping,
+    /// Employed, but not in the building yet — either still walking there or
+    /// queuing at the door because it is full.
+    Commuting,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -113,6 +124,22 @@ pub enum Intent {
         rest: i32,
         social: i32,
     },
+    /// Puts a building on the map, or updates one already there.
+    ///
+    /// The core does not invent workplaces: each one is a service, and the
+    /// gateway registers it from what `Describe` reports. `capacity` therefore
+    /// arrives from the workplace rather than being decided here — the number
+    /// has one owner, and the core only enforces it physically.
+    RegisterWorkplace {
+        id: WorkplaceId,
+        kind: String,
+        position: Vec2,
+        capacity: u32,
+    },
+    /// The pip is no longer employed there. Frees its place in the building.
+    EndEmployment {
+        pip: PipId,
+    },
 }
 
 pub type PipId = u64;
@@ -127,9 +154,23 @@ pub enum DomainEvent {
         name: String,
         position: Vec2,
     },
+    /// Emitted when the pip is actually inside and working — not when it was
+    /// hired. Between the two it is walking, and a fact log that claimed
+    /// otherwise would misreport where everyone was.
     PipStartedWork {
         pip: PipId,
         workplace: WorkplaceId,
+    },
+    PipEndedWork {
+        pip: PipId,
+        workplace: WorkplaceId,
+        reason: &'static str,
+    },
+    WorkplaceBuilt {
+        workplace: WorkplaceId,
+        kind: String,
+        position: Vec2,
+        capacity: u32,
     },
     PipGotHungry {
         pip: PipId,
@@ -155,6 +196,22 @@ pub struct World {
     pub activities: Vec<Activity>,
     pub needs: Vec<Needs>,
     pub employers: Vec<Option<WorkplaceId>>,
+    /// The building the pip is physically inside, which is not the same as who
+    /// employs it: a hired pip is `employers = Some` and `inside = None` for the
+    /// whole walk there, and stays that way if it arrives to a full building.
+    pub inside: Vec<Option<WorkplaceId>>,
+
+    // Workplaces, same structure-of-arrays treatment. There are few of them, so
+    // the layout buys nothing here — it is uniformity, so that a reader who has
+    // understood the pip arrays has understood these too.
+    pub workplace_ids: Vec<WorkplaceId>,
+    pub workplace_kinds: Vec<String>,
+    pub workplace_positions: Vec<Vec2>,
+    pub workplace_capacities: Vec<u32>,
+    /// Cached count of `inside`. Maintained by `enter_workplaces`, `leave` and
+    /// `remove_at`, and checked against a recount by a test — a derived value
+    /// that drifts is worse than one recomputed every tick.
+    pub workplace_occupants: Vec<u32>,
 
     next_pip_id: PipId,
 }
@@ -171,6 +228,12 @@ impl World {
             activities: Vec::new(),
             needs: Vec::new(),
             employers: Vec::new(),
+            inside: Vec::new(),
+            workplace_ids: Vec::new(),
+            workplace_kinds: Vec::new(),
+            workplace_positions: Vec::new(),
+            workplace_capacities: Vec::new(),
+            workplace_occupants: Vec::new(),
             next_pip_id: 1,
         }
     }
@@ -189,6 +252,19 @@ impl World {
         self.ids.iter().position(|&id| id == pip)
     }
 
+    fn workplace_index(&self, workplace: WorkplaceId) -> Option<usize> {
+        self.workplace_ids.iter().position(|&id| id == workplace)
+    }
+
+    /// Takes the pip out of whatever building it is in. No-op if it is outside.
+    fn leave_building(&mut self, i: usize) -> Option<WorkplaceId> {
+        let workplace = self.inside[i].take()?;
+        if let Some(wi) = self.workplace_index(workplace) {
+            self.workplace_occupants[wi] = self.workplace_occupants[wi].saturating_sub(1);
+        }
+        Some(workplace)
+    }
+
     /// Advances the world by exactly one tick.
     ///
     /// This is the only mutating entry point, and it is a pure function of
@@ -200,7 +276,11 @@ impl World {
         self.apply_intents(intents, &mut events);
         self.decay_needs(&mut events);
         self.wander();
+        self.commute();
         self.move_walkers();
+        // After movement, so a pip that reached the door this tick gets in on
+        // this tick rather than standing outside for one.
+        self.enter_workplaces(&mut events);
         self.tick += 1;
 
         events
@@ -221,6 +301,12 @@ impl World {
         for i in 0..self.positions.len() {
             let roll = self.rng.next_range(0, 1000);
             if self.activities[i] != Activity::Idle {
+                continue;
+            }
+            // Somebody with a job does not wander off. Without this, a pip
+            // queuing at a full door would stroll away every few seconds and
+            // start the walk over.
+            if self.employers[i].is_some() {
                 continue;
             }
             if roll >= WANDER_CHANCE_PER_MILLE {
@@ -254,6 +340,7 @@ impl World {
                         ..Needs::full()
                     });
                     self.employers.push(None);
+                    self.inside.push(None);
 
                     events.push(DomainEvent::PipSpawned {
                         pip: id,
@@ -267,14 +354,56 @@ impl World {
                         self.activities[i] = Activity::Walking;
                     }
                 }
+                // Hiring is a contract, not a teleport. It records the employer
+                // and nothing else; `commute` walks the pip there and
+                // `enter_workplaces` decides whether it gets in.
                 Intent::Hire { pip, workplace } => {
                     if let Some(i) = self.index_of(*pip) {
+                        if self.employers[i] != Some(*workplace) {
+                            self.leave_building(i);
+                        }
                         self.employers[i] = Some(*workplace);
-                        self.activities[i] = Activity::Working;
+                    }
+                }
+                Intent::EndEmployment { pip } => {
+                    if let Some(i) = self.index_of(*pip) {
+                        if let Some(workplace) = self.leave_building(i) {
+                            events.push(DomainEvent::PipEndedWork {
+                                pip: *pip,
+                                workplace,
+                                reason: "employment ended",
+                            });
+                        }
+                        self.employers[i] = None;
                         self.destinations[i] = None;
-                        events.push(DomainEvent::PipStartedWork {
-                            pip: *pip,
-                            workplace: *workplace,
+                        self.activities[i] = Activity::Idle;
+                    }
+                }
+                Intent::RegisterWorkplace {
+                    id,
+                    kind,
+                    position,
+                    capacity,
+                } => {
+                    // Upsert: the gateway re-registers on every reconnect, and
+                    // a workplace that came back with a different capacity
+                    // should be believed. Nobody is evicted if the new capacity
+                    // is smaller — the overflow drains as shifts end.
+                    if let Some(wi) = self.workplace_index(*id) {
+                        self.workplace_kinds[wi] = kind.clone();
+                        self.workplace_positions[wi] = *position;
+                        self.workplace_capacities[wi] = *capacity;
+                    } else {
+                        self.workplace_ids.push(*id);
+                        self.workplace_kinds.push(kind.clone());
+                        self.workplace_positions.push(*position);
+                        self.workplace_capacities.push(*capacity);
+                        self.workplace_occupants.push(0);
+                        events.push(DomainEvent::WorkplaceBuilt {
+                            workplace: *id,
+                            kind: kind.clone(),
+                            position: *position,
+                            capacity: *capacity,
                         });
                     }
                 }
@@ -336,6 +465,11 @@ impl World {
     }
 
     fn remove_at(&mut self, i: usize) {
+        // Before the arrays shift, or the freed position is lost and the
+        // building slowly fills with the dead — the same class of bug the
+        // farm's shift lease exists to catch on the other side of the wire.
+        self.leave_building(i);
+
         self.ids.remove(i);
         self.names.remove(i);
         self.positions.remove(i);
@@ -343,20 +477,93 @@ impl World {
         self.activities.remove(i);
         self.needs.remove(i);
         self.employers.remove(i);
+        self.inside.remove(i);
+    }
+
+    /// Employed pips head for their building's door.
+    ///
+    /// Runs every tick rather than once at hire, so a pip knocked off course —
+    /// or one whose workplace was registered after it was hired — finds its way
+    /// there anyway. Idempotent: a pip already walking has its destination set
+    /// to the same place.
+    fn commute(&mut self) {
+        for i in 0..self.ids.len() {
+            if self.inside[i].is_some() {
+                continue;
+            }
+            let Some(workplace) = self.employers[i] else {
+                continue;
+            };
+            let Some(wi) = self.workplace_index(workplace) else {
+                // Hired into a building the core has never been told about.
+                // Nothing sensible to do but wait for it to be registered.
+                continue;
+            };
+
+            let door = self.workplace_positions[wi];
+            self.activities[i] = Activity::Commuting;
+            self.destinations[i] = if self.positions[i] == door {
+                None
+            } else {
+                Some(door)
+            };
+        }
+    }
+
+    /// Pips standing at a door go in, if there is room.
+    ///
+    /// This is where a building's capacity becomes physical. The number is the
+    /// workplace service's own — the gateway registers it from `Describe` — so
+    /// there is still exactly one owner of "how many fit"; the core only stops
+    /// the twenty-fifth body walking through a door built for twenty-four.
+    fn enter_workplaces(&mut self, events: &mut Vec<DomainEvent>) {
+        for i in 0..self.ids.len() {
+            if self.inside[i].is_some() {
+                continue;
+            }
+            let Some(workplace) = self.employers[i] else {
+                continue;
+            };
+            let Some(wi) = self.workplace_index(workplace) else {
+                continue;
+            };
+            if self.positions[i] != self.workplace_positions[wi] {
+                continue;
+            }
+            if self.workplace_occupants[wi] >= self.workplace_capacities[wi] {
+                // Queues at the door, still Commuting, and tries again next
+                // tick. Index order decides who gets the next free place, which
+                // is arbitrary but reproducible — and reproducible is the
+                // requirement.
+                continue;
+            }
+
+            self.workplace_occupants[wi] += 1;
+            self.inside[i] = Some(workplace);
+            self.activities[i] = Activity::Working;
+            self.destinations[i] = None;
+            events.push(DomainEvent::PipStartedWork {
+                pip: self.ids[i],
+                workplace,
+            });
+        }
     }
 
     fn move_walkers(&mut self) {
-        const SPEED: Milli = 50;
-
         for i in 0..self.positions.len() {
             let Some(dest) = self.destinations[i] else {
                 continue;
             };
 
-            self.positions[i] = self.positions[i].step_towards(dest, SPEED);
+            self.positions[i] = self.positions[i].step_towards(dest, WALK_SPEED_MILLI);
             if self.positions[i] == dest {
                 self.destinations[i] = None;
-                self.activities[i] = Activity::Idle;
+                // Only a wanderer goes idle on arrival. A commuter stays a
+                // commuter until it is actually inside, which may be several
+                // ticks later if the building is full.
+                if self.activities[i] == Activity::Walking {
+                    self.activities[i] = Activity::Idle;
+                }
             }
         }
     }
@@ -377,6 +584,11 @@ impl World {
             mix(self.positions[i].y as u64);
             mix(self.needs[i].food as u64);
             mix(self.activities[i] as u64);
+            mix(self.inside[i].unwrap_or(0));
+        }
+        for i in 0..self.workplace_ids.len() {
+            mix(self.workplace_ids[i]);
+            mix(self.workplace_occupants[i] as u64);
         }
         h
     }
@@ -587,19 +799,207 @@ mod tests {
         assert_eq!(w.len(), 1, "a regularly fed pip should still be alive");
     }
 
+    // --- buildings ----------------------------------------------------------
+
+    const DOOR: Vec2 = Vec2 { x: 6_000, y: 4_000 };
+
+    fn build(id: WorkplaceId, capacity: u32) -> Intent {
+        Intent::RegisterWorkplace {
+            id,
+            kind: "farm".into(),
+            position: DOOR,
+            capacity,
+        }
+    }
+
+    /// Recount `inside` and compare against the cached occupancy. The cache is
+    /// maintained in three places, and a derived value that drifts is worse
+    /// than one recomputed every tick — so every building test ends here.
+    fn assert_occupancy_is_consistent(w: &World) {
+        for wi in 0..w.workplace_ids.len() {
+            let counted = w
+                .inside
+                .iter()
+                .filter(|p| **p == Some(w.workplace_ids[wi]))
+                .count() as u32;
+            assert_eq!(
+                counted, w.workplace_occupants[wi],
+                "workplace {} cached {} occupants but holds {}",
+                w.workplace_ids[wi], w.workplace_occupants[wi], counted
+            );
+            assert!(
+                w.workplace_occupants[wi] <= w.workplace_capacities[wi],
+                "workplace {} is over capacity",
+                w.workplace_ids[wi]
+            );
+        }
+    }
+
+    /// Hiring is a contract, not a teleport.
     #[test]
-    fn hiring_emits_started_work() {
+    fn a_hired_pip_walks_to_work_before_it_starts_working() {
         let mut w = World::new(9);
         w.step(&spawn(1));
-        let events = w.step(&[Intent::Hire {
+        let events = w.step(&[build(77, 4), Intent::Hire { pip: 1, workplace: 77 }]);
+
+        assert_eq!(w.employers[0], Some(77));
+        assert_eq!(w.inside[0], None, "hired and already inside");
+        assert_eq!(w.activities[0], Activity::Commuting);
+        assert!(
+            !events.iter().any(|e| matches!(e, DomainEvent::PipStartedWork { .. })),
+            "work cannot have started before the pip arrived"
+        );
+
+        let mut started = None;
+        for _ in 0..200 {
+            for e in w.step(&[]) {
+                if let DomainEvent::PipStartedWork { workplace, .. } = e {
+                    started = Some(workplace);
+                }
+            }
+            if started.is_some() {
+                break;
+            }
+        }
+
+        assert_eq!(started, Some(77), "the pip never got to work");
+        assert_eq!(w.positions[0], DOOR);
+        assert_eq!(w.inside[0], Some(77));
+        assert_eq!(w.activities[0], Activity::Working);
+        assert_occupancy_is_consistent(&w);
+    }
+
+    /// The limit the whole feature exists for.
+    #[test]
+    fn a_building_never_holds_more_pips_than_it_fits() {
+        const CAPACITY: u32 = 3;
+
+        let mut w = World::new(21);
+        w.step(&spawn(10));
+        let hires: Vec<Intent> = (1..=10)
+            .map(|pip| Intent::Hire { pip, workplace: 5 })
+            .collect();
+        w.step(&[build(5, CAPACITY)]);
+        w.step(&hires);
+
+        for _ in 0..400 {
+            w.step(&[]);
+            assert_occupancy_is_consistent(&w);
+        }
+
+        assert_eq!(w.workplace_occupants[0], CAPACITY);
+
+        // The rest are not lost or wandering — they are queuing at the door,
+        // which is the behaviour that makes the limit visible on screen.
+        let queuing = (0..w.len())
+            .filter(|&i| w.inside[i].is_none() && w.activities[i] == Activity::Commuting)
+            .count();
+        assert_eq!(queuing, 10 - CAPACITY as usize);
+        for i in 0..w.len() {
+            if w.inside[i].is_none() {
+                assert_eq!(w.positions[i], DOOR, "a queuing pip should be at the door");
+            }
+        }
+    }
+
+    #[test]
+    fn a_freed_place_is_taken_by_someone_waiting() {
+        let mut w = World::new(22);
+        w.step(&spawn(2));
+        w.step(&[build(5, 1)]);
+        w.step(&[
+            Intent::Hire { pip: 1, workplace: 5 },
+            Intent::Hire { pip: 2, workplace: 5 },
+        ]);
+
+        for _ in 0..200 {
+            w.step(&[]);
+        }
+        assert_eq!(w.workplace_occupants[0], 1);
+        let inside_first = (0..w.len()).find(|&i| w.inside[i].is_some()).unwrap();
+        let first = w.ids[inside_first];
+
+        w.step(&[Intent::EndEmployment { pip: first }]);
+        w.step(&[]);
+
+        assert_eq!(w.workplace_occupants[0], 1, "the waiting pip should be in");
+        let now_inside = (0..w.len()).find(|&i| w.inside[i].is_some()).unwrap();
+        assert_ne!(w.ids[now_inside], first);
+        assert_occupancy_is_consistent(&w);
+    }
+
+    /// Dying at work must free the place. The equivalent bug on the farm's side
+    /// of the wire is what the shift lease exists to catch.
+    #[test]
+    fn dying_inside_frees_the_place() {
+        let mut w = World::new(23);
+        w.step(&spawn(1));
+        w.step(&[build(5, 1)]);
+        w.step(&[Intent::Hire { pip: 1, workplace: 5 }]);
+
+        for _ in 0..200 {
+            w.step(&[]);
+        }
+        assert_eq!(w.workplace_occupants[0], 1);
+
+        w.step(&[Intent::ApplyNeeds {
             pip: 1,
-            workplace: 77,
+            food: -999_999,
+            rest: 0,
+            social: 0,
         }]);
 
-        assert!(events.contains(&DomainEvent::PipStartedWork {
-            pip: 1,
-            workplace: 77
-        }));
-        assert_eq!(w.employers[0], Some(77));
+        assert!(w.is_empty());
+        assert_eq!(w.workplace_occupants[0], 0);
+        assert_occupancy_is_consistent(&w);
+    }
+
+    /// Buildings and queues must not cost the property everything rests on.
+    #[test]
+    fn commuting_and_queuing_are_reproducible() {
+        let run = || {
+            let mut w = World::new(77);
+            w.step(&spawn(30));
+            w.step(&[build(5, 8)]);
+            for t in 0..600 {
+                let intents = if t % 20 == 0 && t / 20 < 30 {
+                    vec![Intent::Hire {
+                        pip: (t / 20 + 1) as PipId,
+                        workplace: 5,
+                    }]
+                } else {
+                    vec![]
+                };
+                w.step(&intents);
+            }
+            w
+        };
+        assert_eq!(run().state_hash(), run().state_hash());
+    }
+
+    #[test]
+    fn registering_a_workplace_twice_updates_it_without_a_second_building() {
+        let mut w = World::new(24);
+        let first = w.step(&[build(5, 4)]);
+        assert_eq!(
+            first
+                .iter()
+                .filter(|e| matches!(e, DomainEvent::WorkplaceBuilt { .. }))
+                .count(),
+            1
+        );
+
+        let again = w.step(&[Intent::RegisterWorkplace {
+            id: 5,
+            kind: "farm".into(),
+            position: Vec2 { x: 1, y: 2 },
+            capacity: 9,
+        }]);
+        assert!(!again
+            .iter()
+            .any(|e| matches!(e, DomainEvent::WorkplaceBuilt { .. })));
+        assert_eq!(w.workplace_ids.len(), 1);
+        assert_eq!(w.workplace_capacities[0], 9);
+        assert_eq!(w.workplace_positions[0], Vec2 { x: 1, y: 2 });
     }
 }

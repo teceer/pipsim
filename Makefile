@@ -84,14 +84,22 @@ infra-down:
 # The rest are ClusterIP, and layer 20's rabbitmq/postgres providers talk to
 # them over these forwards, so this must be running before `make infra-up`
 # reaches layer 20.
+#
+# world-gateway belongs on this list even though it is not platform: it is the
+# only address the browser client knows (VITE_GATEWAY_URL, default :8081), and
+# without it the client silently falls back to its local WASM world and reports
+# "local (no gateway)". Note that a forward dies with the pod behind it, so a
+# rollout of any of these means restarting this target.
 infra-forward:
 	@echo "jaeger          http://localhost:16686"
 	@echo "redpanda console http://localhost:8085"
 	@echo "rabbitmq        http://localhost:15672  (pipsim/pipsim)"
 	@echo "kafka           localhost:31092"
 	@echo "postgres        localhost:5432          (pipsim/pipsim)"
+	@echo "world-gateway   http://localhost:8081   (what the web client dials)"
 	@echo
-	@kubectl -n pipsim-platform port-forward svc/jaeger 16686:16686 & \
+	@kubectl -n pipsim port-forward svc/world-gateway 8081:8081 & \
+	 kubectl -n pipsim-platform port-forward svc/jaeger 16686:16686 & \
 	 kubectl -n pipsim-platform port-forward svc/redpanda-console 8085:8080 & \
 	 kubectl -n pipsim-platform port-forward svc/rabbitmq 15672:15672 & \
 	 kubectl -n pipsim-platform port-forward svc/postgres 5432:5432 & \
