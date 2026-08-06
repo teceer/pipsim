@@ -44,11 +44,13 @@ def service(name, dockerfile, port_forwards=[], deps=[]):
 
 service('sim-core', 'services/sim-core/Dockerfile', '50051:50051')
 service('farm', 'services/workplaces/farm/Dockerfile', '8090:8090')
+service('tavern', 'services/workplaces/tavern/Dockerfile', '8092:8090')
 service('world-gateway', 'services/world-gateway/Dockerfile', '8081:8081',
-        ['sim-core', 'farm'])
+        ['sim-core', 'farm', 'tavern'])
 
-# TODO: broadcast, bff, pathfinder and the remaining workplaces land here as
-# each grows a Dockerfile and a chart. farm is the template for a workplace.
+# TODO: broadcast, bff, pathfinder and the workshop land here as each grows a
+# Dockerfile and a chart. farm and tavern are the templates for a workplace —
+# one in Go, one in Elixir, both passing services/workplaces/conformance.
 
 # --- client -----------------------------------------------------------------
 #

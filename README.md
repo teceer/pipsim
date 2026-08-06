@@ -19,9 +19,11 @@ its event log.
 - **The prediction claim is checked, not asserted.** `make parity` runs the same
   scenario through the native and the WASM build and compares state hashes. If
   they ever diverge, client prediction has started lying — CI fails on it.
-- **A workplace is a microservice.** Farm, workshop and tavern each implement one
-  shared `.proto` contract, in three different languages. Adding a building type
-  touches neither the core nor the gateway.
+- **A workplace is a microservice, and the contract is checked across
+  languages.** The farm is Go, the tavern is Elixir, and the same conformance
+  suite passes against both — including the Elixir one, which serves Connect
+  with `Plug` and no gRPC library at all. Adding a building type touches neither
+  the core nor the gateway.
 - **Buildings are places, not addresses.** A hired pip walks to its workplace and
   goes inside if there is room; one that arrives at a full building queues at the
   door. Capacity is the workplace service's own number, enforced physically by

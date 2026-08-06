@@ -14,12 +14,22 @@ Do not edit anything here by hand.
 `build.rs`, which is idiomatic for Rust but does not fit buf's plugin model.
 Rust bindings are generated at compile time into `target/`.
 
-**Elixir** has nothing here *yet*. The BSR hosts no Elixir plugin, so it would
-have to be the local `protoc-gen-elixir` escript — and that escript writes the
-full package path itself while buf also nests output per source directory,
-producing `gen/elixir/pips/sim/v1/pips/sim/v1/sim.pb.ex`. `strategy: all` does
-not change it.
+**Elixir** is here, but does not come from buf. The BSR hosts no Elixir plugin,
+so it is the local `protoc-gen-elixir` escript — and that escript writes the
+full package path itself on top of the path protoc already chose, producing
+`pips/sim/v1/pips/sim/v1/sim.pb.ex`. That duplication was originally blamed on
+buf; it is the plugin, and plain protoc does it too.
 
-No Elixir service consumes a contract yet, so generating dead code behind a
-path-rewriting hack was not worth it. When `services/broadcast` first reads a
-proto, add the plugin back to `proto/buf.gen.yaml` and sort the paths out then.
+`make gen-elixir` therefore runs protoc into a scratch directory and lifts the
+inner tree out. Less clever than fighting the plugin's path logic, and it stops
+working the day the plugin stops doubling rather than the day it changes how.
+
+The escript is a prerequisite:
+
+```
+mix escript.install hex protobuf
+```
+
+`services/workplaces/tavern` compiles this tree directly via `elixirc_paths`,
+which is what keeps "one source of truth for contracts" true for the awkward
+language and not only for the convenient ones.

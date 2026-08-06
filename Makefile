@@ -35,8 +35,32 @@ build:
 ## gen: generate code from proto/ into gen/ (Rust generates itself via build.rs)
 # Elixir needs `mix escript.install hex protobuf` on PATH; Go and TS use
 # hosted plugins and need nothing installed.
-gen:
+gen: gen-elixir
 	buf generate --template proto/buf.gen.yaml -o . proto
+
+## gen-elixir: Elixir contracts, generated with protoc rather than buf
+#
+# protoc-gen-elixir writes its output under the proto *package* path, and protoc
+# has already placed it under the source path — which are the same thing here,
+# so every file lands at pips/x/v1/pips/x/v1/name.pb.ex. That is the duplication
+# gen/README.md blamed on buf; it is the plugin, and buf is not involved below.
+#
+# Generating into a scratch directory and lifting the inner tree out is less
+# clever than fighting the plugin's path logic, and it does not care if a future
+# version stops doubling.
+gen-elixir:
+	@command -v protoc-gen-elixir >/dev/null || { \
+	  echo "protoc-gen-elixir missing: mix escript.install hex protobuf"; exit 1; }
+	@tmp=$$(mktemp -d) && \
+	  protoc -I proto --elixir_out=$$tmp $(shell find proto -name '*.proto') && \
+	  rm -rf gen/elixir/pips && \
+	  find $$tmp -name '*.pb.ex' | while read -r f; do \
+	    rel=$${f#$$tmp/}; \
+	    dest="gen/elixir/$${rel#*/pips/}"; \
+	    dest="gen/elixir/pips/$${dest#gen/elixir/}"; \
+	    mkdir -p "$$(dirname "$$dest")" && cp "$$f" "$$dest"; \
+	  done && \
+	  rm -rf $$tmp
 
 ## gen-check: verify gen/ is up to date (used in CI)
 gen-check: gen

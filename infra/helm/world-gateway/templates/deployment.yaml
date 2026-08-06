@@ -33,10 +33,10 @@ spec:
               value: "{{ .Values.sim.seed }}"
             - name: SIM_TICK_HZ
               value: "{{ .Values.sim.tickHz }}"
-            - name: FARM_ADDR
-              value: "{{ .Values.farm.address }}"
-            - name: FARM_WORKPLACE_ID
-              value: "{{ .Values.farm.workplaceId }}"
+            # Addresses only. Each workplace answers Describe with its own id,
+            # kind, position and capacity, so none of those is configured twice.
+            - name: WORKPLACE_ADDRS
+              value: "{{ join "," .Values.workplaceAddrs }}"
             - name: AMQP_URL
               value: "amqp://pipsim:pipsim@rabbitmq.{{ .Values.platformNamespace }}.svc.cluster.local:5672/pipsim"
           readinessProbe:

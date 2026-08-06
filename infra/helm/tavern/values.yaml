@@ -1,0 +1,36 @@
+image:
+  repository: pipsim-registry:5000/pipsim/tavern
+  tag: dev
+  # Always, not IfNotPresent: `dev` is overwritten on every push, so a node that
+  # already has it would keep running a stale binary through a rollout that
+  # reports success.
+  pullPolicy: Always
+
+workplace:
+  # 1 is the farm. Ids are configuration until BuildWorkplace exists.
+  id: 2
+  # Milli-tiles, inside the world bounds sim declares. Deliberately far from the
+  # farm: the commute is the point, and two buildings on top of each other would
+  # hide whether pips actually walk to the one that hired them.
+  x: 32000
+  y: 20000
+
+platformNamespace: pipsim-platform
+
+# One, and unlike the farm this is not yet a solved problem.
+#
+# The tavern keeps its shifts in a GenServer. That is correct at one replica and
+# wrong at two for exactly the reason the farm was: Work and EndShift are
+# load-balanced RPCs, so a pip hired by one replica is unknown to the other.
+# The farm's fix was Redis behind an atomic claim, and the same move applies
+# here — see ADR 0002. Until then, one.
+replicaCount: 1
+
+resources:
+  requests:
+    cpu: 50m
+    # The BEAM is not a Go binary: schedulers, ports and the ERTS itself cost
+    # more at rest than the farm's entire footprint.
+    memory: 128Mi
+  limits:
+    memory: 256Mi
