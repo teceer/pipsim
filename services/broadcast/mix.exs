@@ -23,7 +23,13 @@ defmodule Broadcast.MixProject do
       {:phoenix, "~> 1.7"},
       {:phoenix_pubsub, "~> 2.1"},
       # Consumes the StreamWorld server stream from world-gateway.
-      {:grpc, "~> 0.9"},
+      #
+      # 1.0 rather than 0.9, and not for the features: 0.11.5 was the top of the
+      # 0.x range and carries EEF-CVE-2026-48853 — remote code execution through
+      # unsafe Erlang term deserialisation — plus an authorization bypass in HTTP
+      # transcoding. Neither is fixed anywhere in 0.x, so the constraint itself
+      # was the vulnerability.
+      {:grpc, "~> 1.0"},
       {:protobuf, "~> 0.13"},
       {:jason, "~> 1.4"},
       {:opentelemetry, "~> 1.5"},
