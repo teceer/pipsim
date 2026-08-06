@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 
-SERVICES := sim-core world-gateway broadcast bff pathfinder \
+SERVICES := sim-core world-gateway bank broadcast bff pathfinder \
             workplaces/farm workplaces/workshop workplaces/tavern
 
 .DEFAULT_GOAL := help

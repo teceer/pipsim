@@ -88,10 +88,27 @@ services:
     ports: ["8081:8081"]
     environment:
       SIM_CORE_ADDR: sim-core:50051
+      BANK_ADDR: bank:8082
       KAFKA_BROKERS: redpanda:29092
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
     depends_on: { redpanda: { condition: service_healthy } }
+
+  # The double-entry ledger. Its own Postgres schema (bank.*), migrated on
+  # startup — see services/bank/internal/ledger/postgres.go. world-gateway
+  # degrades gracefully without it (no wages, no purchases), so this is not a
+  # hard dependency the way sim-core is.
+  bank:
+    build: ./services/bank
+    profiles: ["services"]
+    ports: ["8082:8082"]
+    environment:
+      DATABASE_URL: postgres://pipsim:pipsim@postgres:5432/pipsim
+      KAFKA_BROKERS: redpanda:29092
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+    depends_on:
+      postgres: { condition: service_healthy }
+      redpanda: { condition: service_healthy }
 
   broadcast:
     build: ./services/broadcast
