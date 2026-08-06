@@ -259,9 +259,10 @@ impl SimService for SimServiceImpl {
                 Intent::EndEmployment { pip: e.pip_id }
             }
             pb::submit_intent_request::Intent::Transfer(t) => {
-                let (Some(payer), Some(payee)) =
-                    (account_id(&t.payer_account_id), account_id(&t.payee_account_id))
-                else {
+                let (Some(payer), Some(payee)) = (
+                    account_id(&t.payer_account_id),
+                    account_id(&t.payee_account_id),
+                ) else {
                     return Ok(Response::new(pb::SubmitIntentResponse {
                         accepted: false,
                         rejection_reason: "unparseable account id".into(),
@@ -279,7 +280,8 @@ impl SimService for SimServiceImpl {
                 let Some(AccountId::Workplace(payer)) = account_id(&c.payer_account_id) else {
                     return Ok(Response::new(pb::SubmitIntentResponse {
                         accepted: false,
-                        rejection_reason: "credit_balances payer must be a workplace account".into(),
+                        rejection_reason: "credit_balances payer must be a workplace account"
+                            .into(),
                         scheduled_tick: 0,
                     }));
                 };

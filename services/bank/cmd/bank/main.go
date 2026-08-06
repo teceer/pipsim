@@ -65,17 +65,28 @@ func main() {
 	}
 	cancelMigrate()
 
+	store := ledger.NewPostgres(pool)
+
 	var events bankapi.EventPublisher
 	if brokers := kafkaBrokers(); len(brokers) > 0 {
 		kafkaEvents := bankapi.NewKafkaEvents(brokers)
 		defer func() { _ = kafkaEvents.Close() }()
 		events = kafkaEvents
 		slog.Info("publishing money facts", "brokers", brokers)
+
+		// Reclaim the balances of pips that have died. Without this the
+		// supply strands a purse per death, and starvation is the ordinary
+		// way to die here — see ADR 0006 and bankapi.Escheat.
+		lifecycle := bankapi.NewLifecycleConsumer(brokers, store)
+		defer func() { _ = lifecycle.Close() }()
+		go lifecycle.Run(ctx)
+		slog.Info("reclaiming balances of dead pips", "brokers", brokers)
 	} else {
-		slog.Info("KAFKA_BROKERS not set; money facts will not be published")
+		slog.Info("KAFKA_BROKERS not set; money facts will not be published " +
+			"and dead pips' balances will not be reclaimed")
 	}
 
-	handler := bankapi.New(ledger.NewPostgres(pool), events)
+	handler := bankapi.New(store, events)
 
 	mux := http.NewServeMux()
 	mux.Handle(bankv1connect.NewBankServiceHandler(handler))

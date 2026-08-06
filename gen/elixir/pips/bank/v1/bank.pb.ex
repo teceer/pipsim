@@ -11,6 +11,7 @@ defmodule Pips.Bank.V1.TransferKind do
   field :TRANSFER_KIND_WAGE, 1
   field :TRANSFER_KIND_PURCHASE, 2
   field :TRANSFER_KIND_ISSUANCE, 3
+  field :TRANSFER_KIND_ESCHEAT, 4
 end
 
 defmodule Pips.Bank.V1.Account do
