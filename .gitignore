@@ -26,3 +26,6 @@ web/src/sim-wasm/
 .idea/
 .vscode/
 *.swp
+
+# BEAM writes these where it happens to be running.
+erl_crash.dump

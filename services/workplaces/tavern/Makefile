@@ -6,6 +6,7 @@ run:
 
 ## test: unit tests, no cluster required
 test:
+	mix deps.get --quiet
 	mix test
 
 ## lint: formatting + credo
@@ -19,6 +20,6 @@ build:
 
 ## gen: contracts are generated centrally into gen/elixir
 gen:
-	$(MAKE) -C ../../.. gen
+	$(MAKE) -C ../../.. gen-elixir
 
 .PHONY: run test lint build gen

@@ -12,12 +12,14 @@ COPY go.work ./
 COPY gen/go/go.mod gen/go/go.sum ./gen/go/
 COPY services/world-gateway/go.mod services/world-gateway/go.sum ./services/world-gateway/
 COPY services/workplaces/farm/go.mod ./services/workplaces/farm/
+COPY services/workplaces/conformance/go.mod ./services/workplaces/conformance/
 
 RUN go mod download all 2>/dev/null || true
 
 COPY gen/go ./gen/go
 COPY services/world-gateway ./services/world-gateway
 COPY services/workplaces/farm ./services/workplaces/farm
+COPY services/workplaces/conformance ./services/workplaces/conformance
 
 RUN cd services/world-gateway \
  && CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/gateway ./cmd/gateway

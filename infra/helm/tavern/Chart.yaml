@@ -1,0 +1,6 @@
+apiVersion: v2
+name: tavern
+description: A workplace that pulls ale — workplace/v1 in Elixir, restores the social need
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

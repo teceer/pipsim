@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tavern
+  labels:
+    app.kubernetes.io/name: tavern
+    app.kubernetes.io/part-of: pipsim
+    pipsim.dev/workplace-kind: tavern
+spec:
+  replicas: {{ .Values.replicaCount }}
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: tavern
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: tavern
+        app.kubernetes.io/part-of: pipsim
+    spec:
+      containers:
+        - name: tavern
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8090
+          env:
+            - name: WORKPLACE_ID
+              value: "{{ .Values.workplace.id }}"
+            - name: WORKPLACE_X
+              value: "{{ .Values.workplace.x }}"
+            - name: WORKPLACE_Y
+              value: "{{ .Values.workplace.y }}"
+            - name: AMQP_URL
+              value: "amqp://pipsim:pipsim@rabbitmq.{{ .Values.platformNamespace }}.svc.cluster.local:5672/pipsim"
+            # A BEAM node needs a name and a cookie even standalone, and the
+            # release refuses to boot without somewhere writable for its
+            # runtime state.
+            - name: RELEASE_DISTRIBUTION
+              value: "none"
+            - name: RELEASE_TMP
+              value: "/tmp"
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            # Slower than the farm's: the BEAM starts its applications in
+            # dependency order and the first probe would otherwise land before
+            # Bandit is listening.
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tavern
+spec:
+  selector:
+    app.kubernetes.io/name: tavern
+  ports:
+    - name: http
+      port: 8090
+      targetPort: http

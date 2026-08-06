@@ -94,6 +94,22 @@ jobs:
         with:
           setup_only: true
 
+      # Elixir bindings do not come from buf — protoc-gen-elixir writes its own
+      # package paths and `make gen-elixir` untangles them. The toolchain has to
+      # be here anyway, or the staleness check below silently stops covering one
+      # of the six languages.
+      - uses: erlef/setup-beam@v1
+        with:
+          otp-version: "27"
+          elixir-version: "1.18"
+
+      - name: install protoc and the elixir plugin
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y protobuf-compiler
+          mix local.hex --force
+          mix escript.install hex protobuf --force
+          echo "$HOME/.mix/escripts" >> "$GITHUB_PATH"
+
       - name: lint
         run: buf lint proto
 
@@ -119,6 +135,38 @@ jobs:
           make gen
           git diff --exit-code gen/ \
             || (echo "::error::gen/ is stale — run 'make gen' and commit"; exit 1)
+
+  tavern:
+    name: tavern (elixir)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: erlef/setup-beam@v1
+        with:
+          otp-version: "27"
+          elixir-version: "1.18"
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            services/workplaces/tavern/deps
+            services/workplaces/tavern/_build
+          key: mix-${{ runner.os }}-${{ hashFiles('services/workplaces/tavern/mix.lock') }}
+
+      # The tavern compiles gen/elixir from the repo root, so a stale or missing
+      # generated tree fails here rather than at deploy time.
+      - name: deps
+        run: mix deps.get
+        working-directory: services/workplaces/tavern
+
+      - name: lint
+        run: make lint
+        working-directory: services/workplaces/tavern
+
+      - name: test
+        run: make test
+        working-directory: services/workplaces/tavern
 
   go:
     name: go services

@@ -16,11 +16,15 @@ sim:
   tickHz: 10
   address: sim-core:50051
 
-# The workplace the economy driver fills. Empty disables the driver entirely,
-# which is how the gateway runs before any workplace is deployed.
-farm:
-  address: farm:8090
-  workplaceId: 1
+# The workplaces the economy driver fills. An empty list disables the driver
+# entirely, which is how the gateway runs before any workplace is deployed.
+#
+# Addresses and nothing else: each workplace reports its own id, kind, position
+# and capacity through Describe, and the gateway copies them. Configuring an id
+# here as well would let a chart and a service disagree about who lives where.
+workplaceAddrs:
+  - farm:8090
+  - tavern:8090
 
 platformNamespace: pipsim-platform
 

@@ -15,6 +15,7 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
@@ -23,7 +24,6 @@ import (
 	"golang.org/x/net/http2/h2c"
 
 	"github.com/teceer/pipsim/gen/go/pips/sim/v1/simv1connect"
-	workplacev1 "github.com/teceer/pipsim/gen/go/pips/workplace/v1"
 	"github.com/teceer/pipsim/gen/go/pips/workplace/v1/workplacev1connect"
 	"github.com/teceer/pipsim/gen/go/pips/world/v1/worldv1connect"
 	"github.com/teceer/pipsim/services/world-gateway/internal/economy"
@@ -97,32 +97,26 @@ func withCORS(h http.Handler) http.Handler {
 	})
 }
 
-// keepRegistered re-registers the workplace forever.
+// workplaceAddrs reads the list of workplaces to drive.
 //
-// Not just at startup, and not just until it succeeds. Registration is
-// idempotent by contract, so repeating it is free, and it covers the case that
-// actually happens in this cluster: sim-core restarts with a fresh world and
-// forgets every building while the gateway is still running. A world with a
-// workplace nobody can find is a world where every hired pip stands still.
-func keepRegistered(ctx context.Context, driver *economy.Driver, every time.Duration) {
-	failures := 0
-	for ctx.Err() == nil {
-		if err := driver.Register(ctx); err != nil {
-			// Quiet after the first: a workplace that is down stays down for
-			// many cycles, and one line per attempt drowns the log.
-			if failures == 0 {
-				slog.Warn("could not register the workplace", "err", err)
-			}
-			failures++
-		} else {
-			failures = 0
-		}
-
-		select {
-		case <-ctx.Done():
-		case <-time.After(every):
+// Addresses only. Which id and kind lives at each one is answered by the
+// workplace itself through `Describe`, so a Helm value cannot disagree with a
+// service's own configuration about who it is.
+func workplaceAddrs() []string {
+	var out []string
+	for _, a := range strings.Split(os.Getenv("WORKPLACE_ADDRS"), ",") {
+		if a = strings.TrimSpace(a); a != "" {
+			out = append(out, a)
 		}
 	}
+
+	// Accepted for one release so a chart still carrying the single-farm
+	// variable keeps its economy running instead of silently losing it.
+	if farm := strings.TrimSpace(os.Getenv("FARM_ADDR")); farm != "" {
+		slog.Warn("FARM_ADDR is deprecated; use WORKPLACE_ADDRS", "addr", farm)
+		out = append(out, farm)
+	}
+	return out
 }
 
 func main() {
@@ -143,12 +137,12 @@ func main() {
 
 	svc := gateway.New(simClient, seed, int32(tickHz))
 
-	// The economy loop: fill the farm's positions and forward what a shift does
-	// to the workers. Mechanics only — see internal/economy for why the policy
-	// deliberately lives elsewhere.
+	// The economy loop: fill each workplace's positions and forward what a shift
+	// does to the workers. Mechanics only — see internal/economy for why the
+	// policy deliberately lives elsewhere.
 	amqpURL := os.Getenv("AMQP_URL")
-	farmAddr := os.Getenv("FARM_ADDR")
-	if farmAddr != "" && amqpURL != "" {
+	addrs := workplaceAddrs()
+	if len(addrs) > 0 && amqpURL != "" {
 		offers, err := economy.Dial(amqpURL)
 		if err != nil {
 			slog.Error("could not reach the broker", "err", err)
@@ -156,34 +150,29 @@ func main() {
 		}
 		defer offers.Close()
 
-		driver := economy.NewDriver(
-			simClient,
-			workplacev1connect.NewWorkplaceServiceClient(h2cClient(), "http://"+farmAddr),
-			envUint("FARM_WORKPLACE_ID", 1),
-			"farm",
-			offers,
-		)
+		drivers := make([]*economy.Driver, 0, len(addrs))
+		for _, addr := range addrs {
+			drivers = append(drivers, economy.NewDriver(
+				simClient,
+				workplacev1connect.NewWorkplaceServiceClient(h2cClient(), "http://"+addr),
+				addr,
+				offers,
+			))
+		}
+		fleet := economy.NewFleet(simClient, drivers...)
 
 		ctx, cancelEconomy := context.WithCancel(context.Background())
 		defer cancelEconomy()
 
-		go keepRegistered(ctx, driver, 10*time.Second)
+		fleet.KeepRegistered(ctx, 10*time.Second)
+		go fleet.Run(ctx, time.Second)
+		go economy.RunOutcomes(ctx, amqpURL, fleet.OnHired)
 
-		go driver.Run(ctx, time.Second)
-		go economy.RunOutcomes(ctx, amqpURL, driver.OnHired)
+		svc = svc.WithWorkplaces(fleet.Describe)
 
-		svc = svc.WithWorkplaces(func(ctx context.Context) []*workplacev1.DescribeResponse {
-			desc, err := driver.Describe(ctx)
-			if err != nil {
-				slog.Warn("could not describe the farm for a joining client", "err", err)
-				return nil
-			}
-			return []*workplacev1.DescribeResponse{desc}
-		})
-
-		slog.Info("economy driver started", "farm", farmAddr)
+		slog.Info("economy started", "workplaces", addrs)
 	} else {
-		slog.Info("economy disabled; FARM_ADDR and AMQP_URL are both required")
+		slog.Info("economy disabled; WORKPLACE_ADDRS and AMQP_URL are both required")
 	}
 
 	mux := http.NewServeMux()
