@@ -1,0 +1,102 @@
+syntax = "proto3";
+
+package pips.bank.v1;
+
+// The bank. Every actor — pip, workplace, treasury — has exactly one account
+// here, and every movement of money is a transfer between two of them. There
+// is no cash: no second pool, no reconciliation between two kinds of money.
+//
+// The bank is authoritative for history and solvency. sim-core holds a
+// replica of the balances it needs to decide with inside a tick, updated
+// only by intents — this service never talks to sim-core directly, and never
+// decides what a resource is worth. See docs/adr/0006.
+service BankService {
+  // Opens an account for a holder that doesn't have one yet. Idempotent:
+  // opening an account that already exists returns it unchanged.
+  rpc OpenAccount(OpenAccountRequest) returns (OpenAccountResponse);
+
+  // Moves money from one account to another. (payer, payee, tick, kind) is
+  // the idempotency key — a retried call with the same key returns the
+  // original result rather than moving money twice.
+  rpc Transfer(TransferRequest) returns (TransferResponse);
+
+  // One payer, many payees, one call. This is payroll: a workplace pays
+  // every pip on shift in a single round trip instead of one Transfer per
+  // pip, which is what keeps a tick's payroll inside the tick budget.
+  rpc BatchTransfer(BatchTransferRequest) returns (BatchTransferResponse);
+
+  rpc GetBalance(GetBalanceRequest) returns (GetBalanceResponse);
+}
+
+enum TransferKind {
+  TRANSFER_KIND_UNSPECIFIED = 0;
+  TRANSFER_KIND_WAGE = 1;
+  TRANSFER_KIND_PURCHASE = 2;
+  // Money supply is closed by default — every transfer is a move, never a
+  // creation. Issuance is the one exception, and it is always a transfer
+  // from the treasury account, visible as such in the journal rather than a
+  // separate mechanism.
+  TRANSFER_KIND_ISSUANCE = 3;
+  // A dead pip's balance returning to the treasury. Not issuance in reverse
+  // — no money is destroyed, it changes hands — but worth its own kind so
+  // that "where did the supply go" is answerable from the journal alone.
+  // Starvation is the ordinary way a pip leaves the world, so without this
+  // the supply would drain one purse at a time.
+  TRANSFER_KIND_ESCHEAT = 4;
+}
+
+message Account {
+  // Namespaced by holder kind so "workplace:3" and "pip:412" cannot
+  // collide: "pip:<id>", "workplace:<id>", or "treasury".
+  string id = 1;
+  int64 balance = 2;
+}
+
+message OpenAccountRequest {
+  string account_id = 1;
+}
+
+message OpenAccountResponse {
+  Account account = 1;
+}
+
+message TransferRequest {
+  string payer = 1;
+  string payee = 2;
+  int64 amount = 3;
+  TransferKind kind = 4;
+  uint64 tick = 5;
+}
+
+message TransferResponse {
+  bool ok = 1;
+  // Set when ok is false — e.g. the payer can't afford it.
+  string reason = 2;
+  int64 payer_balance = 3;
+}
+
+message BatchTransferRequest {
+  string payer = 1;
+
+  message Credit {
+    string payee = 1;
+    int64 amount = 2;
+  }
+  repeated Credit credits = 2;
+  TransferKind kind = 3;
+  uint64 tick = 4;
+}
+
+message BatchTransferResponse {
+  bool ok = 1;
+  string reason = 2;
+  int64 payer_balance = 3;
+}
+
+message GetBalanceRequest {
+  string account_id = 1;
+}
+
+message GetBalanceResponse {
+  int64 balance = 1;
+}

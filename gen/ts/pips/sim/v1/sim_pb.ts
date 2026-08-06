@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file pips/sim/v1/sim.proto.
  */
 export const file_pips_sim_v1_sim: GenFile = /*@__PURE__*/
-  fileDesc("ChVwaXBzL3NpbS92MS9zaW0ucHJvdG8SC3BpcHMuc2ltLnYxIigKBFZlYzISDwoHeF9taWxsaRgBIAEoBRIPCgd5X21pbGxpGAIgASgFIsICCgNQaXASCgoCaWQYASABKAQSDAoEbmFtZRgCIAEoCRIjCghwb3NpdGlvbhgDIAEoCzIRLnBpcHMuc2ltLnYxLlZlYzISKgoIYWN0aXZpdHkYBCABKA4yGC5waXBzLnNpbS52MS5QaXBBY3Rpdml0eRIqCgVuZWVkcxgFIAMoCzIbLnBpcHMuc2ltLnYxLlBpcC5OZWVkc0VudHJ5EiIKFWVtcGxveWVyX3dvcmtwbGFjZV9pZBgGIAEoBEgAiAEBEiAKE2luc2lkZV93b3JrcGxhY2VfaWQYByABKARIAYgBARosCgpOZWVkc0VudHJ5EgsKA2tleRgBIAEoBRINCgV2YWx1ZRgCIAEoBToCOAFCGAoWX2VtcGxveWVyX3dvcmtwbGFjZV9pZEIWChRfaW5zaWRlX3dvcmtwbGFjZV9pZCJvCglXb3JrcGxhY2USCgoCaWQYASABKAQSDAoEa2luZBgCIAEoCRIjCghwb3NpdGlvbhgDIAEoCzIRLnBpcHMuc2ltLnYxLlZlYzISEAoIY2FwYWNpdHkYBCABKA0SEQoJb2NjdXBhbnRzGAUgASgNIhsKC1N0ZXBSZXF1ZXN0EgwKBHRpY2sYASABKAQiWwoMU3RlcFJlc3BvbnNlEgwKBHRpY2sYASABKAQSJgoFZGVsdGEYAiABKAsyFy5waXBzLnNpbS52MS5Xb3JsZERlbHRhEhUKDWRvbWFpbl9ldmVudHMYAyADKAwihAEKCldvcmxkRGVsdGESDAoEdGljaxgBIAEoBBIjCgRwaXBzGAIgAygLMhUucGlwcy5zaW0udjEuUGlwRGVsdGESFwoPcmVtb3ZlZF9waXBfaWRzGAMgAygEEioKCndvcmtwbGFjZXMYBCADKAsyFi5waXBzLnNpbS52MS5Xb3JrcGxhY2UipAIKCFBpcERlbHRhEgoKAmlkGAEgASgEEigKCHBvc2l0aW9uGAIgASgLMhEucGlwcy5zaW0udjEuVmVjMkgAiAEBEi8KCGFjdGl2aXR5GAMgASgOMhgucGlwcy5zaW0udjEuUGlwQWN0aXZpdHlIAYgBARIvCgVuZWVkcxgEIAMoCzIgLnBpcHMuc2ltLnYxLlBpcERlbHRhLk5lZWRzRW50cnkSIAoTaW5zaWRlX3dvcmtwbGFjZV9pZBgFIAEoBEgCiAEBGiwKCk5lZWRzRW50cnkSCwoDa2V5GAEgASgFEg0KBXZhbHVlGAIgASgFOgI4AUILCglfcG9zaXRpb25CCwoJX2FjdGl2aXR5QhYKFF9pbnNpZGVfd29ya3BsYWNlX2lkIhEKD1NuYXBzaG90UmVxdWVzdCKAAQoQU25hcHNob3RSZXNwb25zZRIMCgR0aWNrGAEgASgEEh4KBHBpcHMYAiADKAsyEC5waXBzLnNpbS52MS5QaXASEgoKc3RhdGVfaGFzaBgDIAEoDBIqCgp3b3JrcGxhY2VzGAQgAygLMhYucGlwcy5zaW0udjEuV29ya3BsYWNlIicKEldhdGNoRGVsdGFzUmVxdWVzdBIRCglmcm9tX3RpY2sYASABKAQiPQoTV2F0Y2hEZWx0YXNSZXNwb25zZRImCgVkZWx0YRgBIAEoCzIXLnBpcHMuc2ltLnYxLldvcmxkRGVsdGEi1QIKE1N1Ym1pdEludGVudFJlcXVlc3QSJwoEaGlyZRgBIAEoCzIXLnBpcHMuc2ltLnYxLkhpcmVJbnRlbnRIABInCgRtb3ZlGAIgASgLMhcucGlwcy5zaW0udjEuTW92ZUludGVudEgAEiwKBXNwYXduGAMgASgLMhsucGlwcy5zaW0udjEuU3Bhd25QaXBJbnRlbnRIABI0CgthcHBseV9uZWVkcxgEIAEoCzIdLnBpcHMuc2ltLnYxLkFwcGx5TmVlZHNJbnRlbnRIABJCChJyZWdpc3Rlcl93b3JrcGxhY2UYBSABKAsyJC5waXBzLnNpbS52MS5SZWdpc3RlcldvcmtwbGFjZUludGVudEgAEjoKDmVuZF9lbXBsb3ltZW50GAYgASgLMiAucGlwcy5zaW0udjEuRW5kRW1wbG95bWVudEludGVudEgAQggKBmludGVudCJaChRTdWJtaXRJbnRlbnRSZXNwb25zZRIQCghhY2NlcHRlZBgBIAEoCBIYChByZWplY3Rpb25fcmVhc29uGAIgASgJEhYKDnNjaGVkdWxlZF90aWNrGAMgASgEIjIKCkhpcmVJbnRlbnQSDgoGcGlwX2lkGAEgASgEEhQKDHdvcmtwbGFjZV9pZBgCIAEoBCIlChNFbmRFbXBsb3ltZW50SW50ZW50Eg4KBnBpcF9pZBgBIAEoBCJ0ChdSZWdpc3RlcldvcmtwbGFjZUludGVudBIUCgx3b3JrcGxhY2VfaWQYASABKAQSDAoEa2luZBgCIAEoCRIjCghwb3NpdGlvbhgDIAEoCzIRLnBpcHMuc2ltLnYxLlZlYzISEAoIY2FwYWNpdHkYBCABKA0iRAoKTW92ZUludGVudBIOCgZwaXBfaWQYASABKAQSJgoLZGVzdGluYXRpb24YAiABKAsyES5waXBzLnNpbS52MS5WZWMyIkMKDlNwYXduUGlwSW50ZW50EgwKBG5hbWUYASABKAkSIwoIcG9zaXRpb24YAiABKAsyES5waXBzLnNpbS52MS5WZWMyIpkBChBBcHBseU5lZWRzSW50ZW50Eg4KBnBpcF9pZBgBIAEoBBJCCgtuZWVkX2RlbHRhcxgCIAMoCzItLnBpcHMuc2ltLnYxLkFwcGx5TmVlZHNJbnRlbnQuTmVlZERlbHRhc0VudHJ5GjEKD05lZWREZWx0YXNFbnRyeRILCgNrZXkYASABKAUSDQoFdmFsdWUYAiABKAU6AjgBKksKBE5lZWQSFAoQTkVFRF9VTlNQRUNJRklFRBAAEg0KCU5FRURfRk9PRBABEg0KCU5FRURfUkVTVBACEg8KC05FRURfU09DSUFMEAMqxgEKC1BpcEFjdGl2aXR5EhwKGFBJUF9BQ1RJVklUWV9VTlNQRUNJRklFRBAAEhUKEVBJUF9BQ1RJVklUWV9JRExFEAESGAoUUElQX0FDVElWSVRZX1dBTEtJTkcQAhIYChRQSVBfQUNUSVZJVFlfV09SS0lORxADEhcKE1BJUF9BQ1RJVklUWV9FQVRJTkcQBBIZChVQSVBfQUNUSVZJVFlfU0xFRVBJTkcQBRIaChZQSVBfQUNUSVZJVFlfQ09NTVVUSU5HEAYyuwIKClNpbVNlcnZpY2USOwoEU3RlcBIYLnBpcHMuc2ltLnYxLlN0ZXBSZXF1ZXN0GhkucGlwcy5zaW0udjEuU3RlcFJlc3BvbnNlEkcKCFNuYXBzaG90EhwucGlwcy5zaW0udjEuU25hcHNob3RSZXF1ZXN0Gh0ucGlwcy5zaW0udjEuU25hcHNob3RSZXNwb25zZRJSCgtXYXRjaERlbHRhcxIfLnBpcHMuc2ltLnYxLldhdGNoRGVsdGFzUmVxdWVzdBogLnBpcHMuc2ltLnYxLldhdGNoRGVsdGFzUmVzcG9uc2UwARJTCgxTdWJtaXRJbnRlbnQSIC5waXBzLnNpbS52MS5TdWJtaXRJbnRlbnRSZXF1ZXN0GiEucGlwcy5zaW0udjEuU3VibWl0SW50ZW50UmVzcG9uc2VCnAEKD2NvbS5waXBzLnNpbS52MUIIU2ltUHJvdG9QAVoxZ2l0aHViLmNvbS90ZWNlZXIvcGlwc2ltL2dlbi9nby9waXBzL3NpbS92MTtzaW12MaICA1BTWKoCC1BpcHMuU2ltLlYxygILUGlwc1xTaW1cVjHiAhdQaXBzXFNpbVxWMVxHUEJNZXRhZGF0YeoCDVBpcHM6OlNpbTo6VjFiBnByb3RvMw");
+  fileDesc("ChVwaXBzL3NpbS92MS9zaW0ucHJvdG8SC3BpcHMuc2ltLnYxIigKBFZlYzISDwoHeF9taWxsaRgBIAEoBRIPCgd5X21pbGxpGAIgASgFItMCCgNQaXASCgoCaWQYASABKAQSDAoEbmFtZRgCIAEoCRIjCghwb3NpdGlvbhgDIAEoCzIRLnBpcHMuc2ltLnYxLlZlYzISKgoIYWN0aXZpdHkYBCABKA4yGC5waXBzLnNpbS52MS5QaXBBY3Rpdml0eRIqCgVuZWVkcxgFIAMoCzIbLnBpcHMuc2ltLnYxLlBpcC5OZWVkc0VudHJ5EiIKFWVtcGxveWVyX3dvcmtwbGFjZV9pZBgGIAEoBEgAiAEBEiAKE2luc2lkZV93b3JrcGxhY2VfaWQYByABKARIAYgBARIPCgdiYWxhbmNlGAggASgDGiwKCk5lZWRzRW50cnkSCwoDa2V5GAEgASgFEg0KBXZhbHVlGAIgASgFOgI4AUIYChZfZW1wbG95ZXJfd29ya3BsYWNlX2lkQhYKFF9pbnNpZGVfd29ya3BsYWNlX2lkIpsBCglXb3JrcGxhY2USCgoCaWQYASABKAQSDAoEa2luZBgCIAEoCRIjCghwb3NpdGlvbhgDIAEoCzIRLnBpcHMuc2ltLnYxLlZlYzISEAoIY2FwYWNpdHkYBCABKA0SEQoJb2NjdXBhbnRzGAUgASgNEioKBXNlbGxzGAYgAygLMhsucGlwcy5zaW0udjEuV29ya3BsYWNlT2ZmZXIiGwoLU3RlcFJlcXVlc3QSDAoEdGljaxgBIAEoBCJbCgxTdGVwUmVzcG9uc2USDAoEdGljaxgBIAEoBBImCgVkZWx0YRgCIAEoCzIXLnBpcHMuc2ltLnYxLldvcmxkRGVsdGESFQoNZG9tYWluX2V2ZW50cxgDIAMoDCKEAQoKV29ybGREZWx0YRIMCgR0aWNrGAEgASgEEiMKBHBpcHMYAiADKAsyFS5waXBzLnNpbS52MS5QaXBEZWx0YRIXCg9yZW1vdmVkX3BpcF9pZHMYAyADKAQSKgoKd29ya3BsYWNlcxgEIAMoCzIWLnBpcHMuc2ltLnYxLldvcmtwbGFjZSKkAgoIUGlwRGVsdGESCgoCaWQYASABKAQSKAoIcG9zaXRpb24YAiABKAsyES5waXBzLnNpbS52MS5WZWMySACIAQESLwoIYWN0aXZpdHkYAyABKA4yGC5waXBzLnNpbS52MS5QaXBBY3Rpdml0eUgBiAEBEi8KBW5lZWRzGAQgAygLMiAucGlwcy5zaW0udjEuUGlwRGVsdGEuTmVlZHNFbnRyeRIgChNpbnNpZGVfd29ya3BsYWNlX2lkGAUgASgESAKIAQEaLAoKTmVlZHNFbnRyeRILCgNrZXkYASABKAUSDQoFdmFsdWUYAiABKAU6AjgBQgsKCV9wb3NpdGlvbkILCglfYWN0aXZpdHlCFgoUX2luc2lkZV93b3JrcGxhY2VfaWQiEQoPU25hcHNob3RSZXF1ZXN0IoABChBTbmFwc2hvdFJlc3BvbnNlEgwKBHRpY2sYASABKAQSHgoEcGlwcxgCIAMoCzIQLnBpcHMuc2ltLnYxLlBpcBISCgpzdGF0ZV9oYXNoGAMgASgMEioKCndvcmtwbGFjZXMYBCADKAsyFi5waXBzLnNpbS52MS5Xb3JrcGxhY2UiJwoSV2F0Y2hEZWx0YXNSZXF1ZXN0EhEKCWZyb21fdGljaxgBIAEoBCI9ChNXYXRjaERlbHRhc1Jlc3BvbnNlEiYKBWRlbHRhGAEgASgLMhcucGlwcy5zaW0udjEuV29ybGREZWx0YSLEAwoTU3VibWl0SW50ZW50UmVxdWVzdBInCgRoaXJlGAEgASgLMhcucGlwcy5zaW0udjEuSGlyZUludGVudEgAEicKBG1vdmUYAiABKAsyFy5waXBzLnNpbS52MS5Nb3ZlSW50ZW50SAASLAoFc3Bhd24YAyABKAsyGy5waXBzLnNpbS52MS5TcGF3blBpcEludGVudEgAEjQKC2FwcGx5X25lZWRzGAQgASgLMh0ucGlwcy5zaW0udjEuQXBwbHlOZWVkc0ludGVudEgAEkIKEnJlZ2lzdGVyX3dvcmtwbGFjZRgFIAEoCzIkLnBpcHMuc2ltLnYxLlJlZ2lzdGVyV29ya3BsYWNlSW50ZW50SAASOgoOZW5kX2VtcGxveW1lbnQYBiABKAsyIC5waXBzLnNpbS52MS5FbmRFbXBsb3ltZW50SW50ZW50SAASLwoIdHJhbnNmZXIYByABKAsyGy5waXBzLnNpbS52MS5UcmFuc2ZlckludGVudEgAEjwKD2NyZWRpdF9iYWxhbmNlcxgIIAEoCzIhLnBpcHMuc2ltLnYxLkNyZWRpdEJhbGFuY2VzSW50ZW50SABCCAoGaW50ZW50IloKFFN1Ym1pdEludGVudFJlc3BvbnNlEhAKCGFjY2VwdGVkGAEgASgIEhgKEHJlamVjdGlvbl9yZWFzb24YAiABKAkSFgoOc2NoZWR1bGVkX3RpY2sYAyABKAQiMgoKSGlyZUludGVudBIOCgZwaXBfaWQYASABKAQSFAoMd29ya3BsYWNlX2lkGAIgASgEIiUKE0VuZEVtcGxveW1lbnRJbnRlbnQSDgoGcGlwX2lkGAEgASgEIqABChdSZWdpc3RlcldvcmtwbGFjZUludGVudBIUCgx3b3JrcGxhY2VfaWQYASABKAQSDAoEa2luZBgCIAEoCRIjCghwb3NpdGlvbhgDIAEoCzIRLnBpcHMuc2ltLnYxLlZlYzISEAoIY2FwYWNpdHkYBCABKA0SKgoFc2VsbHMYBSADKAsyGy5waXBzLnNpbS52MS5Xb3JrcGxhY2VPZmZlciI2Cg5Xb3JrcGxhY2VPZmZlchIVCg1yZXNvdXJjZV9raW5kGAEgASgFEg0KBXByaWNlGAIgASgDIkQKCk1vdmVJbnRlbnQSDgoGcGlwX2lkGAEgASgEEiYKC2Rlc3RpbmF0aW9uGAIgASgLMhEucGlwcy5zaW0udjEuVmVjMiJDCg5TcGF3blBpcEludGVudBIMCgRuYW1lGAEgASgJEiMKCHBvc2l0aW9uGAIgASgLMhEucGlwcy5zaW0udjEuVmVjMiKZAQoQQXBwbHlOZWVkc0ludGVudBIOCgZwaXBfaWQYASABKAQSQgoLbmVlZF9kZWx0YXMYAiADKAsyLS5waXBzLnNpbS52MS5BcHBseU5lZWRzSW50ZW50Lk5lZWREZWx0YXNFbnRyeRoxCg9OZWVkRGVsdGFzRW50cnkSCwoDa2V5GAEgASgFEg0KBXZhbHVlGAIgASgFOgI4ASKiAQoOVHJhbnNmZXJJbnRlbnQSGAoQcGF5ZXJfYWNjb3VudF9pZBgBIAEoCRIYChBwYXllZV9hY2NvdW50X2lkGAIgASgJEg4KBmFtb3VudBgDIAEoAxIVCg1yZXNvdXJjZV9raW5kGAQgASgFEgwKBHRpY2sYBSABKAQSJwoEa2luZBgGIAEoDjIZLnBpcHMuc2ltLnYxLlRyYW5zZmVyS2luZCKjAQoUQ3JlZGl0QmFsYW5jZXNJbnRlbnQSGAoQcGF5ZXJfYWNjb3VudF9pZBgBIAEoCRI5CgdjcmVkaXRzGAIgAygLMigucGlwcy5zaW0udjEuQ3JlZGl0QmFsYW5jZXNJbnRlbnQuQ3JlZGl0EgwKBHRpY2sYAyABKAQaKAoGQ3JlZGl0Eg4KBnBpcF9pZBgBIAEoBBIOCgZhbW91bnQYAiABKAMqSwoETmVlZBIUChBORUVEX1VOU1BFQ0lGSUVEEAASDQoJTkVFRF9GT09EEAESDQoJTkVFRF9SRVNUEAISDwoLTkVFRF9TT0NJQUwQAyrGAQoLUGlwQWN0aXZpdHkSHAoYUElQX0FDVElWSVRZX1VOU1BFQ0lGSUVEEAASFQoRUElQX0FDVElWSVRZX0lETEUQARIYChRQSVBfQUNUSVZJVFlfV0FMS0lORxACEhgKFFBJUF9BQ1RJVklUWV9XT1JLSU5HEAMSFwoTUElQX0FDVElWSVRZX0VBVElORxAEEhkKFVBJUF9BQ1RJVklUWV9TTEVFUElORxAFEhoKFlBJUF9BQ1RJVklUWV9DT01NVVRJTkcQBiqYAQoMVHJhbnNmZXJLaW5kEh0KGVRSQU5TRkVSX0tJTkRfVU5TUEVDSUZJRUQQABIWChJUUkFOU0ZFUl9LSU5EX1dBR0UQARIaChZUUkFOU0ZFUl9LSU5EX1BVUkNIQVNFEAISGgoWVFJBTlNGRVJfS0lORF9JU1NVQU5DRRADEhkKFVRSQU5TRkVSX0tJTkRfRVNDSEVBVBAEMrsCCgpTaW1TZXJ2aWNlEjsKBFN0ZXASGC5waXBzLnNpbS52MS5TdGVwUmVxdWVzdBoZLnBpcHMuc2ltLnYxLlN0ZXBSZXNwb25zZRJHCghTbmFwc2hvdBIcLnBpcHMuc2ltLnYxLlNuYXBzaG90UmVxdWVzdBodLnBpcHMuc2ltLnYxLlNuYXBzaG90UmVzcG9uc2USUgoLV2F0Y2hEZWx0YXMSHy5waXBzLnNpbS52MS5XYXRjaERlbHRhc1JlcXVlc3QaIC5waXBzLnNpbS52MS5XYXRjaERlbHRhc1Jlc3BvbnNlMAESUwoMU3VibWl0SW50ZW50EiAucGlwcy5zaW0udjEuU3VibWl0SW50ZW50UmVxdWVzdBohLnBpcHMuc2ltLnYxLlN1Ym1pdEludGVudFJlc3BvbnNlQpwBCg9jb20ucGlwcy5zaW0udjFCCFNpbVByb3RvUAFaMWdpdGh1Yi5jb20vdGVjZWVyL3BpcHNpbS9nZW4vZ28vcGlwcy9zaW0vdjE7c2ltdjGiAgNQU1iqAgtQaXBzLlNpbS5WMcoCC1BpcHNcU2ltXFYx4gIXUGlwc1xTaW1cVjFcR1BCTWV0YWRhdGHqAg1QaXBzOjpTaW06OlYxYgZwcm90bzM");
 
 /**
  * @generated from message pips.sim.v1.Vec2
@@ -78,6 +78,16 @@ export type Pip = Message<"pips.sim.v1.Pip"> & {
    * @generated from field: optional uint64 inside_workplace_id = 7;
    */
   insideWorkplaceId?: bigint | undefined;
+
+  /**
+   * The core's replica of the pip's bank balance. Exposed so the gateway can
+   * answer "can this pip afford it" before submitting an intent, and so a
+   * client can draw it. The bank remains authoritative for history and
+   * solvency — this is what the core will actually settle a purchase against.
+   *
+   * @generated from field: int64 balance = 8;
+   */
+  balance: bigint;
 };
 
 /**
@@ -123,6 +133,15 @@ export type Workplace = Message<"pips.sim.v1.Workplace"> & {
    * @generated from field: uint32 occupants = 5;
    */
   occupants: number;
+
+  /**
+   * What it sells, so a client predicting with the same core can predict a
+   * hungry pip walking here. Prices are the workplace service's own; this is
+   * the copy the core was registered with.
+   *
+   * @generated from field: repeated pips.sim.v1.WorkplaceOffer sells = 6;
+   */
+  sells: WorkplaceOffer[];
 };
 
 /**
@@ -389,6 +408,18 @@ export type SubmitIntentRequest = Message<"pips.sim.v1.SubmitIntentRequest"> & {
      */
     value: EndEmploymentIntent;
     case: "endEmployment";
+  } | {
+    /**
+     * @generated from field: pips.sim.v1.TransferIntent transfer = 7;
+     */
+    value: TransferIntent;
+    case: "transfer";
+  } | {
+    /**
+     * @generated from field: pips.sim.v1.CreditBalancesIntent credit_balances = 8;
+     */
+    value: CreditBalancesIntent;
+    case: "creditBalances";
   } | { case: undefined; value?: undefined };
 };
 
@@ -504,6 +535,16 @@ export type RegisterWorkplaceIntent = Message<"pips.sim.v1.RegisterWorkplaceInte
    * @generated from field: uint32 capacity = 4;
    */
   capacity: number;
+
+  /**
+   * What this building sells, copied from its own `Describe`. Same ownership
+   * rule as `capacity`: the workplace decides the price, the gateway carries
+   * it here, and the core only enforces it — a pip deciding inside a tick
+   * whether it can afford lunch cannot make a network call to ask.
+   *
+   * @generated from field: repeated pips.sim.v1.WorkplaceOffer sells = 5;
+   */
+  sells: WorkplaceOffer[];
 };
 
 /**
@@ -512,6 +553,34 @@ export type RegisterWorkplaceIntent = Message<"pips.sim.v1.RegisterWorkplaceInte
  */
 export const RegisterWorkplaceIntentSchema: GenMessage<RegisterWorkplaceIntent> = /*@__PURE__*/
   messageDesc(file_pips_sim_v1_sim, 15);
+
+/**
+ * Mirrors pips.workplace.v1.Offer. A second declaration rather than an import
+ * because workplace.proto already imports this file for Vec2, and buf refuses
+ * the cycle.
+ *
+ * @generated from message pips.sim.v1.WorkplaceOffer
+ */
+export type WorkplaceOffer = Message<"pips.sim.v1.WorkplaceOffer"> & {
+  /**
+   * pips.workplace.v1.ResourceKind, as a bare int32 for the same reason.
+   *
+   * @generated from field: int32 resource_kind = 1;
+   */
+  resourceKind: number;
+
+  /**
+   * @generated from field: int64 price = 2;
+   */
+  price: bigint;
+};
+
+/**
+ * Describes the message pips.sim.v1.WorkplaceOffer.
+ * Use `create(WorkplaceOfferSchema)` to create a new message.
+ */
+export const WorkplaceOfferSchema: GenMessage<WorkplaceOffer> = /*@__PURE__*/
+  messageDesc(file_pips_sim_v1_sim, 16);
 
 /**
  * @generated from message pips.sim.v1.MoveIntent
@@ -533,7 +602,7 @@ export type MoveIntent = Message<"pips.sim.v1.MoveIntent"> & {
  * Use `create(MoveIntentSchema)` to create a new message.
  */
 export const MoveIntentSchema: GenMessage<MoveIntent> = /*@__PURE__*/
-  messageDesc(file_pips_sim_v1_sim, 16);
+  messageDesc(file_pips_sim_v1_sim, 17);
 
 /**
  * @generated from message pips.sim.v1.SpawnPipIntent
@@ -555,7 +624,7 @@ export type SpawnPipIntent = Message<"pips.sim.v1.SpawnPipIntent"> & {
  * Use `create(SpawnPipIntentSchema)` to create a new message.
  */
 export const SpawnPipIntentSchema: GenMessage<SpawnPipIntent> = /*@__PURE__*/
-  messageDesc(file_pips_sim_v1_sim, 17);
+  messageDesc(file_pips_sim_v1_sim, 18);
 
 /**
  * The effect of work on a pip, handed back by a workplace.
@@ -585,7 +654,124 @@ export type ApplyNeedsIntent = Message<"pips.sim.v1.ApplyNeedsIntent"> & {
  * Use `create(ApplyNeedsIntentSchema)` to create a new message.
  */
 export const ApplyNeedsIntentSchema: GenMessage<ApplyNeedsIntent> = /*@__PURE__*/
-  messageDesc(file_pips_sim_v1_sim, 18);
+  messageDesc(file_pips_sim_v1_sim, 19);
+
+/**
+ * Moves money between two accounts the core knows about — a pip, a
+ * workplace, or the treasury. The bank has already made this transfer (or
+ * this intent originates one for it, on the purchase path where the pip's
+ * decision is made inside a tick); this is the copy that lets step() answer
+ * "can this pip afford it" without a network call. The core is authoritative
+ * for the moment of purchase, the bank for history and solvency.
+ *
+ * @generated from message pips.sim.v1.TransferIntent
+ */
+export type TransferIntent = Message<"pips.sim.v1.TransferIntent"> & {
+  /**
+   * Namespaced: "pip:412", "workplace:3", "treasury".
+   *
+   * @generated from field: string payer_account_id = 1;
+   */
+  payerAccountId: string;
+
+  /**
+   * @generated from field: string payee_account_id = 2;
+   */
+  payeeAccountId: string;
+
+  /**
+   * @generated from field: int64 amount = 3;
+   */
+  amount: bigint;
+
+  /**
+   * 0 (RESOURCE_KIND_UNSPECIFIED) for a pure money move, e.g. a wage credit.
+   * Set when the payer is buying pips.workplace.v1.ResourceKind — the core
+   * also runs Consume for the payer in the same intent. Declared as int32,
+   * not pips.workplace.v1.ResourceKind, because workplace.proto already
+   * imports this file and a back-import would be circular.
+   *
+   * @generated from field: int32 resource_kind = 4;
+   */
+  resourceKind: number;
+
+  /**
+   * @generated from field: uint64 tick = 5;
+   */
+  tick: bigint;
+
+  /**
+   * What kind of movement this is. Load-bearing, not descriptive: the
+   * treasury is exempt from the balance check because issuance is the money
+   * supply growing on purpose, and that exemption is granted by this field
+   * rather than inferred from the payer being the treasury. Without it every
+   * transfer out of the treasury can mint, and the core has no way to tell an
+   * issuance from a mistake.
+   *
+   * @generated from field: pips.sim.v1.TransferKind kind = 6;
+   */
+  kind: TransferKind;
+};
+
+/**
+ * Describes the message pips.sim.v1.TransferIntent.
+ * Use `create(TransferIntentSchema)` to create a new message.
+ */
+export const TransferIntentSchema: GenMessage<TransferIntent> = /*@__PURE__*/
+  messageDesc(file_pips_sim_v1_sim, 20);
+
+/**
+ * Payroll, batched. A workplace's shift population is paid in one intent
+ * carrying every pip's credit, rather than one intent per pip — the number
+ * of pips employed does not get to set the tick budget.
+ *
+ * @generated from message pips.sim.v1.CreditBalancesIntent
+ */
+export type CreditBalancesIntent = Message<"pips.sim.v1.CreditBalancesIntent"> & {
+  /**
+   * @generated from field: string payer_account_id = 1;
+   */
+  payerAccountId: string;
+
+  /**
+   * @generated from field: repeated pips.sim.v1.CreditBalancesIntent.Credit credits = 2;
+   */
+  credits: CreditBalancesIntent_Credit[];
+
+  /**
+   * @generated from field: uint64 tick = 3;
+   */
+  tick: bigint;
+};
+
+/**
+ * Describes the message pips.sim.v1.CreditBalancesIntent.
+ * Use `create(CreditBalancesIntentSchema)` to create a new message.
+ */
+export const CreditBalancesIntentSchema: GenMessage<CreditBalancesIntent> = /*@__PURE__*/
+  messageDesc(file_pips_sim_v1_sim, 21);
+
+/**
+ * @generated from message pips.sim.v1.CreditBalancesIntent.Credit
+ */
+export type CreditBalancesIntent_Credit = Message<"pips.sim.v1.CreditBalancesIntent.Credit"> & {
+  /**
+   * @generated from field: uint64 pip_id = 1;
+   */
+  pipId: bigint;
+
+  /**
+   * @generated from field: int64 amount = 2;
+   */
+  amount: bigint;
+};
+
+/**
+ * Describes the message pips.sim.v1.CreditBalancesIntent.Credit.
+ * Use `create(CreditBalancesIntent_CreditSchema)` to create a new message.
+ */
+export const CreditBalancesIntent_CreditSchema: GenMessage<CreditBalancesIntent_Credit> = /*@__PURE__*/
+  messageDesc(file_pips_sim_v1_sim, 21, 0);
 
 /**
  * @generated from enum pips.sim.v1.Need
@@ -665,6 +851,48 @@ export enum PipActivity {
  */
 export const PipActivitySchema: GenEnum<PipActivity> = /*@__PURE__*/
   enumDesc(file_pips_sim_v1_sim, 1);
+
+/**
+ * Mirrors pips.bank.v1.TransferKind. Deliberately a second declaration rather
+ * than an import: the bank's enum describes a row in a journal, this one
+ * describes a privilege the core grants while applying an intent. They happen
+ * to have the same members today; tying them together would make the core's
+ * rules change whenever bookkeeping gains a category.
+ *
+ * @generated from enum pips.sim.v1.TransferKind
+ */
+export enum TransferKind {
+  /**
+   * @generated from enum value: TRANSFER_KIND_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: TRANSFER_KIND_WAGE = 1;
+   */
+  WAGE = 1,
+
+  /**
+   * @generated from enum value: TRANSFER_KIND_PURCHASE = 2;
+   */
+  PURCHASE = 2,
+
+  /**
+   * @generated from enum value: TRANSFER_KIND_ISSUANCE = 3;
+   */
+  ISSUANCE = 3,
+
+  /**
+   * @generated from enum value: TRANSFER_KIND_ESCHEAT = 4;
+   */
+  ESCHEAT = 4,
+}
+
+/**
+ * Describes the enum pips.sim.v1.TransferKind.
+ */
+export const TransferKindSchema: GenEnum<TransferKind> = /*@__PURE__*/
+  enumDesc(file_pips_sim_v1_sim, 2);
 
 /**
  * The simulation core. Everything here is a COMMAND — the caller waits for an

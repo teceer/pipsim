@@ -33,6 +33,10 @@ message EventEnvelope {
     ResourceProduced resource_produced = 20;
     WorkplaceBuilt workplace_built = 21;
     WorkplaceDemolished workplace_demolished = 22;
+    WagePaid wage_paid = 23;
+    PurchaseMade purchase_made = 24;
+    AccountOverdrawn account_overdrawn = 25;
+    MoneyIssued money_issued = 26;
   }
 }
 
@@ -87,4 +91,34 @@ message WorkplaceBuilt {
 message WorkplaceDemolished {
   uint64 workplace_id = 1;
   string reason = 2;
+}
+
+// --- money -------------------------------------------------------------------
+//
+// Emitted by services/bank. payer/payee are the bank's namespaced account ids
+// ("pip:412", "workplace:3", "treasury"), not bare numeric ids, because a
+// consumer needs to tell the holder kind apart without a second lookup.
+
+message WagePaid {
+  string payer = 1;
+  string payee = 2;
+  int64 amount = 3;
+}
+
+message PurchaseMade {
+  string payer = 1;
+  string payee = 2;
+  int64 amount = 3;
+  pips.workplace.v1.ResourceKind kind = 4;
+}
+
+message AccountOverdrawn {
+  string account = 1;
+  int64 attempted_amount = 2;
+  int64 balance = 3;
+}
+
+message MoneyIssued {
+  string payee = 1;
+  int64 amount = 2;
 }

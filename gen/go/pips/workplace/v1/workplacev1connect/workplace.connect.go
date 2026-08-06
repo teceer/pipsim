@@ -49,6 +49,8 @@ const (
 	// WorkplaceServiceEndShiftProcedure is the fully-qualified name of the WorkplaceService's EndShift
 	// RPC.
 	WorkplaceServiceEndShiftProcedure = "/pips.workplace.v1.WorkplaceService/EndShift"
+	// WorkplaceServiceBuyProcedure is the fully-qualified name of the WorkplaceService's Buy RPC.
+	WorkplaceServiceBuyProcedure = "/pips.workplace.v1.WorkplaceService/Buy"
 )
 
 // WorkplaceServiceClient is a client for the pips.workplace.v1.WorkplaceService service.
@@ -73,6 +75,11 @@ type WorkplaceServiceClient interface {
 	Work(context.Context, *connect.Request[v1.WorkRequest]) (*connect.Response[v1.WorkResponse], error)
 	// A pip ends the shift, voluntarily or not.
 	EndShift(context.Context, *connect.Request[v1.EndShiftRequest]) (*connect.Response[v1.EndShiftResponse], error)
+	// A pip buys one unit of something this workplace sells. The workplace only
+	// confirms the kind and the price it advertises in `Describe.sells` — it
+	// never moves money itself. The gateway does that through the bank, then
+	// tells sim-core what the resource does to the pip via a TransferIntent.
+	Buy(context.Context, *connect.Request[v1.BuyRequest]) (*connect.Response[v1.BuyResponse], error)
 }
 
 // NewWorkplaceServiceClient constructs a client for the pips.workplace.v1.WorkplaceService service.
@@ -122,6 +129,12 @@ func NewWorkplaceServiceClient(httpClient connect.HTTPClient, baseURL string, op
 			connect.WithSchema(workplaceServiceMethods.ByName("EndShift")),
 			connect.WithClientOptions(opts...),
 		),
+		buy: connect.NewClient[v1.BuyRequest, v1.BuyResponse](
+			httpClient,
+			baseURL+WorkplaceServiceBuyProcedure,
+			connect.WithSchema(workplaceServiceMethods.ByName("Buy")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -133,6 +146,7 @@ type workplaceServiceClient struct {
 	startShift *connect.Client[v1.StartShiftRequest, v1.StartShiftResponse]
 	work       *connect.Client[v1.WorkRequest, v1.WorkResponse]
 	endShift   *connect.Client[v1.EndShiftRequest, v1.EndShiftResponse]
+	buy        *connect.Client[v1.BuyRequest, v1.BuyResponse]
 }
 
 // List calls pips.workplace.v1.WorkplaceService.List.
@@ -165,6 +179,11 @@ func (c *workplaceServiceClient) EndShift(ctx context.Context, req *connect.Requ
 	return c.endShift.CallUnary(ctx, req)
 }
 
+// Buy calls pips.workplace.v1.WorkplaceService.Buy.
+func (c *workplaceServiceClient) Buy(ctx context.Context, req *connect.Request[v1.BuyRequest]) (*connect.Response[v1.BuyResponse], error) {
+	return c.buy.CallUnary(ctx, req)
+}
+
 // WorkplaceServiceHandler is an implementation of the pips.workplace.v1.WorkplaceService service.
 type WorkplaceServiceHandler interface {
 	// Every building this service hosts.
@@ -187,6 +206,11 @@ type WorkplaceServiceHandler interface {
 	Work(context.Context, *connect.Request[v1.WorkRequest]) (*connect.Response[v1.WorkResponse], error)
 	// A pip ends the shift, voluntarily or not.
 	EndShift(context.Context, *connect.Request[v1.EndShiftRequest]) (*connect.Response[v1.EndShiftResponse], error)
+	// A pip buys one unit of something this workplace sells. The workplace only
+	// confirms the kind and the price it advertises in `Describe.sells` — it
+	// never moves money itself. The gateway does that through the bank, then
+	// tells sim-core what the resource does to the pip via a TransferIntent.
+	Buy(context.Context, *connect.Request[v1.BuyRequest]) (*connect.Response[v1.BuyResponse], error)
 }
 
 // NewWorkplaceServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -232,6 +256,12 @@ func NewWorkplaceServiceHandler(svc WorkplaceServiceHandler, opts ...connect.Han
 		connect.WithSchema(workplaceServiceMethods.ByName("EndShift")),
 		connect.WithHandlerOptions(opts...),
 	)
+	workplaceServiceBuyHandler := connect.NewUnaryHandler(
+		WorkplaceServiceBuyProcedure,
+		svc.Buy,
+		connect.WithSchema(workplaceServiceMethods.ByName("Buy")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/pips.workplace.v1.WorkplaceService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case WorkplaceServiceListProcedure:
@@ -246,6 +276,8 @@ func NewWorkplaceServiceHandler(svc WorkplaceServiceHandler, opts ...connect.Han
 			workplaceServiceWorkHandler.ServeHTTP(w, r)
 		case WorkplaceServiceEndShiftProcedure:
 			workplaceServiceEndShiftHandler.ServeHTTP(w, r)
+		case WorkplaceServiceBuyProcedure:
+			workplaceServiceBuyHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -277,4 +309,8 @@ func (UnimplementedWorkplaceServiceHandler) Work(context.Context, *connect.Reque
 
 func (UnimplementedWorkplaceServiceHandler) EndShift(context.Context, *connect.Request[v1.EndShiftRequest]) (*connect.Response[v1.EndShiftResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pips.workplace.v1.WorkplaceService.EndShift is not implemented"))
+}
+
+func (UnimplementedWorkplaceServiceHandler) Buy(context.Context, *connect.Request[v1.BuyRequest]) (*connect.Response[v1.BuyResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("pips.workplace.v1.WorkplaceService.Buy is not implemented"))
 }

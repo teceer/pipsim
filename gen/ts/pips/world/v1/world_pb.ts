@@ -6,7 +6,7 @@ import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegen
 import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
 import type { Pip, Vec2, Workplace, WorldDelta } from "../../sim/v1/sim_pb";
 import { file_pips_sim_v1_sim } from "../../sim/v1/sim_pb";
-import type { DescribeResponse } from "../../workplace/v1/workplace_pb";
+import type { DescribeResponse, ResourceKind } from "../../workplace/v1/workplace_pb";
 import { file_pips_workplace_v1_workplace } from "../../workplace/v1/workplace_pb";
 import type { Message } from "@bufbuild/protobuf";
 
@@ -14,7 +14,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file pips/world/v1/world.proto.
  */
 export const file_pips_world_v1_world: GenFile = /*@__PURE__*/
-  fileDesc("ChlwaXBzL3dvcmxkL3YxL3dvcmxkLnByb3RvEg1waXBzLndvcmxkLnYxIiUKEEpvaW5Xb3JsZFJlcXVlc3QSEQoJY2xpZW50X2lkGAEgASgJIsgBChFKb2luV29ybGRSZXNwb25zZRIMCgR0aWNrGAEgASgEEg8KB3RpY2tfaHoYAiABKAUSEAoIc2ltX3NlZWQYAyABKAQSHgoEcGlwcxgEIAMoCzIQLnBpcHMuc2ltLnYxLlBpcBI3Cgp3b3JrcGxhY2VzGAUgAygLMiMucGlwcy53b3JrcGxhY2UudjEuRGVzY3JpYmVSZXNwb25zZRIpCglidWlsZGluZ3MYBiADKAsyFi5waXBzLnNpbS52MS5Xb3JrcGxhY2UiOgoSU3RyZWFtV29ybGRSZXF1ZXN0EhEKCWNsaWVudF9pZBgBIAEoCRIRCglmcm9tX3RpY2sYAiABKAQifgoTU3RyZWFtV29ybGRSZXNwb25zZRImCgVkZWx0YRgBIAEoCzIXLnBpcHMuc2ltLnYxLldvcmxkRGVsdGESPwoSY2hhbmdlZF93b3JrcGxhY2VzGAIgAygLMiMucGlwcy53b3JrcGxhY2UudjEuRGVzY3JpYmVSZXNwb25zZSJKChVCdWlsZFdvcmtwbGFjZVJlcXVlc3QSDAoEa2luZBgBIAEoCRIjCghwb3NpdGlvbhgCIAEoCzIRLnBpcHMuc2ltLnYxLlZlYzIiRQoWQnVpbGRXb3JrcGxhY2VSZXNwb25zZRIUCgx3b3JrcGxhY2VfaWQYASABKAQSFQoNcmVhZHlfYXRfdGljaxgCIAEoBCI5ChFBc3NpZ25Xb3JrUmVxdWVzdBIOCgZwaXBfaWQYASABKAQSFAoMd29ya3BsYWNlX2lkGAIgASgEIjYKEkFzc2lnbldvcmtSZXNwb25zZRIQCghhY2NlcHRlZBgBIAEoCBIOCgZyZWFzb24YAiABKAky6AIKDFdvcmxkU2VydmljZRJOCglKb2luV29ybGQSHy5waXBzLndvcmxkLnYxLkpvaW5Xb3JsZFJlcXVlc3QaIC5waXBzLndvcmxkLnYxLkpvaW5Xb3JsZFJlc3BvbnNlElYKC1N0cmVhbVdvcmxkEiEucGlwcy53b3JsZC52MS5TdHJlYW1Xb3JsZFJlcXVlc3QaIi5waXBzLndvcmxkLnYxLlN0cmVhbVdvcmxkUmVzcG9uc2UwARJdCg5CdWlsZFdvcmtwbGFjZRIkLnBpcHMud29ybGQudjEuQnVpbGRXb3JrcGxhY2VSZXF1ZXN0GiUucGlwcy53b3JsZC52MS5CdWlsZFdvcmtwbGFjZVJlc3BvbnNlElEKCkFzc2lnbldvcmsSIC5waXBzLndvcmxkLnYxLkFzc2lnbldvcmtSZXF1ZXN0GiEucGlwcy53b3JsZC52MS5Bc3NpZ25Xb3JrUmVzcG9uc2VCrAEKEWNvbS5waXBzLndvcmxkLnYxQgpXb3JsZFByb3RvUAFaNWdpdGh1Yi5jb20vdGVjZWVyL3BpcHNpbS9nZW4vZ28vcGlwcy93b3JsZC92MTt3b3JsZHYxogIDUFdYqgINUGlwcy5Xb3JsZC5WMcoCDVBpcHNcV29ybGRcVjHiAhlQaXBzXFdvcmxkXFYxXEdQQk1ldGFkYXRh6gIPUGlwczo6V29ybGQ6OlYxYgZwcm90bzM", [file_pips_sim_v1_sim, file_pips_workplace_v1_workplace]);
+  fileDesc("ChlwaXBzL3dvcmxkL3YxL3dvcmxkLnByb3RvEg1waXBzLndvcmxkLnYxIiUKEEpvaW5Xb3JsZFJlcXVlc3QSEQoJY2xpZW50X2lkGAEgASgJIsgBChFKb2luV29ybGRSZXNwb25zZRIMCgR0aWNrGAEgASgEEg8KB3RpY2tfaHoYAiABKAUSEAoIc2ltX3NlZWQYAyABKAQSHgoEcGlwcxgEIAMoCzIQLnBpcHMuc2ltLnYxLlBpcBI3Cgp3b3JrcGxhY2VzGAUgAygLMiMucGlwcy53b3JrcGxhY2UudjEuRGVzY3JpYmVSZXNwb25zZRIpCglidWlsZGluZ3MYBiADKAsyFi5waXBzLnNpbS52MS5Xb3JrcGxhY2UiOgoSU3RyZWFtV29ybGRSZXF1ZXN0EhEKCWNsaWVudF9pZBgBIAEoCRIRCglmcm9tX3RpY2sYAiABKAQifgoTU3RyZWFtV29ybGRSZXNwb25zZRImCgVkZWx0YRgBIAEoCzIXLnBpcHMuc2ltLnYxLldvcmxkRGVsdGESPwoSY2hhbmdlZF93b3JrcGxhY2VzGAIgAygLMiMucGlwcy53b3JrcGxhY2UudjEuRGVzY3JpYmVSZXNwb25zZSJKChVCdWlsZFdvcmtwbGFjZVJlcXVlc3QSDAoEa2luZBgBIAEoCRIjCghwb3NpdGlvbhgCIAEoCzIRLnBpcHMuc2ltLnYxLlZlYzIiRQoWQnVpbGRXb3JrcGxhY2VSZXNwb25zZRIUCgx3b3JrcGxhY2VfaWQYASABKAQSFQoNcmVhZHlfYXRfdGljaxgCIAEoBCI5ChFBc3NpZ25Xb3JrUmVxdWVzdBIOCgZwaXBfaWQYASABKAQSFAoMd29ya3BsYWNlX2lkGAIgASgEIjYKEkFzc2lnbldvcmtSZXNwb25zZRIQCghhY2NlcHRlZBgBIAEoCBIOCgZyZWFzb24YAiABKAkiYQoKQnV5UmVxdWVzdBIOCgZwaXBfaWQYASABKAQSFAoMd29ya3BsYWNlX2lkGAIgASgEEi0KBGtpbmQYAyABKA4yHy5waXBzLndvcmtwbGFjZS52MS5SZXNvdXJjZUtpbmQiOAoLQnV5UmVzcG9uc2USCgoCb2sYASABKAgSDgoGcmVhc29uGAIgASgJEg0KBXByaWNlGAMgASgDMqYDCgxXb3JsZFNlcnZpY2USTgoJSm9pbldvcmxkEh8ucGlwcy53b3JsZC52MS5Kb2luV29ybGRSZXF1ZXN0GiAucGlwcy53b3JsZC52MS5Kb2luV29ybGRSZXNwb25zZRJWCgtTdHJlYW1Xb3JsZBIhLnBpcHMud29ybGQudjEuU3RyZWFtV29ybGRSZXF1ZXN0GiIucGlwcy53b3JsZC52MS5TdHJlYW1Xb3JsZFJlc3BvbnNlMAESXQoOQnVpbGRXb3JrcGxhY2USJC5waXBzLndvcmxkLnYxLkJ1aWxkV29ya3BsYWNlUmVxdWVzdBolLnBpcHMud29ybGQudjEuQnVpbGRXb3JrcGxhY2VSZXNwb25zZRJRCgpBc3NpZ25Xb3JrEiAucGlwcy53b3JsZC52MS5Bc3NpZ25Xb3JrUmVxdWVzdBohLnBpcHMud29ybGQudjEuQXNzaWduV29ya1Jlc3BvbnNlEjwKA0J1eRIZLnBpcHMud29ybGQudjEuQnV5UmVxdWVzdBoaLnBpcHMud29ybGQudjEuQnV5UmVzcG9uc2VCrAEKEWNvbS5waXBzLndvcmxkLnYxQgpXb3JsZFByb3RvUAFaNWdpdGh1Yi5jb20vdGVjZWVyL3BpcHNpbS9nZW4vZ28vcGlwcy93b3JsZC92MTt3b3JsZHYxogIDUFdYqgINUGlwcy5Xb3JsZC5WMcoCDVBpcHNcV29ybGRcVjHiAhlQaXBzXFdvcmxkXFYxXEdQQk1ldGFkYXRh6gIPUGlwczo6V29ybGQ6OlYxYgZwcm90bzM", [file_pips_sim_v1_sim, file_pips_workplace_v1_workplace]);
 
 /**
  * @generated from message pips.world.v1.JoinWorldRequest
@@ -220,6 +220,60 @@ export const AssignWorkResponseSchema: GenMessage<AssignWorkResponse> = /*@__PUR
   messageDesc(file_pips_world_v1_world, 7);
 
 /**
+ * @generated from message pips.world.v1.BuyRequest
+ */
+export type BuyRequest = Message<"pips.world.v1.BuyRequest"> & {
+  /**
+   * @generated from field: uint64 pip_id = 1;
+   */
+  pipId: bigint;
+
+  /**
+   * @generated from field: uint64 workplace_id = 2;
+   */
+  workplaceId: bigint;
+
+  /**
+   * @generated from field: pips.workplace.v1.ResourceKind kind = 3;
+   */
+  kind: ResourceKind;
+};
+
+/**
+ * Describes the message pips.world.v1.BuyRequest.
+ * Use `create(BuyRequestSchema)` to create a new message.
+ */
+export const BuyRequestSchema: GenMessage<BuyRequest> = /*@__PURE__*/
+  messageDesc(file_pips_world_v1_world, 8);
+
+/**
+ * @generated from message pips.world.v1.BuyResponse
+ */
+export type BuyResponse = Message<"pips.world.v1.BuyResponse"> & {
+  /**
+   * @generated from field: bool ok = 1;
+   */
+  ok: boolean;
+
+  /**
+   * @generated from field: string reason = 2;
+   */
+  reason: string;
+
+  /**
+   * @generated from field: int64 price = 3;
+   */
+  price: bigint;
+};
+
+/**
+ * Describes the message pips.world.v1.BuyResponse.
+ * Use `create(BuyResponseSchema)` to create a new message.
+ */
+export const BuyResponseSchema: GenMessage<BuyResponse> = /*@__PURE__*/
+  messageDesc(file_pips_world_v1_world, 9);
+
+/**
  * The client-facing API. Served over Connect-RPC, which means the browser can
  * call it directly — no gRPC-Web bridge, no Envoy.
  *
@@ -268,6 +322,18 @@ export const WorldService: GenService<{
     methodKind: "unary";
     input: typeof AssignWorkRequestSchema;
     output: typeof AssignWorkResponseSchema;
+  },
+  /**
+   * A pip buys one unit of something a workplace sells. The gateway calls the
+   * workplace for the price, moves the money through the bank, then tells
+   * sim-core what the purchase does to the pip via a TransferIntent.
+   *
+   * @generated from rpc pips.world.v1.WorldService.Buy
+   */
+  buy: {
+    methodKind: "unary";
+    input: typeof BuyRequestSchema;
+    output: typeof BuyResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_pips_world_v1_world, 0);

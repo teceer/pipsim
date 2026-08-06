@@ -12,7 +12,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file pips/workplace/v1/workplace.proto.
  */
 export const file_pips_workplace_v1_workplace: GenFile = /*@__PURE__*/
-  fileDesc("CiFwaXBzL3dvcmtwbGFjZS92MS93b3JrcGxhY2UucHJvdG8SEXBpcHMud29ya3BsYWNlLnYxIg0KC0xpc3RSZXF1ZXN0IkcKDExpc3RSZXNwb25zZRI3Cgp3b3JrcGxhY2VzGAEgAygLMiMucGlwcy53b3JrcGxhY2UudjEuRGVzY3JpYmVSZXNwb25zZSInCg9EZXNjcmliZVJlcXVlc3QSFAoMd29ya3BsYWNlX2lkGAEgASgEIoUCChBEZXNjcmliZVJlc3BvbnNlEhQKDHdvcmtwbGFjZV9pZBgBIAEoBBIMCgRraW5kGAIgASgJEhQKDGRpc3BsYXlfbmFtZRgDIAEoCRITCgttYXhfd29ya2VycxgEIAEoBRIXCg9jdXJyZW50X3dvcmtlcnMYBSABKAUSIwoIcG9zaXRpb24YBiABKAsyES5waXBzLnNpbS52MS5WZWMyEjEKCHByb2R1Y2VzGAcgAygOMh8ucGlwcy53b3JrcGxhY2UudjEuUmVzb3VyY2VLaW5kEjEKCGNvbnN1bWVzGAggAygOMh8ucGlwcy53b3JrcGxhY2UudjEuUmVzb3VyY2VLaW5kIjgKEENhbkVtcGxveVJlcXVlc3QSFAoMd29ya3BsYWNlX2lkGAEgASgEEg4KBnBpcF9pZBgCIAEoBCI0ChFDYW5FbXBsb3lSZXNwb25zZRIPCgdhbGxvd2VkGAEgASgIEg4KBnJlYXNvbhgCIAEoCSJHChFTdGFydFNoaWZ0UmVxdWVzdBIUCgx3b3JrcGxhY2VfaWQYASABKAQSDgoGcGlwX2lkGAIgASgEEgwKBHRpY2sYAyABKAQiNgoSU3RhcnRTaGlmdFJlc3BvbnNlEhAKCGFjY2VwdGVkGAEgASgIEg4KBnJlYXNvbhgCIAEoCSJBCgtXb3JrUmVxdWVzdBIUCgx3b3JrcGxhY2VfaWQYASABKAQSDgoGcGlwX2lkGAIgASgEEgwKBHRpY2sYAyABKAQi1gEKDFdvcmtSZXNwb25zZRIzCghwcm9kdWNlZBgBIAMoCzIhLnBpcHMud29ya3BsYWNlLnYxLlJlc291cmNlQW1vdW50EkQKC25lZWRfZGVsdGFzGAIgAygLMi8ucGlwcy53b3JrcGxhY2UudjEuV29ya1Jlc3BvbnNlLk5lZWREZWx0YXNFbnRyeRIYChBzaGlmdF9zaG91bGRfZW5kGAMgASgIGjEKD05lZWREZWx0YXNFbnRyeRILCgNrZXkYASABKAUSDQoFdmFsdWUYAiABKAU6AjgBIk8KDlJlc291cmNlQW1vdW50Ei0KBGtpbmQYASABKA4yHy5waXBzLndvcmtwbGFjZS52MS5SZXNvdXJjZUtpbmQSDgoGYW1vdW50GAIgASgFIlUKD0VuZFNoaWZ0UmVxdWVzdBIUCgx3b3JrcGxhY2VfaWQYASABKAQSDgoGcGlwX2lkGAIgASgEEgwKBHRpY2sYAyABKAQSDgoGcmVhc29uGAQgASgJIhIKEEVuZFNoaWZ0UmVzcG9uc2UqjQEKDFJlc291cmNlS2luZBIdChlSRVNPVVJDRV9LSU5EX1VOU1BFQ0lGSUVEEAASFwoTUkVTT1VSQ0VfS0lORF9HUkFJThABEhYKElJFU09VUkNFX0tJTkRfRk9PRBACEhYKElJFU09VUkNFX0tJTkRfVE9PTBADEhUKEVJFU09VUkNFX0tJTkRfQUxFEAQygQQKEFdvcmtwbGFjZVNlcnZpY2USRwoETGlzdBIeLnBpcHMud29ya3BsYWNlLnYxLkxpc3RSZXF1ZXN0Gh8ucGlwcy53b3JrcGxhY2UudjEuTGlzdFJlc3BvbnNlElMKCERlc2NyaWJlEiIucGlwcy53b3JrcGxhY2UudjEuRGVzY3JpYmVSZXF1ZXN0GiMucGlwcy53b3JrcGxhY2UudjEuRGVzY3JpYmVSZXNwb25zZRJWCglDYW5FbXBsb3kSIy5waXBzLndvcmtwbGFjZS52MS5DYW5FbXBsb3lSZXF1ZXN0GiQucGlwcy53b3JrcGxhY2UudjEuQ2FuRW1wbG95UmVzcG9uc2USWQoKU3RhcnRTaGlmdBIkLnBpcHMud29ya3BsYWNlLnYxLlN0YXJ0U2hpZnRSZXF1ZXN0GiUucGlwcy53b3JrcGxhY2UudjEuU3RhcnRTaGlmdFJlc3BvbnNlEkcKBFdvcmsSHi5waXBzLndvcmtwbGFjZS52MS5Xb3JrUmVxdWVzdBofLnBpcHMud29ya3BsYWNlLnYxLldvcmtSZXNwb25zZRJTCghFbmRTaGlmdBIiLnBpcHMud29ya3BsYWNlLnYxLkVuZFNoaWZ0UmVxdWVzdBojLnBpcHMud29ya3BsYWNlLnYxLkVuZFNoaWZ0UmVzcG9uc2VCzAEKFWNvbS5waXBzLndvcmtwbGFjZS52MUIOV29ya3BsYWNlUHJvdG9QAVo9Z2l0aHViLmNvbS90ZWNlZXIvcGlwc2ltL2dlbi9nby9waXBzL3dvcmtwbGFjZS92MTt3b3JrcGxhY2V2MaICA1BXWKoCEVBpcHMuV29ya3BsYWNlLlYxygIRUGlwc1xXb3JrcGxhY2VcVjHiAh1QaXBzXFdvcmtwbGFjZVxWMVxHUEJNZXRhZGF0YeoCE1BpcHM6OldvcmtwbGFjZTo6VjFiBnByb3RvMw", [file_pips_sim_v1_sim]);
+  fileDesc("CiFwaXBzL3dvcmtwbGFjZS92MS93b3JrcGxhY2UucHJvdG8SEXBpcHMud29ya3BsYWNlLnYxIg0KC0xpc3RSZXF1ZXN0IkcKDExpc3RSZXNwb25zZRI3Cgp3b3JrcGxhY2VzGAEgAygLMiMucGlwcy53b3JrcGxhY2UudjEuRGVzY3JpYmVSZXNwb25zZSInCg9EZXNjcmliZVJlcXVlc3QSFAoMd29ya3BsYWNlX2lkGAEgASgEIswCChBEZXNjcmliZVJlc3BvbnNlEhQKDHdvcmtwbGFjZV9pZBgBIAEoBBIMCgRraW5kGAIgASgJEhQKDGRpc3BsYXlfbmFtZRgDIAEoCRITCgttYXhfd29ya2VycxgEIAEoBRIXCg9jdXJyZW50X3dvcmtlcnMYBSABKAUSIwoIcG9zaXRpb24YBiABKAsyES5waXBzLnNpbS52MS5WZWMyEjEKCHByb2R1Y2VzGAcgAygOMh8ucGlwcy53b3JrcGxhY2UudjEuUmVzb3VyY2VLaW5kEjEKCGNvbnN1bWVzGAggAygOMh8ucGlwcy53b3JrcGxhY2UudjEuUmVzb3VyY2VLaW5kEgwKBHdhZ2UYCSABKAMSDgoGZWZmb3J0GAogASgFEicKBXNlbGxzGAsgAygLMhgucGlwcy53b3JrcGxhY2UudjEuT2ZmZXIiRQoFT2ZmZXISLQoEa2luZBgBIAEoDjIfLnBpcHMud29ya3BsYWNlLnYxLlJlc291cmNlS2luZBINCgVwcmljZRgCIAEoAyI4ChBDYW5FbXBsb3lSZXF1ZXN0EhQKDHdvcmtwbGFjZV9pZBgBIAEoBBIOCgZwaXBfaWQYAiABKAQiNAoRQ2FuRW1wbG95UmVzcG9uc2USDwoHYWxsb3dlZBgBIAEoCBIOCgZyZWFzb24YAiABKAkiRwoRU3RhcnRTaGlmdFJlcXVlc3QSFAoMd29ya3BsYWNlX2lkGAEgASgEEg4KBnBpcF9pZBgCIAEoBBIMCgR0aWNrGAMgASgEIjYKElN0YXJ0U2hpZnRSZXNwb25zZRIQCghhY2NlcHRlZBgBIAEoCBIOCgZyZWFzb24YAiABKAkiQQoLV29ya1JlcXVlc3QSFAoMd29ya3BsYWNlX2lkGAEgASgEEg4KBnBpcF9pZBgCIAEoBBIMCgR0aWNrGAMgASgEIugBCgxXb3JrUmVzcG9uc2USMwoIcHJvZHVjZWQYASADKAsyIS5waXBzLndvcmtwbGFjZS52MS5SZXNvdXJjZUFtb3VudBJICgtuZWVkX2RlbHRhcxgCIAMoCzIvLnBpcHMud29ya3BsYWNlLnYxLldvcmtSZXNwb25zZS5OZWVkRGVsdGFzRW50cnlCAhgBEhgKEHNoaWZ0X3Nob3VsZF9lbmQYAyABKAgSDAoEd2FnZRgEIAEoAxoxCg9OZWVkRGVsdGFzRW50cnkSCwoDa2V5GAEgASgFEg0KBXZhbHVlGAIgASgFOgI4ASJPCg5SZXNvdXJjZUFtb3VudBItCgRraW5kGAEgASgOMh8ucGlwcy53b3JrcGxhY2UudjEuUmVzb3VyY2VLaW5kEg4KBmFtb3VudBgCIAEoBSJVCg9FbmRTaGlmdFJlcXVlc3QSFAoMd29ya3BsYWNlX2lkGAEgASgEEg4KBnBpcF9pZBgCIAEoBBIMCgR0aWNrGAMgASgEEg4KBnJlYXNvbhgEIAEoCSISChBFbmRTaGlmdFJlc3BvbnNlIm8KCkJ1eVJlcXVlc3QSFAoMd29ya3BsYWNlX2lkGAEgASgEEg4KBnBpcF9pZBgCIAEoBBItCgRraW5kGAMgASgOMh8ucGlwcy53b3JrcGxhY2UudjEuUmVzb3VyY2VLaW5kEgwKBHRpY2sYBCABKAQibQoLQnV5UmVzcG9uc2USCgoCb2sYASABKAgSDgoGcmVhc29uGAIgASgJEg0KBXByaWNlGAMgASgDEjMKCHByb2R1Y2VkGAQgASgLMiEucGlwcy53b3JrcGxhY2UudjEuUmVzb3VyY2VBbW91bnQqjQEKDFJlc291cmNlS2luZBIdChlSRVNPVVJDRV9LSU5EX1VOU1BFQ0lGSUVEEAASFwoTUkVTT1VSQ0VfS0lORF9HUkFJThABEhYKElJFU09VUkNFX0tJTkRfRk9PRBACEhYKElJFU09VUkNFX0tJTkRfVE9PTBADEhUKEVJFU09VUkNFX0tJTkRfQUxFEAQyxwQKEFdvcmtwbGFjZVNlcnZpY2USRwoETGlzdBIeLnBpcHMud29ya3BsYWNlLnYxLkxpc3RSZXF1ZXN0Gh8ucGlwcy53b3JrcGxhY2UudjEuTGlzdFJlc3BvbnNlElMKCERlc2NyaWJlEiIucGlwcy53b3JrcGxhY2UudjEuRGVzY3JpYmVSZXF1ZXN0GiMucGlwcy53b3JrcGxhY2UudjEuRGVzY3JpYmVSZXNwb25zZRJWCglDYW5FbXBsb3kSIy5waXBzLndvcmtwbGFjZS52MS5DYW5FbXBsb3lSZXF1ZXN0GiQucGlwcy53b3JrcGxhY2UudjEuQ2FuRW1wbG95UmVzcG9uc2USWQoKU3RhcnRTaGlmdBIkLnBpcHMud29ya3BsYWNlLnYxLlN0YXJ0U2hpZnRSZXF1ZXN0GiUucGlwcy53b3JrcGxhY2UudjEuU3RhcnRTaGlmdFJlc3BvbnNlEkcKBFdvcmsSHi5waXBzLndvcmtwbGFjZS52MS5Xb3JrUmVxdWVzdBofLnBpcHMud29ya3BsYWNlLnYxLldvcmtSZXNwb25zZRJTCghFbmRTaGlmdBIiLnBpcHMud29ya3BsYWNlLnYxLkVuZFNoaWZ0UmVxdWVzdBojLnBpcHMud29ya3BsYWNlLnYxLkVuZFNoaWZ0UmVzcG9uc2USRAoDQnV5Eh0ucGlwcy53b3JrcGxhY2UudjEuQnV5UmVxdWVzdBoeLnBpcHMud29ya3BsYWNlLnYxLkJ1eVJlc3BvbnNlQswBChVjb20ucGlwcy53b3JrcGxhY2UudjFCDldvcmtwbGFjZVByb3RvUAFaPWdpdGh1Yi5jb20vdGVjZWVyL3BpcHNpbS9nZW4vZ28vcGlwcy93b3JrcGxhY2UvdjE7d29ya3BsYWNldjGiAgNQV1iqAhFQaXBzLldvcmtwbGFjZS5WMcoCEVBpcHNcV29ya3BsYWNlXFYx4gIdUGlwc1xXb3JrcGxhY2VcVjFcR1BCTWV0YWRhdGHqAhNQaXBzOjpXb3JrcGxhY2U6OlYxYgZwcm90bzM", [file_pips_sim_v1_sim]);
 
 /**
  * @generated from message pips.workplace.v1.ListRequest
@@ -109,6 +109,31 @@ export type DescribeResponse = Message<"pips.workplace.v1.DescribeResponse"> & {
    * @generated from field: repeated pips.workplace.v1.ResourceKind consumes = 8;
    */
   consumes: ResourceKind[];
+
+  /**
+   * What a shift here pays, per tick worked. 0 means unpaid.
+   *
+   * @generated from field: int64 wage = 9;
+   */
+  wage: bigint;
+
+  /**
+   * How demanding the work is. A scalar the building declares about the
+   * work, not a need delta — sim-core decides what effort costs, the same
+   * way it already prices Activity::Working. If this ever grows a per-need
+   * shape, it has become need_deltas again.
+   *
+   * @generated from field: int32 effort = 10;
+   */
+  effort: number;
+
+  /**
+   * What this workplace sells to pips, and at what price. Empty if it
+   * doesn't sell anything.
+   *
+   * @generated from field: repeated pips.workplace.v1.Offer sells = 11;
+   */
+  sells: Offer[];
 };
 
 /**
@@ -117,6 +142,28 @@ export type DescribeResponse = Message<"pips.workplace.v1.DescribeResponse"> & {
  */
 export const DescribeResponseSchema: GenMessage<DescribeResponse> = /*@__PURE__*/
   messageDesc(file_pips_workplace_v1_workplace, 3);
+
+/**
+ * @generated from message pips.workplace.v1.Offer
+ */
+export type Offer = Message<"pips.workplace.v1.Offer"> & {
+  /**
+   * @generated from field: pips.workplace.v1.ResourceKind kind = 1;
+   */
+  kind: ResourceKind;
+
+  /**
+   * @generated from field: int64 price = 2;
+   */
+  price: bigint;
+};
+
+/**
+ * Describes the message pips.workplace.v1.Offer.
+ * Use `create(OfferSchema)` to create a new message.
+ */
+export const OfferSchema: GenMessage<Offer> = /*@__PURE__*/
+  messageDesc(file_pips_workplace_v1_workplace, 4);
 
 /**
  * @generated from message pips.workplace.v1.CanEmployRequest
@@ -138,7 +185,7 @@ export type CanEmployRequest = Message<"pips.workplace.v1.CanEmployRequest"> & {
  * Use `create(CanEmployRequestSchema)` to create a new message.
  */
 export const CanEmployRequestSchema: GenMessage<CanEmployRequest> = /*@__PURE__*/
-  messageDesc(file_pips_workplace_v1_workplace, 4);
+  messageDesc(file_pips_workplace_v1_workplace, 5);
 
 /**
  * @generated from message pips.workplace.v1.CanEmployResponse
@@ -160,7 +207,7 @@ export type CanEmployResponse = Message<"pips.workplace.v1.CanEmployResponse"> &
  * Use `create(CanEmployResponseSchema)` to create a new message.
  */
 export const CanEmployResponseSchema: GenMessage<CanEmployResponse> = /*@__PURE__*/
-  messageDesc(file_pips_workplace_v1_workplace, 5);
+  messageDesc(file_pips_workplace_v1_workplace, 6);
 
 /**
  * @generated from message pips.workplace.v1.StartShiftRequest
@@ -187,7 +234,7 @@ export type StartShiftRequest = Message<"pips.workplace.v1.StartShiftRequest"> &
  * Use `create(StartShiftRequestSchema)` to create a new message.
  */
 export const StartShiftRequestSchema: GenMessage<StartShiftRequest> = /*@__PURE__*/
-  messageDesc(file_pips_workplace_v1_workplace, 6);
+  messageDesc(file_pips_workplace_v1_workplace, 7);
 
 /**
  * @generated from message pips.workplace.v1.StartShiftResponse
@@ -209,7 +256,7 @@ export type StartShiftResponse = Message<"pips.workplace.v1.StartShiftResponse">
  * Use `create(StartShiftResponseSchema)` to create a new message.
  */
 export const StartShiftResponseSchema: GenMessage<StartShiftResponse> = /*@__PURE__*/
-  messageDesc(file_pips_workplace_v1_workplace, 7);
+  messageDesc(file_pips_workplace_v1_workplace, 8);
 
 /**
  * @generated from message pips.workplace.v1.WorkRequest
@@ -236,7 +283,7 @@ export type WorkRequest = Message<"pips.workplace.v1.WorkRequest"> & {
  * Use `create(WorkRequestSchema)` to create a new message.
  */
 export const WorkRequestSchema: GenMessage<WorkRequest> = /*@__PURE__*/
-  messageDesc(file_pips_workplace_v1_workplace, 8);
+  messageDesc(file_pips_workplace_v1_workplace, 9);
 
 /**
  * @generated from message pips.workplace.v1.WorkResponse
@@ -248,9 +295,22 @@ export type WorkResponse = Message<"pips.workplace.v1.WorkResponse"> & {
   produced: ResourceAmount[];
 
   /**
-   * Deltas applied to the pip's needs, e.g. work makes it hungrier.
+   * Deprecated, and now always empty.
    *
-   * @generated from field: map<int32, int32> need_deltas = 2;
+   * ADR 0006 step 7 asked for this to be reserved. It cannot be: `make
+   * proto-lint` runs `buf breaking`, which refuses the deletion, and that
+   * rule is load-bearing — a topic with a week's retention holds messages
+   * that must still decode. So the field stays on the wire and dies by
+   * disuse instead.
+   *
+   * Nothing populates it. A workplace no longer has any opinion about a
+   * pip's needs: it reports what it produced and what it paid, and sim-core
+   * owns what a resource does to a body. A workplace that starts filling
+   * this in again has reintroduced the bug that let the tavern starve its
+   * own staff.
+   *
+   * @generated from field: map<int32, int32> need_deltas = 2 [deprecated = true];
+   * @deprecated
    */
   needDeltas: { [key: number]: number };
 
@@ -260,6 +320,14 @@ export type WorkResponse = Message<"pips.workplace.v1.WorkResponse"> & {
    * @generated from field: bool shift_should_end = 3;
    */
   shiftShouldEnd: boolean;
+
+  /**
+   * What this tick of work paid, proportional to elapsed ticks. The gateway
+   * moves it through the bank; the workplace only declares it.
+   *
+   * @generated from field: int64 wage = 4;
+   */
+  wage: bigint;
 };
 
 /**
@@ -267,7 +335,7 @@ export type WorkResponse = Message<"pips.workplace.v1.WorkResponse"> & {
  * Use `create(WorkResponseSchema)` to create a new message.
  */
 export const WorkResponseSchema: GenMessage<WorkResponse> = /*@__PURE__*/
-  messageDesc(file_pips_workplace_v1_workplace, 9);
+  messageDesc(file_pips_workplace_v1_workplace, 10);
 
 /**
  * @generated from message pips.workplace.v1.ResourceAmount
@@ -289,7 +357,7 @@ export type ResourceAmount = Message<"pips.workplace.v1.ResourceAmount"> & {
  * Use `create(ResourceAmountSchema)` to create a new message.
  */
 export const ResourceAmountSchema: GenMessage<ResourceAmount> = /*@__PURE__*/
-  messageDesc(file_pips_workplace_v1_workplace, 10);
+  messageDesc(file_pips_workplace_v1_workplace, 11);
 
 /**
  * @generated from message pips.workplace.v1.EndShiftRequest
@@ -321,7 +389,7 @@ export type EndShiftRequest = Message<"pips.workplace.v1.EndShiftRequest"> & {
  * Use `create(EndShiftRequestSchema)` to create a new message.
  */
 export const EndShiftRequestSchema: GenMessage<EndShiftRequest> = /*@__PURE__*/
-  messageDesc(file_pips_workplace_v1_workplace, 11);
+  messageDesc(file_pips_workplace_v1_workplace, 12);
 
 /**
  * @generated from message pips.workplace.v1.EndShiftResponse
@@ -334,7 +402,75 @@ export type EndShiftResponse = Message<"pips.workplace.v1.EndShiftResponse"> & {
  * Use `create(EndShiftResponseSchema)` to create a new message.
  */
 export const EndShiftResponseSchema: GenMessage<EndShiftResponse> = /*@__PURE__*/
-  messageDesc(file_pips_workplace_v1_workplace, 12);
+  messageDesc(file_pips_workplace_v1_workplace, 13);
+
+/**
+ * @generated from message pips.workplace.v1.BuyRequest
+ */
+export type BuyRequest = Message<"pips.workplace.v1.BuyRequest"> & {
+  /**
+   * @generated from field: uint64 workplace_id = 1;
+   */
+  workplaceId: bigint;
+
+  /**
+   * @generated from field: uint64 pip_id = 2;
+   */
+  pipId: bigint;
+
+  /**
+   * @generated from field: pips.workplace.v1.ResourceKind kind = 3;
+   */
+  kind: ResourceKind;
+
+  /**
+   * @generated from field: uint64 tick = 4;
+   */
+  tick: bigint;
+};
+
+/**
+ * Describes the message pips.workplace.v1.BuyRequest.
+ * Use `create(BuyRequestSchema)` to create a new message.
+ */
+export const BuyRequestSchema: GenMessage<BuyRequest> = /*@__PURE__*/
+  messageDesc(file_pips_workplace_v1_workplace, 14);
+
+/**
+ * @generated from message pips.workplace.v1.BuyResponse
+ */
+export type BuyResponse = Message<"pips.workplace.v1.BuyResponse"> & {
+  /**
+   * @generated from field: bool ok = 1;
+   */
+  ok: boolean;
+
+  /**
+   * @generated from field: string reason = 2;
+   */
+  reason: string;
+
+  /**
+   * The price at the moment of sale — matches Describe.sells, but pinned to
+   * this response so a caller never has to re-fetch Describe to know what it
+   * was charged.
+   *
+   * @generated from field: int64 price = 3;
+   */
+  price: bigint;
+
+  /**
+   * @generated from field: pips.workplace.v1.ResourceAmount produced = 4;
+   */
+  produced?: ResourceAmount | undefined;
+};
+
+/**
+ * Describes the message pips.workplace.v1.BuyResponse.
+ * Use `create(BuyResponseSchema)` to create a new message.
+ */
+export const BuyResponseSchema: GenMessage<BuyResponse> = /*@__PURE__*/
+  messageDesc(file_pips_workplace_v1_workplace, 15);
 
 /**
  * @generated from enum pips.workplace.v1.ResourceKind
@@ -450,6 +586,19 @@ export const WorkplaceService: GenService<{
     methodKind: "unary";
     input: typeof EndShiftRequestSchema;
     output: typeof EndShiftResponseSchema;
+  },
+  /**
+   * A pip buys one unit of something this workplace sells. The workplace only
+   * confirms the kind and the price it advertises in `Describe.sells` — it
+   * never moves money itself. The gateway does that through the bank, then
+   * tells sim-core what the resource does to the pip via a TransferIntent.
+   *
+   * @generated from rpc pips.workplace.v1.WorkplaceService.Buy
+   */
+  buy: {
+    methodKind: "unary";
+    input: typeof BuyRequestSchema;
+    output: typeof BuyResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_pips_workplace_v1_workplace, 0);

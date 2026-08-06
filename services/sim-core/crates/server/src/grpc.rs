@@ -16,7 +16,7 @@ use tokio_stream::wrappers::BroadcastStream;
 use tokio_stream::{Stream, StreamExt};
 use tonic::{Request, Response, Status};
 
-use sim::{Activity, Intent, Vec2, World};
+use sim::{AccountId, Activity, Intent, ResourceKind, TransferKind, Vec2, World};
 
 use crate::pb::pips::sim::v1 as pb;
 use pb::sim_service_server::SimService;
@@ -25,6 +25,53 @@ use pb::sim_service_server::SimService;
 const NEED_FOOD: i32 = 1;
 const NEED_REST: i32 = 2;
 const NEED_SOCIAL: i32 = 3;
+
+/// Mirrors `pips.sim.v1.TransferKind`. An unrecognised value maps to
+/// `Unspecified`, which grants no privilege — a transfer whose kind did not
+/// survive the wire must not be able to mint.
+fn transfer_kind(value: i32) -> TransferKind {
+    match pb::TransferKind::try_from(value) {
+        Ok(pb::TransferKind::Wage) => TransferKind::Wage,
+        Ok(pb::TransferKind::Purchase) => TransferKind::Purchase,
+        Ok(pb::TransferKind::Issuance) => TransferKind::Issuance,
+        Ok(pb::TransferKind::Escheat) => TransferKind::Escheat,
+        _ => TransferKind::Unspecified,
+    }
+}
+
+/// Mirrors `pips.workplace.v1.ResourceKind`. `TransferIntent.resource_kind`
+/// carries it as a bare int32 rather than the generated enum type, because
+/// `sim.proto` would otherwise have to import `workplace.proto`, which already
+/// imports `sim.proto` for `Vec2` — a cycle buf refuses to build.
+const RESOURCE_KIND_GRAIN: i32 = 1;
+const RESOURCE_KIND_FOOD: i32 = 2;
+const RESOURCE_KIND_TOOL: i32 = 3;
+const RESOURCE_KIND_ALE: i32 = 4;
+
+fn resource_kind(code: i32) -> Option<ResourceKind> {
+    match code {
+        RESOURCE_KIND_GRAIN => Some(ResourceKind::Grain),
+        RESOURCE_KIND_FOOD => Some(ResourceKind::Food),
+        RESOURCE_KIND_TOOL => Some(ResourceKind::Tool),
+        RESOURCE_KIND_ALE => Some(ResourceKind::Ale),
+        _ => None,
+    }
+}
+
+/// Parses the bank's namespaced account id ("pip:412", "workplace:3",
+/// "treasury") into the typed form `crates/sim` works with.
+fn account_id(raw: &str) -> Option<AccountId> {
+    if raw == "treasury" {
+        return Some(AccountId::Treasury);
+    }
+    let (kind, id) = raw.split_once(':')?;
+    let id: u64 = id.parse().ok()?;
+    match kind {
+        "pip" => Some(AccountId::Pip(id)),
+        "workplace" => Some(AccountId::Workplace(id)),
+        _ => None,
+    }
+}
 
 pub struct SimServiceImpl {
     pub world: Arc<Mutex<World>>,
@@ -54,8 +101,25 @@ fn workplaces(world: &World) -> Vec<pb::Workplace> {
             }),
             capacity: world.workplace_capacities[i],
             occupants: world.workplace_occupants[i],
+            sells: world.workplace_sells[i]
+                .iter()
+                .map(|(kind, price)| pb::WorkplaceOffer {
+                    resource_kind: resource_kind_code(*kind),
+                    price: *price,
+                })
+                .collect(),
         })
         .collect()
+}
+
+/// The inverse of `resource_kind`, for putting a price back on the wire.
+fn resource_kind_code(kind: ResourceKind) -> i32 {
+    match kind {
+        ResourceKind::Grain => RESOURCE_KIND_GRAIN,
+        ResourceKind::Food => RESOURCE_KIND_FOOD,
+        ResourceKind::Tool => RESOURCE_KIND_TOOL,
+        ResourceKind::Ale => RESOURCE_KIND_ALE,
+    }
 }
 
 fn needs_map(n: &sim::Needs) -> std::collections::HashMap<i32, i32> {
@@ -136,6 +200,7 @@ impl SimService for SimServiceImpl {
                 needs: needs_map(&w.needs[i]),
                 employer_workplace_id: w.employers[i],
                 inside_workplace_id: w.inside[i],
+                balance: w.balances[i],
             })
             .collect();
 
@@ -220,9 +285,54 @@ impl SimService for SimServiceImpl {
                     })
                     .unwrap_or(Vec2::ZERO),
                 capacity: r.capacity,
+                // An offer whose resource does not decode is dropped rather
+                // than defaulted: a price attached to a resource the core
+                // cannot name is not something to guess at.
+                sells: r
+                    .sells
+                    .iter()
+                    .filter_map(|o| resource_kind(o.resource_kind).map(|k| (k, o.price)))
+                    .collect(),
             },
             pb::submit_intent_request::Intent::EndEmployment(e) => {
                 Intent::EndEmployment { pip: e.pip_id }
+            }
+            pb::submit_intent_request::Intent::Transfer(t) => {
+                let (Some(payer), Some(payee)) = (
+                    account_id(&t.payer_account_id),
+                    account_id(&t.payee_account_id),
+                ) else {
+                    return Ok(Response::new(pb::SubmitIntentResponse {
+                        accepted: false,
+                        rejection_reason: "unparseable account id".into(),
+                        scheduled_tick: 0,
+                    }));
+                };
+                Intent::Transfer {
+                    payer,
+                    payee,
+                    amount: t.amount,
+                    resource_kind: resource_kind(t.resource_kind),
+                    kind: transfer_kind(t.kind),
+                }
+            }
+            pb::submit_intent_request::Intent::CreditBalances(c) => {
+                let Some(AccountId::Workplace(payer)) = account_id(&c.payer_account_id) else {
+                    return Ok(Response::new(pb::SubmitIntentResponse {
+                        accepted: false,
+                        rejection_reason: "credit_balances payer must be a workplace account"
+                            .into(),
+                        scheduled_tick: 0,
+                    }));
+                };
+                Intent::CreditBalances {
+                    payer,
+                    credits: c
+                        .credits
+                        .into_iter()
+                        .map(|cr| (cr.pip_id, cr.amount))
+                        .collect(),
+                }
             }
         };
 

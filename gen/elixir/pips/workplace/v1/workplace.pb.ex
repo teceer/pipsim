@@ -61,6 +61,21 @@ defmodule Pips.Workplace.V1.DescribeResponse do
   field :position, 6, type: Pips.Sim.V1.Vec2
   field :produces, 7, repeated: true, type: Pips.Workplace.V1.ResourceKind, enum: true
   field :consumes, 8, repeated: true, type: Pips.Workplace.V1.ResourceKind, enum: true
+  field :wage, 9, type: :int64
+  field :effort, 10, type: :int32
+  field :sells, 11, repeated: true, type: Pips.Workplace.V1.Offer
+end
+
+defmodule Pips.Workplace.V1.Offer do
+  @moduledoc false
+
+  use Protobuf,
+    full_name: "pips.workplace.v1.Offer",
+    protoc_gen_elixir_version: "0.17.0",
+    syntax: :proto3
+
+  field :kind, 1, type: Pips.Workplace.V1.ResourceKind, enum: true
+  field :price, 2, type: :int64
 end
 
 defmodule Pips.Workplace.V1.CanEmployRequest do
@@ -152,9 +167,11 @@ defmodule Pips.Workplace.V1.WorkResponse do
     repeated: true,
     type: Pips.Workplace.V1.WorkResponse.NeedDeltasEntry,
     json_name: "needDeltas",
-    map: true
+    map: true,
+    deprecated: true
 
   field :shift_should_end, 3, type: :bool, json_name: "shiftShouldEnd"
+  field :wage, 4, type: :int64
 end
 
 defmodule Pips.Workplace.V1.ResourceAmount do
@@ -190,4 +207,32 @@ defmodule Pips.Workplace.V1.EndShiftResponse do
     full_name: "pips.workplace.v1.EndShiftResponse",
     protoc_gen_elixir_version: "0.17.0",
     syntax: :proto3
+end
+
+defmodule Pips.Workplace.V1.BuyRequest do
+  @moduledoc false
+
+  use Protobuf,
+    full_name: "pips.workplace.v1.BuyRequest",
+    protoc_gen_elixir_version: "0.17.0",
+    syntax: :proto3
+
+  field :workplace_id, 1, type: :uint64, json_name: "workplaceId"
+  field :pip_id, 2, type: :uint64, json_name: "pipId"
+  field :kind, 3, type: Pips.Workplace.V1.ResourceKind, enum: true
+  field :tick, 4, type: :uint64
+end
+
+defmodule Pips.Workplace.V1.BuyResponse do
+  @moduledoc false
+
+  use Protobuf,
+    full_name: "pips.workplace.v1.BuyResponse",
+    protoc_gen_elixir_version: "0.17.0",
+    syntax: :proto3
+
+  field :ok, 1, type: :bool
+  field :reason, 2, type: :string
+  field :price, 3, type: :int64
+  field :produced, 4, type: Pips.Workplace.V1.ResourceAmount
 end

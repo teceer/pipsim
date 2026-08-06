@@ -101,6 +101,64 @@ impl Needs {
     }
 }
 
+/// What a workplace can sell or produce, mirrored from
+/// `pips.workplace.v1.ResourceKind` (this crate takes no dependencies, so the
+/// wire enum is not available here — `crates/server` maps between the two).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ResourceKind {
+    Grain,
+    Food,
+    Tool,
+    Ale,
+}
+
+/// What one unit of a resource does to a pip. The single owner of "what a
+/// resource does to a pip" — ADR 0006. `ALE` restores social everywhere in
+/// the world, because that is what ale is; a workplace declares that it
+/// *sells* ale, never what ale does.
+///
+/// Grain and Tool have no direct effect on a pip: they are inputs a workplace
+/// consumes to produce something else, not something a pip drinks or eats.
+pub fn need_effects(kind: ResourceKind) -> Needs {
+    match kind {
+        ResourceKind::Grain => Needs {
+            food: 0,
+            rest: 0,
+            social: 0,
+        },
+        ResourceKind::Food => Needs {
+            food: 200,
+            rest: 0,
+            social: 0,
+        },
+        ResourceKind::Tool => Needs {
+            food: 0,
+            rest: 0,
+            social: 0,
+        },
+        ResourceKind::Ale => Needs {
+            food: 0,
+            rest: 0,
+            social: 150,
+        },
+    }
+}
+
+/// Why money is moving. Mirrors `pips.sim.v1.TransferKind`.
+///
+/// Load-bearing rather than descriptive: `Issuance` is what exempts the
+/// treasury from the balance check, and that privilege is carried by the
+/// transfer instead of inferred from who the payer is. Without it, every
+/// movement out of the treasury could mint.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum TransferKind {
+    Unspecified,
+    Wage,
+    Purchase,
+    Issuance,
+    Escheat,
+}
+
 /// Intents are queued and applied at the START of a tick, never mid-tick.
 /// Applying them as they arrive would make the outcome depend on network
 /// timing, which is exactly what determinism forbids.
@@ -136,6 +194,10 @@ pub enum Intent {
     /// arrives from the workplace rather than being decided here — the number
     /// has one owner, and the core only enforces it physically.
     RegisterWorkplace {
+        /// What the building sells, and for how much. The price has one
+        /// owner — the workplace service — and arrives here as a copy, the
+        /// same way `capacity` does.
+        sells: Vec<(ResourceKind, i64)>,
         id: WorkplaceId,
         kind: String,
         position: Vec2,
@@ -145,10 +207,49 @@ pub enum Intent {
     EndEmployment {
         pip: PipId,
     },
+    /// Moves money between two accounts the core knows about — a pip, a
+    /// workplace, or the treasury.
+    ///
+    /// The bank is authoritative for history and solvency; this is the
+    /// replica update that lets a tick decide "can this pip afford it"
+    /// without a network call. Rejected silently (no balance moves) if the
+    /// payer cannot afford it — the core is never behind on spending, only on
+    /// income not yet applied.
+    ///
+    /// `resource_kind` set means the payer is buying that resource: after the
+    /// balance moves, the core also runs `Consume` for the payer in the same
+    /// intent, one unit's worth.
+    Transfer {
+        payer: AccountId,
+        payee: AccountId,
+        amount: i64,
+        resource_kind: Option<ResourceKind>,
+        kind: TransferKind,
+    },
+    /// Payroll, batched. A workplace's shift population is paid in one
+    /// intent carrying every pip's credit, rather than one intent per pip —
+    /// the number of pips employed does not get to set the tick budget.
+    /// Rejected as a whole (no balance moves at all) if the payer cannot
+    /// cover the sum of credits.
+    CreditBalances {
+        payer: WorkplaceId,
+        credits: Vec<(PipId, i64)>,
+    },
 }
 
 pub type PipId = u64;
 pub type WorkplaceId = u64;
+
+/// A bank account, namespaced by holder kind exactly like
+/// `pips.bank.v1.Account.id` — `"pip:412"` and `"workplace:3"` cannot
+/// collide. Parsed once at the edge (`crates/server`) so `crates/sim` never
+/// deals with strings during a tick.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum AccountId {
+    Pip(PipId),
+    Workplace(WorkplaceId),
+    Treasury,
+}
 
 /// Facts produced by a tick. The core does not publish them — `server` picks
 /// them up and writes them to Kafka.
@@ -185,6 +286,19 @@ pub enum DomainEvent {
         pip: PipId,
         cause: &'static str,
     },
+    /// A pip bought something, and the core is the authority that says so.
+    ///
+    /// The bank books this rather than deciding it. A purchase is settled
+    /// against the pip's replica balance inside a tick, which is the one
+    /// place the decision can be made without a network call — so the core
+    /// gates it and the ledger records what happened. Emitted only when the
+    /// transfer actually applied.
+    PurchaseMade {
+        pip: PipId,
+        workplace: WorkplaceId,
+        amount: i64,
+        resource: ResourceKind,
+    },
 }
 
 /// Structure-of-arrays world state.
@@ -205,6 +319,19 @@ pub struct World {
     /// employs it: a hired pip is `employers = Some` and `inside = None` for the
     /// whole walk there, and stays that way if it arrives to a full building.
     pub inside: Vec<Option<WorkplaceId>>,
+    /// Where the pip is going of its own accord, as opposed to where it is
+    /// employed. An errand outranks the commute: a pip that cannot afford to
+    /// keep working because it is starving has no business walking to work.
+    ///
+    /// This is the first thing in the simulation a pip decides for itself.
+    /// Everything else about it — where it works, when it eats — was decided
+    /// by a service or by the world.
+    pub errands: Vec<Option<WorkplaceId>>,
+    /// The core's replica of the pip's bank balance. Authoritative balances
+    /// live in `services/bank`; this exists so a tick can decide "can this
+    /// pip afford it" without a network call. Moved only by `Intent::Transfer`
+    /// / `Intent::CreditBalances`.
+    pub balances: Vec<i64>,
 
     // Workplaces, same structure-of-arrays treatment. There are few of them, so
     // the layout buys nothing here — it is uniformity, so that a reader who has
@@ -217,6 +344,15 @@ pub struct World {
     /// `remove_at`, and checked against a recount by a test — a derived value
     /// that drifts is worse than one recomputed every tick.
     pub workplace_occupants: Vec<u32>,
+    /// Same replica role as `balances`, one per workplace.
+    pub workplace_balances: Vec<i64>,
+    /// What each workplace sells, and at what price. Registered from the
+    /// service's own `Describe`, never invented here.
+    pub workplace_sells: Vec<Vec<(ResourceKind, i64)>>,
+    /// The treasury's own balance. Negative by design: issuance is a transfer
+    /// from the treasury, and money supply stays closed only because that
+    /// negative and everyone else's positive balances sum to zero.
+    pub treasury_balance: i64,
 
     next_pip_id: PipId,
 }
@@ -234,11 +370,16 @@ impl World {
             needs: Vec::new(),
             employers: Vec::new(),
             inside: Vec::new(),
+            errands: Vec::new(),
+            balances: Vec::new(),
             workplace_ids: Vec::new(),
             workplace_kinds: Vec::new(),
             workplace_positions: Vec::new(),
             workplace_capacities: Vec::new(),
             workplace_occupants: Vec::new(),
+            workplace_balances: Vec::new(),
+            workplace_sells: Vec::new(),
+            treasury_balance: 0,
             next_pip_id: 1,
         }
     }
@@ -257,8 +398,47 @@ impl World {
         self.ids.iter().position(|&id| id == pip)
     }
 
-    fn workplace_index(&self, workplace: WorkplaceId) -> Option<usize> {
+    pub fn workplace_index(&self, workplace: WorkplaceId) -> Option<usize> {
         self.workplace_ids.iter().position(|&id| id == workplace)
+    }
+
+    fn balance_of(&self, account: AccountId) -> Option<i64> {
+        match account {
+            AccountId::Pip(id) => self.index_of(id).map(|i| self.balances[i]),
+            AccountId::Workplace(id) => {
+                self.workplace_index(id).map(|i| self.workplace_balances[i])
+            }
+            AccountId::Treasury => Some(self.treasury_balance),
+        }
+    }
+
+    fn adjust_balance(&mut self, account: AccountId, delta: i64) {
+        match account {
+            AccountId::Pip(id) => {
+                if let Some(i) = self.index_of(id) {
+                    self.balances[i] += delta;
+                }
+            }
+            AccountId::Workplace(id) => {
+                if let Some(i) = self.workplace_index(id) {
+                    self.workplace_balances[i] += delta;
+                }
+            }
+            AccountId::Treasury => self.treasury_balance += delta,
+        }
+    }
+
+    /// Applies one unit's worth of `need_effects(kind)` to a pip, clamped
+    /// exactly like `ApplyNeeds` — a resource is not trusted to keep a need in
+    /// range any more than a workplace is.
+    fn consume(&mut self, pip: PipId, kind: ResourceKind) {
+        if let Some(i) = self.index_of(pip) {
+            let effect = need_effects(kind);
+            let n = &mut self.needs[i];
+            n.food = (n.food + effect.food).clamp(0, NEED_MAX);
+            n.rest = (n.rest + effect.rest).clamp(0, NEED_MAX);
+            n.social = (n.social + effect.social).clamp(0, NEED_MAX);
+        }
     }
 
     /// Takes the pip out of whatever building it is in. No-op if it is outside.
@@ -280,12 +460,17 @@ impl World {
 
         self.apply_intents(intents, &mut events);
         self.decay_needs(&mut events);
+        // Before wander and commute, because an errand outranks both: a
+        // starving pip should not be strolling, and should not be walking to
+        // a shift it will not live to finish.
+        self.decide_errands();
         self.wander();
         self.commute();
         self.move_walkers();
         // After movement, so a pip that reached the door this tick gets in on
         // this tick rather than standing outside for one.
         self.enter_workplaces(&mut events);
+        self.shop(&mut events);
         self.tick += 1;
 
         events
@@ -346,6 +531,8 @@ impl World {
                     });
                     self.employers.push(None);
                     self.inside.push(None);
+                    self.errands.push(None);
+                    self.balances.push(0);
 
                     events.push(DomainEvent::PipSpawned {
                         pip: id,
@@ -389,6 +576,7 @@ impl World {
                     kind,
                     position,
                     capacity,
+                    sells,
                 } => {
                     // Upsert: the gateway re-registers on every reconnect, and
                     // a workplace that came back with a different capacity
@@ -398,12 +586,15 @@ impl World {
                         self.workplace_kinds[wi] = kind.clone();
                         self.workplace_positions[wi] = *position;
                         self.workplace_capacities[wi] = *capacity;
+                        self.workplace_sells[wi] = sells.clone();
                     } else {
                         self.workplace_ids.push(*id);
                         self.workplace_kinds.push(kind.clone());
                         self.workplace_positions.push(*position);
                         self.workplace_capacities.push(*capacity);
                         self.workplace_occupants.push(0);
+                        self.workplace_balances.push(0);
+                        self.workplace_sells.push(sells.clone());
                         events.push(DomainEvent::WorkplaceBuilt {
                             workplace: *id,
                             kind: kind.clone(),
@@ -426,6 +617,96 @@ impl World {
                         n.food = (n.food + food).clamp(0, NEED_MAX);
                         n.rest = (n.rest + rest).clamp(0, NEED_MAX);
                         n.social = (n.social + social).clamp(0, NEED_MAX);
+                    }
+                }
+                Intent::Transfer {
+                    payer,
+                    payee,
+                    amount,
+                    resource_kind,
+                    kind,
+                } => {
+                    // Rejected silently, no partial effect: the core is never
+                    // behind on spending. It can only be behind on income not
+                    // yet applied.
+                    let Some(payer_balance) = self.balance_of(*payer) else {
+                        continue;
+                    };
+                    if self.balance_of(*payee).is_none() {
+                        continue;
+                    }
+
+                    // The treasury may go negative, because issuance is the
+                    // money supply growing on purpose. That privilege is
+                    // granted by the transfer's kind, never by the payer's
+                    // identity — otherwise every movement out of the treasury
+                    // could mint, and a mislabelled one would do it silently.
+                    let may_run_negative =
+                        *payer == AccountId::Treasury && *kind == TransferKind::Issuance;
+                    if !may_run_negative && payer_balance < *amount {
+                        continue;
+                    }
+
+                    // A purchase is a physical act. ADR 0004 made buildings
+                    // places rather than addresses and hiring a walk rather
+                    // than a teleport; buying is subject to the same rule, or
+                    // money quietly reintroduces the addressing model that ADR
+                    // replaced. The pip must be inside the seller.
+                    if let Some(resource) = resource_kind {
+                        let (AccountId::Pip(pip), AccountId::Workplace(seller)) = (*payer, *payee)
+                        else {
+                            continue;
+                        };
+                        let Some(i) = self.index_of(pip) else {
+                            continue;
+                        };
+                        if self.inside[i] != Some(seller) {
+                            continue;
+                        }
+
+                        self.adjust_balance(*payer, -*amount);
+                        self.adjust_balance(*payee, *amount);
+                        self.consume(pip, *resource);
+
+                        // The core gates the purchase, so the core is what
+                        // says it happened; the bank books this fact rather
+                        // than deciding it. Emitted only on the path where
+                        // the money actually moved.
+                        events.push(DomainEvent::PurchaseMade {
+                            pip,
+                            workplace: seller,
+                            amount: *amount,
+                            resource: *resource,
+                        });
+                        continue;
+                    }
+
+                    self.adjust_balance(*payer, -*amount);
+                    self.adjust_balance(*payee, *amount);
+                }
+                Intent::CreditBalances { payer, credits } => {
+                    // Only pips that still exist are paid, and the payer is
+                    // debited only for those. `adjust_balance` is a no-op for
+                    // an unknown pip, so summing the whole list first would
+                    // debit the workplace for a wage nobody receives — money
+                    // destroyed, which the closed-supply invariant forbids.
+                    // The gap is real: the gateway builds this list from a
+                    // snapshot, and a pip can starve before the intent lands.
+                    let payable: Vec<(PipId, i64)> = credits
+                        .iter()
+                        .filter(|(pip, _)| self.index_of(*pip).is_some())
+                        .copied()
+                        .collect();
+                    let total: i64 = payable.iter().map(|(_, amount)| *amount).sum();
+                    let Some(payer_balance) = self.balance_of(AccountId::Workplace(*payer)) else {
+                        continue;
+                    };
+                    if payer_balance < total {
+                        continue;
+                    }
+                    self.adjust_balance(AccountId::Workplace(*payer), -total);
+                    for (pip, amount) in &payable {
+                        self.adjust_balance(AccountId::Pip(*pip), *amount);
                     }
                 }
             }
@@ -486,6 +767,17 @@ impl World {
         // farm's shift lease exists to catch on the other side of the wire.
         self.leave_building(i);
 
+        // A dead pip's money goes back to the treasury rather than out of
+        // existence. Money supply is closed (ADR 0006): the sum of every
+        // balance is constant except at an explicit issuance, and dying is
+        // routine here — starvation is the main way a pip leaves the world,
+        // so leaking a purse per death would drain the supply steadily.
+        //
+        // Here rather than at the death site, so that any future way of
+        // removing a pip inherits it. `services/bank` does the same on its
+        // side, off the same PipDied fact.
+        self.treasury_balance += self.balances[i];
+
         self.ids.remove(i);
         self.names.remove(i);
         self.positions.remove(i);
@@ -494,6 +786,8 @@ impl World {
         self.needs.remove(i);
         self.employers.remove(i);
         self.inside.remove(i);
+        self.errands.remove(i);
+        self.balances.remove(i);
     }
 
     /// Employed pips head for their building's door.
@@ -502,22 +796,151 @@ impl World {
     /// or one whose workplace was registered after it was hired — finds its way
     /// there anyway. Idempotent: a pip already walking has its destination set
     /// to the same place.
+    /// The cheapest place selling `kind` that this pip can both afford and
+    /// reach, as an index into the workplace arrays.
+    ///
+    /// Ties break on price first, then on distance, then on the lower index.
+    /// The last rule is arbitrary and exists only so that two runs of the same
+    /// world make the same choice — reproducible beats clever.
+    fn best_offer(&self, from: Vec2, budget: i64, kind: ResourceKind) -> Option<(usize, i64)> {
+        let mut best: Option<(usize, i64, i64)> = None; // (index, price, distance)
+        for wi in 0..self.workplace_ids.len() {
+            let Some(&(_, price)) = self.workplace_sells[wi]
+                .iter()
+                .find(|(sold, _)| *sold == kind)
+            else {
+                continue;
+            };
+            if price > budget {
+                continue;
+            }
+            let at = self.workplace_positions[wi];
+            // Chebyshev, matching how pips actually move: `step_towards`
+            // advances both axes at once, so the diagonal costs the same as a
+            // straight line. Integer-only, because a float here would diverge
+            // between the native and WASM builds.
+            let distance = (at.x - from.x).abs().max((at.y - from.y).abs()) as i64;
+            let better = match best {
+                None => true,
+                Some((_, best_price, best_distance)) => {
+                    (price, distance) < (best_price, best_distance)
+                }
+            };
+            if better {
+                best = Some((wi, price, distance));
+            }
+        }
+        best.map(|(wi, price, _)| (wi, price))
+    }
+
+    /// Hungry pips with money go and buy food.
+    ///
+    /// This is the first decision a pip makes for itself, and the rule lives
+    /// here for the reason every other rule about pips does: the browser
+    /// predicts with this same code, so a decision taken anywhere else would
+    /// make the client and the server disagree about what happens next.
+    ///
+    /// Deliberately not a plan or a queue of goals. A pip is hungry or it is
+    /// not, and it re-decides every tick — which means a shop that raises its
+    /// price, or a wage that arrives late, changes the pip's mind without
+    /// anything having to invalidate a stale intention.
+    fn decide_errands(&mut self) {
+        for i in 0..self.ids.len() {
+            if self.needs[i].food > FOOD_HUNGRY_THRESHOLD {
+                // Fed. Any errand it was on is finished, whether or not it
+                // ever arrived.
+                self.errands[i] = None;
+                continue;
+            }
+            if self.errands[i].is_some() {
+                continue;
+            }
+
+            let Some((wi, _)) =
+                self.best_offer(self.positions[i], self.balances[i], ResourceKind::Food)
+            else {
+                // Nothing for sale it can afford. It keeps working, and if
+                // that is not enough it starves — which is now an economic
+                // death rather than a missing farm.
+                continue;
+            };
+
+            self.errands[i] = Some(self.workplace_ids[wi]);
+            // Leave work to go: a pip cannot be in two buildings, and its
+            // place should go to someone who will use it.
+            self.leave_building(i);
+        }
+    }
+
+    /// A pip inside the shop it walked to buys one unit and leaves.
+    ///
+    /// Settled here rather than through an RPC because the decision is made
+    /// against the pip's replica balance inside the tick — see ADR 0006. The
+    /// bank books the fact afterwards; it does not get a vote.
+    fn shop(&mut self, events: &mut Vec<DomainEvent>) {
+        for i in 0..self.ids.len() {
+            let Some(shop) = self.errands[i] else {
+                continue;
+            };
+            if self.inside[i] != Some(shop) {
+                continue;
+            }
+            let Some(wi) = self.workplace_index(shop) else {
+                self.errands[i] = None;
+                continue;
+            };
+
+            let offer = self.workplace_sells[wi]
+                .iter()
+                .find(|(sold, _)| *sold == ResourceKind::Food)
+                .copied();
+
+            // Whatever happens next, the errand is over: it either bought
+            // something or found it could not, and standing in the doorway
+            // re-deciding would hold a place it is not using.
+            self.errands[i] = None;
+
+            if let Some((kind, price)) = offer.filter(|(_, price)| self.balances[i] >= *price) {
+                self.balances[i] -= price;
+                self.workplace_balances[wi] += price;
+                let pip = self.ids[i];
+                self.consume(pip, kind);
+                events.push(DomainEvent::PurchaseMade {
+                    pip,
+                    workplace: shop,
+                    amount: price,
+                    resource: kind,
+                });
+            }
+
+            self.leave_building(i);
+            self.activities[i] = Activity::Idle;
+        }
+    }
+
     fn commute(&mut self) {
         for i in 0..self.ids.len() {
             if self.inside[i].is_some() {
                 continue;
             }
-            let Some(workplace) = self.employers[i] else {
-                continue;
+            // An errand outranks the commute. A pip walking to the shop is
+            // not skiving: it is doing the thing that keeps it able to work
+            // at all, and its employer holds the position while it goes.
+            let (destination, activity) = match self.errands[i] {
+                Some(shop) => (shop, Activity::Walking),
+                None => match self.employers[i] {
+                    Some(workplace) => (workplace, Activity::Commuting),
+                    None => continue,
+                },
             };
-            let Some(wi) = self.workplace_index(workplace) else {
-                // Hired into a building the core has never been told about.
+            let Some(wi) = self.workplace_index(destination) else {
+                // Sent to a building the core has never been told about.
                 // Nothing sensible to do but wait for it to be registered.
                 continue;
             };
 
             let door = self.workplace_positions[wi];
-            self.activities[i] = Activity::Commuting;
+            self.activities[i] = activity;
             self.destinations[i] = if self.positions[i] == door {
                 None
             } else {
@@ -537,7 +960,12 @@ impl World {
             if self.inside[i].is_some() {
                 continue;
             }
-            let Some(workplace) = self.employers[i] else {
+            // A customer goes in for the same reason a worker does — the
+            // building is a place, and buying is physical (ADR 0004, and
+            // invariant 5 of ADR 0006). It takes a place while it is inside,
+            // which is why `shop` puts it back out in the same tick.
+            let shopping = self.errands[i].is_some();
+            let Some(workplace) = self.errands[i].or(self.employers[i]) else {
                 continue;
             };
             let Some(wi) = self.workplace_index(workplace) else {
@@ -556,8 +984,14 @@ impl World {
 
             self.workplace_occupants[wi] += 1;
             self.inside[i] = Some(workplace);
-            self.activities[i] = Activity::Working;
             self.destinations[i] = None;
+
+            if shopping {
+                self.activities[i] = Activity::Eating;
+                continue;
+            }
+
+            self.activities[i] = Activity::Working;
             events.push(DomainEvent::PipStartedWork {
                 pip: self.ids[i],
                 workplace,
@@ -601,11 +1035,15 @@ impl World {
             mix(self.needs[i].food as u64);
             mix(self.activities[i] as u64);
             mix(self.inside[i].unwrap_or(0));
+            mix(self.balances[i] as u64);
+            mix(self.errands[i].unwrap_or(0));
         }
         for i in 0..self.workplace_ids.len() {
             mix(self.workplace_ids[i]);
             mix(self.workplace_occupants[i] as u64);
+            mix(self.workplace_balances[i] as u64);
         }
+        mix(self.treasury_balance as u64);
         h
     }
 }
@@ -857,6 +1295,7 @@ mod tests {
             kind: "farm".into(),
             position: DOOR,
             capacity,
+            sells: Vec::new(),
         }
     }
 
@@ -1059,6 +1498,7 @@ mod tests {
             kind: "farm".into(),
             position: Vec2 { x: 1, y: 2 },
             capacity: 9,
+            sells: Vec::new(),
         }]);
         assert!(!again
             .iter()
@@ -1066,5 +1506,451 @@ mod tests {
         assert_eq!(w.workplace_ids.len(), 1);
         assert_eq!(w.workplace_capacities[0], 9);
         assert_eq!(w.workplace_positions[0], Vec2 { x: 1, y: 2 });
+    }
+
+    // --- money ----------------------------------------------------------
+
+    #[test]
+    fn ale_restores_social_and_grain_does_nothing() {
+        assert_eq!(need_effects(ResourceKind::Ale).social, 150);
+        assert_eq!(
+            need_effects(ResourceKind::Grain),
+            Needs {
+                food: 0,
+                rest: 0,
+                social: 0,
+            }
+        );
+    }
+
+    /// A workplace is paid, and the pip's replica balance moves. This is the
+    /// payroll path: one batch intent, not one Transfer per pip.
+    #[test]
+    fn credit_balances_pays_every_pip_in_one_intent() {
+        let mut w = World::new(40);
+        w.step(&spawn(2));
+        w.step(&[build(9, 8)]);
+        // Fund the workplace first — a payer with nothing to pay cannot pay.
+        w.step(&[Intent::Transfer {
+            payer: AccountId::Treasury,
+            payee: AccountId::Workplace(9),
+            amount: 100,
+            resource_kind: None,
+            kind: TransferKind::Issuance,
+        }]);
+
+        w.step(&[Intent::CreditBalances {
+            payer: 9,
+            credits: vec![(1, 30), (2, 20)],
+        }]);
+
+        assert_eq!(w.balances[0], 30);
+        assert_eq!(w.balances[1], 20);
+        assert_eq!(w.workplace_balances[0], 50);
+    }
+
+    /// A payer that cannot cover the sum pays nobody — no partial payroll.
+    #[test]
+    fn credit_balances_rejects_as_a_whole_if_underfunded() {
+        let mut w = World::new(41);
+        w.step(&spawn(2));
+        w.step(&[build(9, 8)]);
+
+        w.step(&[Intent::CreditBalances {
+            payer: 9,
+            credits: vec![(1, 30), (2, 20)],
+        }]);
+
+        assert_eq!(w.balances[0], 0);
+        assert_eq!(w.balances[1], 0);
+        assert_eq!(w.workplace_balances[0], 0);
+    }
+
+    /// Walk a hired pip until it is inside its workplace. Buying is physical,
+    /// so most money tests need a pip that has actually arrived somewhere.
+    fn walk_inside(w: &mut World, pip: PipId, workplace: WorkplaceId) {
+        w.step(&[Intent::Hire { pip, workplace }]);
+        for _ in 0..400 {
+            let i = w.index_of(pip).expect("pip should still exist");
+            if w.inside[i] == Some(workplace) {
+                return;
+            }
+            w.step(&[]);
+        }
+        panic!("pip never reached its workplace");
+    }
+
+    /// Buying a resource moves money and consumes it in the same intent.
+    #[test]
+    fn transfer_with_a_resource_kind_pays_and_consumes() {
+        let mut w = World::new(42);
+        w.step(&spawn(1));
+        w.step(&[build(9, 8)]);
+        w.step(&[Intent::Transfer {
+            payer: AccountId::Treasury,
+            payee: AccountId::Pip(1),
+            amount: 10,
+            resource_kind: None,
+            kind: TransferKind::Issuance,
+        }]);
+        walk_inside(&mut w, 1, 9);
+
+        let social_before = w.needs[0].social;
+        let events = w.step(&[Intent::Transfer {
+            payer: AccountId::Pip(1),
+            payee: AccountId::Workplace(9),
+            amount: 4,
+            resource_kind: Some(ResourceKind::Ale),
+            kind: TransferKind::Purchase,
+        }]);
+
+        assert_eq!(w.balances[0], 6);
+        assert_eq!(w.workplace_balances[0], 4);
+        assert!(w.needs[0].social >= social_before);
+        assert!(
+            events
+                .iter()
+                .any(|e| matches!(e, DomainEvent::PurchaseMade { .. })),
+            "the core gates the purchase, so it is what reports one"
+        );
+    }
+
+    /// ADR 0004 made buildings places rather than addresses. Buying is subject
+    /// to the same rule: a pip cannot shop from across the map, or money
+    /// quietly reintroduces the model that ADR replaced.
+    #[test]
+    fn a_pip_cannot_buy_from_a_building_it_is_not_inside() {
+        let mut w = World::new(42);
+        w.step(&spawn(1));
+        w.step(&[build(9, 8)]);
+        w.step(&[Intent::Transfer {
+            payer: AccountId::Treasury,
+            payee: AccountId::Pip(1),
+            amount: 10,
+            resource_kind: None,
+            kind: TransferKind::Issuance,
+        }]);
+        assert_eq!(w.inside[0], None, "the pip is outside to begin with");
+
+        let social_before = w.needs[0].social;
+        let events = w.step(&[Intent::Transfer {
+            payer: AccountId::Pip(1),
+            payee: AccountId::Workplace(9),
+            amount: 4,
+            resource_kind: Some(ResourceKind::Ale),
+            kind: TransferKind::Purchase,
+        }]);
+
+        assert_eq!(w.balances[0], 10, "no money moved");
+        assert_eq!(w.workplace_balances[0], 0);
+        assert!(w.needs[0].social <= social_before, "nothing was consumed");
+        assert!(
+            !events
+                .iter()
+                .any(|e| matches!(e, DomainEvent::PurchaseMade { .. })),
+            "a rejected purchase is not a fact"
+        );
+    }
+
+    /// The treasury may go negative, but only for an issuance. The privilege
+    /// is carried by the transfer, never inferred from who is paying —
+    /// otherwise any movement out of the treasury could mint.
+    #[test]
+    fn only_an_issuance_lets_the_treasury_run_negative() {
+        let mut w = World::new(42);
+        w.step(&spawn(1));
+
+        w.step(&[Intent::Transfer {
+            payer: AccountId::Treasury,
+            payee: AccountId::Pip(1),
+            amount: 100,
+            resource_kind: None,
+            kind: TransferKind::Wage,
+        }]);
+        assert_eq!(w.balances[0], 0, "a treasury with nothing cannot pay wages");
+        assert_eq!(w.treasury_balance, 0);
+
+        w.step(&[Intent::Transfer {
+            payer: AccountId::Treasury,
+            payee: AccountId::Pip(1),
+            amount: 100,
+            resource_kind: None,
+            kind: TransferKind::Issuance,
+        }]);
+        assert_eq!(w.balances[0], 100, "an issuance mints");
+        assert_eq!(w.treasury_balance, -100);
+        assert_eq!(total_money(&w), 0, "and the supply stays closed");
+    }
+
+    /// A pip can never spend money it does not have — the transfer is
+    /// rejected outright, not clamped to what's available.
+    #[test]
+    fn transfer_rejects_insufficient_balance() {
+        let mut w = World::new(43);
+        w.step(&spawn(1));
+        w.step(&[build(9, 8)]);
+
+        w.step(&[Intent::Transfer {
+            payer: AccountId::Pip(1),
+            payee: AccountId::Workplace(9),
+            amount: 4,
+            resource_kind: Some(ResourceKind::Ale),
+            kind: TransferKind::Purchase,
+        }]);
+
+        assert_eq!(w.balances[0], 0);
+        assert_eq!(w.workplace_balances[0], 0);
+    }
+
+    /// Balances are mixed into state_hash, so an economy that diverges is
+    /// caught by replay exactly like a position or a need would be.
+    #[test]
+    fn state_hash_changes_with_balances() {
+        let mut w = World::new(44);
+        w.step(&spawn(1));
+        let before = w.state_hash();
+
+        w.step(&[Intent::Transfer {
+            payer: AccountId::Treasury,
+            payee: AccountId::Pip(1),
+            amount: 10,
+            resource_kind: None,
+            kind: TransferKind::Issuance,
+        }]);
+
+        assert_ne!(before, w.state_hash());
+    }
+
+    /// Every balance the core replicates, summed. Issuance is the treasury
+    /// paying out, so its balance goes negative by exactly what everyone else
+    /// holds — a closed supply sums to zero, always.
+    fn total_money(w: &World) -> i64 {
+        w.balances.iter().sum::<i64>()
+            + w.workplace_balances.iter().sum::<i64>()
+            + w.treasury_balance
+    }
+
+    /// The invariant the whole ledger design rests on, stated as a test.
+    ///
+    /// It failed before the escheat in `remove_at`: a pip that starved took
+    /// its balance out of existence, and since starvation is the ordinary way
+    /// to die here, the supply drained a purse at a time.
+    #[test]
+    fn a_dying_pip_returns_its_money_to_the_treasury() {
+        let mut w = World::new(40);
+        w.step(&spawn(1));
+        w.step(&[Intent::Transfer {
+            payer: AccountId::Treasury,
+            payee: AccountId::Pip(1),
+            amount: 500,
+            resource_kind: None,
+            kind: TransferKind::Issuance,
+        }]);
+        assert_eq!(w.balances[0], 500);
+        assert_eq!(total_money(&w), 0, "issuance keeps the supply closed");
+
+        // Starve it. Food drains every tick and nothing feeds it.
+        for _ in 0..2_000 {
+            if w.is_empty() {
+                break;
+            }
+            w.step(&[]);
+        }
+
+        assert!(w.is_empty(), "the pip should have starved");
+        assert_eq!(w.treasury_balance, 0, "the purse came back");
+        assert_eq!(total_money(&w), 0, "money did not vanish with the pip");
+    }
+
+    /// The gateway builds payroll from a snapshot, so a pip can die between
+    /// being listed and the intent being applied. Paying it must not debit the
+    /// workplace for a wage that lands nowhere.
+    #[test]
+    fn payroll_skips_a_pip_that_no_longer_exists() {
+        let mut w = World::new(40);
+        w.step(&spawn(1));
+        w.step(&[build(9, 4)]);
+        w.step(&[Intent::Transfer {
+            payer: AccountId::Treasury,
+            payee: AccountId::Workplace(9),
+            amount: 1_000,
+            resource_kind: None,
+            kind: TransferKind::Issuance,
+        }]);
+        let before = total_money(&w);
+
+        w.step(&[Intent::CreditBalances {
+            payer: 9,
+            credits: vec![(1, 10), (99_999, 10)],
+        }]);
+
+        assert_eq!(w.balances[0], 10, "the living pip is paid");
+        assert_eq!(
+            w.workplace_balances[0], 990,
+            "the workplace is debited only for the wage that was actually paid"
+        );
+        assert_eq!(total_money(&w), before, "no money created or destroyed");
+    }
+
+    /// A shop: a workplace nobody works at, which sells food at `price`.
+    fn shop_at(id: WorkplaceId, position: Vec2, price: i64) -> Intent {
+        Intent::RegisterWorkplace {
+            id,
+            kind: "market".into(),
+            position,
+            capacity: 8,
+            sells: vec![(ResourceKind::Food, price)],
+        }
+    }
+
+    /// The whole point of ADR 0006, as one test: work pays money, money buys
+    /// food, food keeps a pip alive. Before this, food was conjured by the
+    /// workplace and the economy was decorative.
+    ///
+    /// The pip is paid the way the gateway pays it — a batch credit once a
+    /// second of simulated time — and has to decide for itself when to stop
+    /// working and go and eat.
+    #[test]
+    fn a_paid_pip_feeds_itself_and_survives() {
+        let mut w = World::new(7);
+        w.step(&spawn(1));
+        w.step(&[
+            build(9, 4),
+            shop_at(
+                10,
+                Vec2 {
+                    x: 20_000,
+                    y: 4_000,
+                },
+                50,
+            ),
+            Intent::Transfer {
+                payer: AccountId::Treasury,
+                payee: AccountId::Workplace(9),
+                amount: 1_000_000,
+                resource_kind: None,
+                kind: TransferKind::Issuance,
+            },
+            Intent::Hire {
+                pip: 1,
+                workplace: 9,
+            },
+        ]);
+
+        let mut bought = 0;
+        for tick in 0..4_000 {
+            assert!(!w.is_empty(), "the pip starved at tick {tick}");
+
+            // Payroll, as the gateway runs it: once every ten ticks, only for
+            // a pip that is actually inside its workplace.
+            let intents = if tick % 10 == 0 && w.inside[0] == Some(9) {
+                vec![Intent::CreditBalances {
+                    payer: 9,
+                    credits: vec![(1, 60)],
+                }]
+            } else {
+                Vec::new()
+            };
+
+            bought += w
+                .step(&intents)
+                .iter()
+                .filter(|e| matches!(e, DomainEvent::PurchaseMade { .. }))
+                .count();
+        }
+
+        assert!(bought > 5, "expected repeat custom, got {bought} purchases");
+        assert!(
+            w.balances[0] > 0,
+            "wages should outrun the grocery bill, not merely match it"
+        );
+        assert_eq!(total_money(&w), 0, "the supply stayed closed throughout");
+    }
+
+    /// The other side of the same coin: money is what stands between a pip and
+    /// starvation, so a pip with none dies even though food exists and it is
+    /// standing next to it. This is the scarcity the ADR was after — dying of
+    /// poverty rather than of a missing building.
+    #[test]
+    fn a_penniless_pip_starves_next_to_food_it_cannot_afford() {
+        let mut w = World::new(7);
+        w.step(&spawn(1));
+        w.step(&[shop_at(10, DOOR, 50)]);
+
+        for _ in 0..2_000 {
+            if w.is_empty() {
+                break;
+            }
+            w.step(&[]);
+        }
+
+        assert!(w.is_empty(), "a pip with no money should not survive");
+    }
+
+    /// Hunger outranks the commute. A pip that would otherwise walk to work
+    /// goes to the shop instead, and its employer keeps the position.
+    #[test]
+    fn an_errand_outranks_the_commute() {
+        let mut w = World::new(7);
+        w.step(&spawn(1));
+        w.step(&[
+            build(9, 4),
+            shop_at(
+                10,
+                Vec2 {
+                    x: 30_000,
+                    y: 20_000,
+                },
+                10,
+            ),
+            Intent::Transfer {
+                payer: AccountId::Treasury,
+                payee: AccountId::Pip(1),
+                amount: 100,
+                resource_kind: None,
+                kind: TransferKind::Issuance,
+            },
+            Intent::Hire {
+                pip: 1,
+                workplace: 9,
+            },
+        ]);
+
+        // Starve it to just under the threshold while it commutes.
+        while w.needs[0].food > FOOD_HUNGRY_THRESHOLD {
+            w.step(&[]);
+        }
+        w.step(&[]);
+
+        assert_eq!(w.errands[0], Some(10), "hunger sent it shopping");
+        assert_eq!(w.employers[0], Some(9), "it is still employed");
+        assert_eq!(w.activities[0], Activity::Walking);
+    }
+
+    /// Payroll is all-or-nothing against what is payable, and the check runs
+    /// after the dead are filtered out — a workplace that can afford its live
+    /// workers is not blocked by names on the list that no longer exist.
+    #[test]
+    fn payroll_affordability_is_checked_after_filtering_the_dead() {
+        let mut w = World::new(40);
+        w.step(&spawn(1));
+        w.step(&[build(9, 4)]);
+        w.step(&[Intent::Transfer {
+            payer: AccountId::Treasury,
+            payee: AccountId::Workplace(9),
+            amount: 10,
+            resource_kind: None,
+            kind: TransferKind::Issuance,
+        }]);
+
+        // 10 covers the living pip alone; it would not cover both entries.
+        w.step(&[Intent::CreditBalances {
+            payer: 9,
+            credits: vec![(1, 10), (99_999, 10)],
+        }]);
+
+        assert_eq!(w.balances[0], 10, "the living pip is paid");
+        assert_eq!(w.workplace_balances[0], 0);
+        assert_eq!(total_money(&w), 0);
     }
 }

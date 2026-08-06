@@ -29,10 +29,14 @@ const server = Bun.serve({
     }
 
     // TODO: mount the generated Connect handler for WorkplaceService.
-    //   Describe   -> kind "workshop", produces TOOL, consumes GRAIN
+    //   Describe   -> kind "workshop", produces TOOL, consumes GRAIN,
+    //                 wage per ADR 0006 (no sells: the workshop doesn't
+    //                 trade with pips, only with the grain/tool economy)
     //   CanEmploy  -> onShift.size < MAX_WORKERS
-    //   Work       -> TOOLS_PER_TICK, need_deltas { FOOD: -2, REST: -1 }
+    //   Work       -> TOOLS_PER_TICK, need_deltas { FOOD: -2, REST: -1 },
+    //                 wage proportional to elapsed ticks
     //   EndShift   -> shift_should_end when grain runs out
+    //   Buy        -> always declines; nothing here is for sale to a pip
 
     return new Response("not found", { status: 404 });
   },

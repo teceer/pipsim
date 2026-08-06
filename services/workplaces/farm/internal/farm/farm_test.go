@@ -112,8 +112,8 @@ func TestWorkPaysForEveryElapsedTick(t *testing.T) {
 	}
 
 	const elapsed = 10
-	if got := res.Msg.GetNeedDeltas()[needFood]; got != foodPerTick*elapsed {
-		t.Fatalf("food for %d ticks = %d, want %d", elapsed, got, foodPerTick*elapsed)
+	if got := res.Msg.GetWage(); got != wagePerTick*elapsed {
+		t.Fatalf("wage for %d ticks = %d, want %d", elapsed, got, wagePerTick*elapsed)
 	}
 	if got := res.Msg.GetProduced()[0].GetAmount(); got != grainPerTick*elapsed {
 		t.Fatalf("grain for %d ticks = %d, want %d", elapsed, got, grainPerTick*elapsed)
@@ -126,14 +126,14 @@ func TestWorkTwiceInOneTickPaysOnce(t *testing.T) {
 
 	first, _ := s.Work(context.Background(),
 		connect.NewRequest(&workplacev1.WorkRequest{PipId: 4, Tick: 5}))
-	if first.Msg.GetNeedDeltas()[needFood] == 0 {
+	if first.Msg.GetWage() == 0 {
 		t.Fatal("the first call should have paid")
 	}
 
 	second, _ := s.Work(context.Background(),
 		connect.NewRequest(&workplacev1.WorkRequest{PipId: 4, Tick: 5}))
-	if len(second.Msg.GetNeedDeltas()) != 0 {
-		t.Fatal("a repeated call in the same tick minted food")
+	if second.Msg.GetWage() != 0 {
+		t.Fatal("a repeated call in the same tick minted wages")
 	}
 }
 
@@ -144,7 +144,7 @@ func TestWorkIsCappedAfterALongGap(t *testing.T) {
 
 	res, _ := s.Work(context.Background(),
 		connect.NewRequest(&workplacev1.WorkRequest{PipId: 5, Tick: 100_000}))
-	if got := res.Msg.GetNeedDeltas()[needFood]; got != foodPerTick*MaxTicksPerWork {
-		t.Fatalf("food after a long gap = %d, want the cap %d", got, foodPerTick*MaxTicksPerWork)
+	if got := res.Msg.GetWage(); got != wagePerTick*MaxTicksPerWork {
+		t.Fatalf("wage after a long gap = %d, want the cap %d", got, wagePerTick*MaxTicksPerWork)
 	}
 }
