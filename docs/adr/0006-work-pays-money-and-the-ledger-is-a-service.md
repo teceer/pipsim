@@ -181,6 +181,52 @@ history and policy behind it; the core is a fixed-size `Vec` of integers with no
 clock. It would also put prices and wages in the core — the authority ADRs 0004
 and 0005 spent their effort pushing *out* of it.
 
+## Invariants
+
+Written down as testable statements because the first implementation of this
+ADR (PR #4) satisfied the design and broke three of them anyway. Each one below
+is a property, not a guideline — if it cannot be expressed as a test, it is
+stated wrong.
+
+**1. The supply is closed, including across death.** The sum of every account
+is constant except at an explicit issuance. This has to survive a pip dying,
+which is the ordinary case here and not an edge one: a balance whose holder no
+longer exists escheats to the treasury, on both sides, off the same `PipDied`
+fact. Two things follow that are easy to miss — a batch payroll must debit the
+payer only for credits that actually land, and the core's replica and the bank's
+journal must reclaim independently, each reading its own number, so that a
+divergence between them stays visible instead of one side overwriting the other.
+
+**2. The bank and the core never disagree about whether a transaction
+happened.** A purchase the bank commits and the core rejects takes the pip's
+money and gives it nothing — and it moves the replica in the *unsafe* direction,
+leaving the core believing a pip is richer than the ledger does. Whichever way
+this is resolved, only one of the two may be the gate. The safe-direction-of-
+error argument above holds only while every credit reaches the core; a
+best-effort intent that is allowed to fail silently voids it.
+
+**3. Idempotency keys must be unique per intended movement, not per tick.**
+`(payer, payee, tick, kind)` is right for payroll — one batch per workplace per
+cycle — and wrong for purchases, where two buys from the same seller in one tick
+are two distinct movements. Collapsing them charges once in the bank while the
+core debits twice. A purchase key carries the request's own identity.
+
+**4. A rejection is not a result, and must not be cached.** Storing
+"insufficient funds" under an idempotency key means a pip that is paid later in
+the same tick still cannot buy. Only committed movements are replayable answers.
+
+**5. Buying requires being there.** ADR 0004 made buildings physical and hiring
+a contract rather than a teleport; a purchase is subject to the same rule. A pip
+buys from a building it is *inside*, checked against `inside_workplace_id`, not
+from across the map. Without this, money quietly re-introduces the addressing
+model that ADR replaced.
+
+**6. Privilege is carried by the transfer, not inferred from the payer.** The
+treasury is exempt from the balance check because issuance is money supply
+growing on purpose. That exemption must be tied to an explicit issuance kind on
+the intent — otherwise every transfer with the treasury as payer can mint, and
+the core has no way to tell the difference.
+
 ## Consequences
 
 - **The contract change is a removal, and `buf breaking` will not allow one.**
