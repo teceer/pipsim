@@ -20,6 +20,7 @@ use tonic::transport::Server;
 
 mod events;
 mod grpc;
+mod metrics;
 mod pb;
 mod telemetry;
 mod tick;
@@ -51,6 +52,7 @@ fn kafka_producer(brokers: &str) -> Result<FutureProducer> {
 #[tokio::main]
 async fn main() -> Result<()> {
     let provider = telemetry::init()?;
+    let (meter_provider, sim_metrics) = metrics::init()?;
 
     // The seed is configuration, never generated at startup. Two runs with the
     // same seed and the same intents must produce the same world.
@@ -96,6 +98,7 @@ async fn main() -> Result<()> {
         period: Duration::from_millis(1000 / tick_hz.max(1)),
         deltas: deltas.clone(),
         spawn_every,
+        metrics: sim_metrics,
     };
 
     let addr: std::net::SocketAddr = format!("0.0.0.0:{grpc_port}").parse()?;
@@ -125,6 +128,9 @@ async fn main() -> Result<()> {
 
     if let Err(err) = provider.shutdown() {
         tracing::warn!(error = %err, "tracer shutdown failed");
+    }
+    if let Err(err) = meter_provider.shutdown() {
+        tracing::warn!(error = %err, "meter shutdown failed");
     }
     Ok(())
 }

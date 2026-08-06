@@ -4,6 +4,7 @@ go 1.25.0
 
 use (
 	./gen/go
+	./services/shared/gotel
 	./services/workplaces/conformance
 	./services/workplaces/farm
 	./services/world-gateway

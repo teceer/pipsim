@@ -13,6 +13,8 @@
  * crop growth, and shift scheduling all need it, so BullMQ earns its place.
  */
 
+import "./instrumentation.js";
+
 import { Queue, Worker } from "bullmq";
 
 const redis = {
