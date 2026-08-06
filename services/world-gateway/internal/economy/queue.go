@@ -28,6 +28,12 @@ const (
 	exchange    = "pipsim.work"
 	hiredQueue  = "pipsim.work.hired"
 	offerPrefix = "offer."
+	// The naming convention every workplace's consumer follows — see e.g.
+	// services/workplaces/farm/internal/queue: offerQueue = "pipsim.work.farm".
+	// Restated here rather than imported, because a Go workplace consumer is
+	// not a dependency the gateway should have — this is the one place the
+	// convention has to be known on both sides of the queue.
+	workQueuePrefix = "pipsim.work."
 
 	// Offers published per round.
 	//
@@ -42,6 +48,10 @@ const (
 type Publisher struct {
 	conn *amqp.Connection
 	ch   *amqp.Channel
+	// A channel of its own, never touched by Offer or ConsumeOutcomes: an
+	// amqp.Channel is not safe for concurrent use, and QueueDepth is called
+	// from the metrics callback on its own goroutine.
+	metricsCh *amqp.Channel
 }
 
 func Dial(url string) (*Publisher, error) {
@@ -54,16 +64,42 @@ func Dial(url string) (*Publisher, error) {
 		conn.Close()
 		return nil, err
 	}
-	return &Publisher{conn: conn, ch: ch}, nil
+	metricsCh, err := conn.Channel()
+	if err != nil {
+		ch.Close()
+		conn.Close()
+		return nil, err
+	}
+	return &Publisher{conn: conn, ch: ch, metricsCh: metricsCh}, nil
 }
 
 func (p *Publisher) Close() {
+	if p.metricsCh != nil {
+		_ = p.metricsCh.Close()
+	}
 	if p.ch != nil {
 		_ = p.ch.Close()
 	}
 	if p.conn != nil {
 		_ = p.conn.Close()
 	}
+}
+
+// QueueDepth reports how many offers are waiting for kind's workplace —
+// pipsim.economy.offers_pending. A passive inspect, never a declare: the
+// queue belongs to the consumer side, and this must not create it.
+func (p *Publisher) QueueDepth(kind string) (int, error) {
+	q, err := p.metricsCh.QueueInspect(workQueuePrefix + kind)
+	if err != nil {
+		// A failed passive inspect — e.g. the workplace has not declared its
+		// queue yet — closes the AMQP channel it was issued on, per the
+		// protocol. Reopen so the next call is not doomed to repeat this.
+		if ch, cerr := p.conn.Channel(); cerr == nil {
+			p.metricsCh = ch
+		}
+		return 0, err
+	}
+	return q.Messages, nil
 }
 
 func (p *Publisher) Offer(ctx context.Context, kind string, pipID, tick uint64, traceID string) error {

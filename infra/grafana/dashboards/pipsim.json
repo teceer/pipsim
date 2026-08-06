@@ -1,0 +1,83 @@
+{
+  "title": "pipsim",
+  "uid": "pipsim-overview",
+  "editable": true,
+  "timezone": "browser",
+  "time": { "from": "now-15m", "to": "now" },
+  "refresh": "5s",
+  "schemaVersion": 39,
+  "templating": {
+    "list": [
+      {
+        "name": "DS_PROMETHEUS",
+        "type": "datasource",
+        "query": "prometheus",
+        "current": {}
+      }
+    ]
+  },
+  "panels": [
+    {
+      "title": "tick duration (p50 / p95)",
+      "description": "pipsim.sim.tick_duration — whether the 10 Hz tick loop is holding under load. Unit s becomes the _seconds suffix in the OTel-to-Prometheus name.",
+      "type": "timeseries",
+      "datasource": "${DS_PROMETHEUS}",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "targets": [
+        {
+          "datasource": "${DS_PROMETHEUS}",
+          "expr": "histogram_quantile(0.50, sum(rate(pipsim_sim_tick_duration_seconds_bucket[1m])) by (le))",
+          "legendFormat": "p50"
+        },
+        {
+          "datasource": "${DS_PROMETHEUS}",
+          "expr": "histogram_quantile(0.95, sum(rate(pipsim_sim_tick_duration_seconds_bucket[1m])) by (le))",
+          "legendFormat": "p95"
+        }
+      ]
+    },
+    {
+      "title": "pips alive",
+      "description": "pipsim.sim.pips_alive",
+      "type": "timeseries",
+      "datasource": "${DS_PROMETHEUS}",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "datasource": "${DS_PROMETHEUS}",
+          "expr": "pipsim_sim_pips_alive",
+          "legendFormat": "pips"
+        }
+      ]
+    },
+    {
+      "title": "shift occupancy by building type",
+      "description": "pipsim.workplace.shift_occupancy, grouped by building_type",
+      "type": "timeseries",
+      "datasource": "${DS_PROMETHEUS}",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "targets": [
+        {
+          "datasource": "${DS_PROMETHEUS}",
+          "expr": "pipsim_workplace_shift_occupancy",
+          "legendFormat": "{{building_type}}"
+        }
+      ]
+    },
+    {
+      "title": "offers pending by building type",
+      "description": "pipsim.economy.offers_pending — RabbitMQ work-queue depth per workplace kind",
+      "type": "timeseries",
+      "datasource": "${DS_PROMETHEUS}",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "targets": [
+        {
+          "datasource": "${DS_PROMETHEUS}",
+          "expr": "pipsim_economy_offers_pending",
+          "legendFormat": "{{building_type}}"
+        }
+      ]
+    }
+  ]
+}

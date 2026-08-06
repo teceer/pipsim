@@ -20,12 +20,16 @@ import (
 	"time"
 
 	"connectrpc.com/connect"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	otelmetric "go.opentelemetry.io/otel/metric"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 
 	"github.com/teceer/pipsim/gen/go/pips/sim/v1/simv1connect"
 	"github.com/teceer/pipsim/gen/go/pips/workplace/v1/workplacev1connect"
 	"github.com/teceer/pipsim/gen/go/pips/world/v1/worldv1connect"
+	"github.com/teceer/pipsim/services/shared/gotel"
 	"github.com/teceer/pipsim/services/world-gateway/internal/economy"
 	"github.com/teceer/pipsim/services/world-gateway/internal/gateway"
 )
@@ -120,7 +124,19 @@ func workplaceAddrs() []string {
 }
 
 func main() {
-	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
+	ctx := context.Background()
+	shutdown, err := gotel.Init(ctx, "world-gateway")
+	if err != nil {
+		slog.Error("could not init telemetry", "err", err)
+		os.Exit(1)
+	}
+	defer shutdown(ctx)
+
+	otelInterceptor, err := gotel.Interceptor()
+	if err != nil {
+		slog.Error("could not build otel interceptor", "err", err)
+		os.Exit(1)
+	}
 
 	simAddr := env("SIM_CORE_ADDR", "localhost:50051")
 	seed := envUint("SIM_SEED", 42)
@@ -128,11 +144,13 @@ func main() {
 
 	// connect.WithGRPC because sim-core is tonic, which speaks only gRPC.
 	// The same generated client would talk Connect to a Connect server —
-	// one contract, both protocols.
+	// one contract, both protocols. gotel.WithInterceptor carries the trace
+	// across this hop, which is the one that used to drop it entirely.
 	simClient := simv1connect.NewSimServiceClient(
 		h2cClient(),
 		"http://"+simAddr,
 		connect.WithGRPC(),
+		gotel.WithInterceptor(otelInterceptor),
 	)
 
 	svc := gateway.New(simClient, seed, int32(tickHz))
@@ -163,7 +181,8 @@ func main() {
 			found, err := economy.Discover(
 				discoverCtx,
 				simClient,
-				workplacev1connect.NewWorkplaceServiceClient(h2cClient(), "http://"+addr),
+				workplacev1connect.NewWorkplaceServiceClient(h2cClient(), "http://"+addr,
+					gotel.WithInterceptor(otelInterceptor)),
 				addr,
 				offers,
 			)
@@ -193,13 +212,40 @@ func main() {
 
 		svc = svc.WithWorkplaces(fleet.Describe)
 
+		if _, err := otel.Meter("world-gateway").Int64ObservableGauge(
+			"pipsim.economy.offers_pending",
+			otelmetric.WithDescription("Offers waiting in the work queue, per workplace kind"),
+			otelmetric.WithInt64Callback(func(_ context.Context, o otelmetric.Int64Observer) error {
+				seen := make(map[string]bool, len(fleet.Drivers()))
+				for _, d := range fleet.Drivers() {
+					kind := d.Kind()
+					if kind == "" || seen[kind] {
+						continue
+					}
+					seen[kind] = true
+					depth, err := offers.QueueDepth(kind)
+					if err != nil {
+						slog.Warn("could not read queue depth", "kind", kind, "err", err)
+						continue
+					}
+					o.Observe(int64(depth), otelmetric.WithAttributes(
+						attribute.String("building_type", kind),
+					))
+				}
+				return nil
+			}),
+		); err != nil {
+			slog.Error("could not register offers_pending metric", "err", err)
+			os.Exit(1)
+		}
+
 		slog.Info("economy started", "workplaces", addrs)
 	} else {
 		slog.Info("economy disabled; WORKPLACE_ADDRS and AMQP_URL are both required")
 	}
 
 	mux := http.NewServeMux()
-	mux.Handle(worldv1connect.NewWorldServiceHandler(svc))
+	mux.Handle(worldv1connect.NewWorldServiceHandler(svc, gotel.WithInterceptor(otelInterceptor)))
 
 	// Part of the operational contract every service in this repo implements,
 	// whatever the language.

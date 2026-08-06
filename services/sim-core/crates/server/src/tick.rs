@@ -15,6 +15,7 @@ use tracing::Instrument;
 
 use crate::events;
 use crate::grpc::full_delta;
+use crate::metrics::Metrics;
 use crate::pb::pips::sim::v1 as simpb;
 
 pub struct Driver {
@@ -23,6 +24,7 @@ pub struct Driver {
     pub producer: FutureProducer,
     pub period: Duration,
     pub deltas: broadcast::Sender<simpb::WorldDelta>,
+    pub metrics: Metrics,
     /// Ticks between arrivals, or 0 to disable.
     ///
     /// Temporary. There is no food in the world yet — nothing produces it and
@@ -56,6 +58,7 @@ impl Driver {
     /// published here belongs to this span, so an envelope sitting in a topic
     /// can be taken straight to Jaeger.
     async fn step_once(&self) {
+        let started = std::time::Instant::now();
         let span = tracing::info_span!(
             "pipsim.sim-core.tick",
             otel.kind = "internal",
@@ -115,8 +118,16 @@ impl Driver {
                 let sent = events::publish(&self.producer, tick, &events).await;
                 tracing::info!(tick, produced = events.len(), sent, "facts published");
             }
+
+            self.metrics.pips_alive.record(pips as u64, &[]);
         }
         .instrument(span)
-        .await
+        .await;
+
+        // Outside the span's async block on purpose: this should capture the
+        // whole tick including the Kafka publish, not just sim::step.
+        self.metrics
+            .tick_duration
+            .record(started.elapsed().as_secs_f64(), &[]);
     }
 }

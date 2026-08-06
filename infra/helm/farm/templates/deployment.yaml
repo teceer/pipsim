@@ -52,6 +52,8 @@ spec:
             # keeps its own and only one of them may run.
             - name: REDIS_URL
               value: "redis://redis.{{ .Values.platformNamespace }}.svc.cluster.local:6379/0"
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "http://otel-collector.{{ .Values.platformNamespace }}.svc.cluster.local:4317"
           readinessProbe:
             httpGet:
               path: /healthz

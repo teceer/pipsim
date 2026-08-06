@@ -58,15 +58,17 @@ services:
       interval: 5s
       retries: 20
 
-  otel-collector:
-    image: otel/opentelemetry-collector-contrib:0.111.0
-    command: ["--config=/etc/otel/config.yaml"]
-    volumes: ["./infra/otel/collector.yaml:/etc/otel/config.yaml:ro"]
-    ports: ["4317:4317", "4318:4318"]
-
-  jaeger:
-    image: jaegertracing/all-in-one:1.62.0
-    ports: ["16686:16686"]
+  # otel-lgtm bundles the OTel Collector with Loki + Grafana + Tempo + Mimir/
+  # Prometheus in one image, with datasources and trace<->log<->metric
+  # correlation provisioned out of the box. It replaces the hand-rolled
+  # collector config plus Jaeger below. Grafana listens on 3000, which bff
+  # already owns on the host, so it is remapped to 3001.
+  observability:
+    image: grafana/otel-lgtm:0.30.0
+    ports: ["3001:3000", "4317:4317", "4318:4318"]
+    volumes:
+      - "./infra/grafana/dashboards-provisioning.yaml:/otel-lgtm/grafana/conf/provisioning/dashboards/pipsim.yaml:ro"
+      - "./infra/grafana/dashboards/pipsim.json:/otel-lgtm/grafana/conf/provisioning/dashboards/pipsim/pipsim.json:ro"
 
   # --- services ---------------------------------------------------------------
   # Behind a profile so that `make dev-platform` brings up the platform alone.
@@ -77,7 +79,7 @@ services:
     ports: ["50051:50051"]
     environment:
       KAFKA_BROKERS: redpanda:29092
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://observability:4317
       SIM_SEED: "42"          # determinism: fixed seed in dev
       SIM_TICK_HZ: "10"
     depends_on: { redpanda: { condition: service_healthy } }
@@ -90,7 +92,7 @@ services:
       SIM_CORE_ADDR: sim-core:50051
       KAFKA_BROKERS: redpanda:29092
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://observability:4317
     depends_on: { redpanda: { condition: service_healthy } }
 
   broadcast:
@@ -99,6 +101,8 @@ services:
     ports: ["4000:4000"]
     environment:
       WORLD_GATEWAY_ADDR: world-gateway:8081
+      OTEL_SERVICE_NAME: broadcast
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://observability:4317
 
   bff:
     build: ./services/bff
@@ -107,4 +111,6 @@ services:
     environment:
       REDIS_URL: redis://redis:6379
       WORLD_GATEWAY_URL: http://world-gateway:8081
+      OTEL_SERVICE_NAME: bff
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://observability:4317
     depends_on: { redis: { condition: service_healthy } }

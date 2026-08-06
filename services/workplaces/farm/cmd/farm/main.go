@@ -16,10 +16,14 @@ import (
 	"time"
 
 	"github.com/redis/go-redis/v9"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	otelmetric "go.opentelemetry.io/otel/metric"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 
 	"github.com/teceer/pipsim/gen/go/pips/workplace/v1/workplacev1connect"
+	"github.com/teceer/pipsim/services/shared/gotel"
 	"github.com/teceer/pipsim/services/workplaces/farm/internal/farm"
 	"github.com/teceer/pipsim/services/workplaces/farm/internal/queue"
 )
@@ -69,7 +73,19 @@ func daprSidecar() string {
 }
 
 func main() {
-	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
+	ctx := context.Background()
+	shutdown, err := gotel.Init(ctx, "farm")
+	if err != nil {
+		slog.Error("could not init telemetry", "err", err)
+		os.Exit(1)
+	}
+	defer shutdown(ctx)
+
+	otelInterceptor, err := gotel.Interceptor()
+	if err != nil {
+		slog.Error("could not build otel interceptor", "err", err)
+		os.Exit(1)
+	}
 
 	// This process hosts a *kind* of building, not one building. WORKPLACES is
 	// the multi-building form; the single WORKPLACE_ID/X/Y triple still works
@@ -145,6 +161,23 @@ func main() {
 		slog.Info("shift state in the dapr actor store", "sidecar", daprBase)
 	}
 
+	// svc.Workers(), not host.Workers(): under Dapr the plain Host bypasses the
+	// actor invocation daprStore requires and answers ERR_ACTOR_INSTANCE_MISSING,
+	// same reasoning as /healthz below.
+	if _, err := otel.Meter("farm").Int64ObservableGauge(
+		"pipsim.workplace.shift_occupancy",
+		otelmetric.WithDescription("Workers currently on shift"),
+		otelmetric.WithInt64Callback(func(_ context.Context, o otelmetric.Int64Observer) error {
+			o.Observe(int64(svc.Workers()), otelmetric.WithAttributes(
+				attribute.String("building_type", "farm"),
+			))
+			return nil
+		}),
+	); err != nil {
+		slog.Error("could not register shift_occupancy metric", "err", err)
+		os.Exit(1)
+	}
+
 	// Competing consumers: several replicas share pipsim.work.farm, so an offer
 	// goes to exactly one of them. Without a broker URL the farm still serves
 	// its RPCs and simply never receives offers.
@@ -167,7 +200,7 @@ func main() {
 	}
 
 	mux := http.NewServeMux()
-	mux.Handle(workplacev1connect.NewWorkplaceServiceHandler(svc))
+	mux.Handle(workplacev1connect.NewWorkplaceServiceHandler(svc, gotel.WithInterceptor(otelInterceptor)))
 
 	// The endpoints the sidecar calls back into. Disjoint paths from Connect's,
 	// so both contracts live on one port. Registered unconditionally: without a

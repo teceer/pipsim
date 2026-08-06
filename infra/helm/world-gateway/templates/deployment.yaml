@@ -39,6 +39,8 @@ spec:
               value: "{{ join "," .Values.workplaceAddrs }}"
             - name: AMQP_URL
               value: "amqp://pipsim:pipsim@rabbitmq.{{ .Values.platformNamespace }}.svc.cluster.local:5672/pipsim"
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "http://otel-collector.{{ .Values.platformNamespace }}.svc.cluster.local:4317"
           readinessProbe:
             httpGet:
               path: /healthz

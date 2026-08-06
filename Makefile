@@ -115,7 +115,7 @@ infra-down:
 # "local (no gateway)". Note that a forward dies with the pod behind it, so a
 # rollout of any of these means restarting this target.
 infra-forward:
-	@echo "jaeger          http://localhost:16686"
+	@echo "grafana         http://localhost:3001"
 	@echo "redpanda console http://localhost:8085"
 	@echo "rabbitmq        http://localhost:15672  (pipsim/pipsim)"
 	@echo "kafka           localhost:31092"
@@ -123,7 +123,7 @@ infra-forward:
 	@echo "world-gateway   http://localhost:8081   (what the web client dials)"
 	@echo
 	@kubectl -n pipsim port-forward svc/world-gateway 8081:8081 & \
-	 kubectl -n pipsim-platform port-forward svc/jaeger 16686:16686 & \
+	 kubectl -n pipsim-platform port-forward svc/otel-collector 3001:3000 & \
 	 kubectl -n pipsim-platform port-forward svc/redpanda-console 8085:8080 & \
 	 kubectl -n pipsim-platform port-forward svc/rabbitmq 15672:15672 & \
 	 kubectl -n pipsim-platform port-forward svc/postgres 5432:5432 & \
