@@ -24,9 +24,23 @@ use crate::telemetry;
 use crate::pb;
 use pb::pips::events::v1::{
     event_envelope::Payload, EventEnvelope, PipDied, PipEndedWork, PipGotHungry, PipSpawned,
-    PipStartedWork, WorkplaceBuilt,
+    PipStartedWork, PurchaseMade, WorkplaceBuilt,
 };
 use pb::pips::sim::v1 as simpb;
+
+/// `PurchaseMade.kind` is the generated `workplace.v1` enum, while
+/// `crates/sim` carries its own copy — the sim crate takes no dependencies,
+/// so the wire enum is not available to it. Same mirroring as
+/// `grpc::resource_kind`, in the other direction.
+fn resource_kind_pb(kind: sim::ResourceKind) -> pb::pips::workplace::v1::ResourceKind {
+    use pb::pips::workplace::v1::ResourceKind as Pb;
+    match kind {
+        sim::ResourceKind::Grain => Pb::Grain,
+        sim::ResourceKind::Food => Pb::Food,
+        sim::ResourceKind::Tool => Pb::Tool,
+        sim::ResourceKind::Ale => Pb::Ale,
+    }
+}
 
 pub const TOPIC_LIFECYCLE: &str = "pipsim.pip.lifecycle.v1";
 pub const TOPIC_WORK: &str = "pipsim.pip.work.v1";
@@ -35,6 +49,11 @@ pub const TOPIC_WORK: &str = "pipsim.pip.work.v1";
 /// Terraform layer 20 — a consumer rebuilding a map of the world reads it from
 /// the beginning and ends up with one entry per building.
 pub const TOPIC_BUILDINGS: &str = "pipsim.world.buildings.v1";
+/// Purchases, keyed by pip. Separate from the bank's own
+/// `pipsim.economy.money.v1` on purpose: the bank consumes this one to book
+/// what the core decided, and a service that both produced and consumed one
+/// topic would be reading its own writes back.
+pub const TOPIC_PURCHASES: &str = "pipsim.economy.purchases.v1";
 
 /// Envelope plus its routing decision: which topic, and which key.
 struct Routed {
@@ -129,6 +148,21 @@ fn route(tick: u64, event: &DomainEvent) -> Routed {
                     y_milli: position.y,
                 }),
                 max_workers: *capacity as i32,
+            }),
+        ),
+        DomainEvent::PurchaseMade {
+            pip,
+            workplace,
+            amount,
+            resource,
+        } => (
+            TOPIC_PURCHASES,
+            pip.to_string(),
+            Payload::PurchaseMade(PurchaseMade {
+                payer: format!("pip:{pip}"),
+                payee: format!("workplace:{workplace}"),
+                amount: *amount,
+                kind: resource_kind_pb(*resource) as i32,
             }),
         ),
     };

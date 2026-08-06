@@ -144,6 +144,21 @@ pub fn need_effects(kind: ResourceKind) -> Needs {
     }
 }
 
+/// Why money is moving. Mirrors `pips.sim.v1.TransferKind`.
+///
+/// Load-bearing rather than descriptive: `Issuance` is what exempts the
+/// treasury from the balance check, and that privilege is carried by the
+/// transfer instead of inferred from who the payer is. Without it, every
+/// movement out of the treasury could mint.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum TransferKind {
+    Unspecified,
+    Wage,
+    Purchase,
+    Issuance,
+    Escheat,
+}
+
 /// Intents are queued and applied at the START of a tick, never mid-tick.
 /// Applying them as they arrive would make the outcome depend on network
 /// timing, which is exactly what determinism forbids.
@@ -205,6 +220,7 @@ pub enum Intent {
         payee: AccountId,
         amount: i64,
         resource_kind: Option<ResourceKind>,
+        kind: TransferKind,
     },
     /// Payroll, batched. A workplace's shift population is paid in one
     /// intent carrying every pip's credit, rather than one intent per pip —
@@ -265,6 +281,19 @@ pub enum DomainEvent {
     PipDied {
         pip: PipId,
         cause: &'static str,
+    },
+    /// A pip bought something, and the core is the authority that says so.
+    ///
+    /// The bank books this rather than deciding it. A purchase is settled
+    /// against the pip's replica balance inside a tick, which is the one
+    /// place the decision can be made without a network call — so the core
+    /// gates it and the ledger records what happened. Emitted only when the
+    /// transfer actually applied.
+    PurchaseMade {
+        pip: PipId,
+        workplace: WorkplaceId,
+        amount: i64,
+        resource: ResourceKind,
     },
 }
 
@@ -569,25 +598,65 @@ impl World {
                     payee,
                     amount,
                     resource_kind,
+                    kind,
                 } => {
                     // Rejected silently, no partial effect: the core is never
                     // behind on spending. It can only be behind on income not
-                    // yet applied. The treasury is the one account exempt from
-                    // the check — issuance is money supply growing on
-                    // purpose, and its balance is expected to go negative.
+                    // yet applied.
                     let Some(payer_balance) = self.balance_of(*payer) else {
                         continue;
                     };
-                    let payer_can_afford =
-                        *payer == AccountId::Treasury || payer_balance >= *amount;
-                    if self.balance_of(*payee).is_none() || !payer_can_afford {
+                    if self.balance_of(*payee).is_none() {
                         continue;
                     }
+
+                    // The treasury may go negative, because issuance is the
+                    // money supply growing on purpose. That privilege is
+                    // granted by the transfer's kind, never by the payer's
+                    // identity — otherwise every movement out of the treasury
+                    // could mint, and a mislabelled one would do it silently.
+                    let may_run_negative =
+                        *payer == AccountId::Treasury && *kind == TransferKind::Issuance;
+                    if !may_run_negative && payer_balance < *amount {
+                        continue;
+                    }
+
+                    // A purchase is a physical act. ADR 0004 made buildings
+                    // places rather than addresses and hiring a walk rather
+                    // than a teleport; buying is subject to the same rule, or
+                    // money quietly reintroduces the addressing model that ADR
+                    // replaced. The pip must be inside the seller.
+                    if let Some(resource) = resource_kind {
+                        let (AccountId::Pip(pip), AccountId::Workplace(seller)) = (*payer, *payee)
+                        else {
+                            continue;
+                        };
+                        let Some(i) = self.index_of(pip) else {
+                            continue;
+                        };
+                        if self.inside[i] != Some(seller) {
+                            continue;
+                        }
+
+                        self.adjust_balance(*payer, -*amount);
+                        self.adjust_balance(*payee, *amount);
+                        self.consume(pip, *resource);
+
+                        // The core gates the purchase, so the core is what
+                        // says it happened; the bank books this fact rather
+                        // than deciding it. Emitted only on the path where
+                        // the money actually moved.
+                        events.push(DomainEvent::PurchaseMade {
+                            pip,
+                            workplace: seller,
+                            amount: *amount,
+                            resource: *resource,
+                        });
+                        continue;
+                    }
+
                     self.adjust_balance(*payer, -*amount);
                     self.adjust_balance(*payee, *amount);
-                    if let (AccountId::Pip(pip), Some(kind)) = (*payer, resource_kind) {
-                        self.consume(pip, *kind);
-                    }
                 }
                 Intent::CreditBalances { payer, credits } => {
                     // Only pips that still exist are paid, and the payer is
@@ -1297,6 +1366,7 @@ mod tests {
             payee: AccountId::Workplace(9),
             amount: 100,
             resource_kind: None,
+            kind: TransferKind::Issuance,
         }]);
 
         w.step(&[Intent::CreditBalances {
@@ -1326,6 +1396,20 @@ mod tests {
         assert_eq!(w.workplace_balances[0], 0);
     }
 
+    /// Walk a hired pip until it is inside its workplace. Buying is physical,
+    /// so most money tests need a pip that has actually arrived somewhere.
+    fn walk_inside(w: &mut World, pip: PipId, workplace: WorkplaceId) {
+        w.step(&[Intent::Hire { pip, workplace }]);
+        for _ in 0..400 {
+            let i = w.index_of(pip).expect("pip should still exist");
+            if w.inside[i] == Some(workplace) {
+                return;
+            }
+            w.step(&[]);
+        }
+        panic!("pip never reached its workplace");
+    }
+
     /// Buying a resource moves money and consumes it in the same intent.
     #[test]
     fn transfer_with_a_resource_kind_pays_and_consumes() {
@@ -1337,19 +1421,95 @@ mod tests {
             payee: AccountId::Pip(1),
             amount: 10,
             resource_kind: None,
+            kind: TransferKind::Issuance,
         }]);
+        walk_inside(&mut w, 1, 9);
+
         let social_before = w.needs[0].social;
-        w.step(&[]); // let social decay a little so the restore is visible
-        w.step(&[Intent::Transfer {
+        let events = w.step(&[Intent::Transfer {
             payer: AccountId::Pip(1),
             payee: AccountId::Workplace(9),
             amount: 4,
             resource_kind: Some(ResourceKind::Ale),
+            kind: TransferKind::Purchase,
         }]);
 
         assert_eq!(w.balances[0], 6);
         assert_eq!(w.workplace_balances[0], 4);
         assert!(w.needs[0].social >= social_before);
+        assert!(
+            events
+                .iter()
+                .any(|e| matches!(e, DomainEvent::PurchaseMade { .. })),
+            "the core gates the purchase, so it is what reports one"
+        );
+    }
+
+    /// ADR 0004 made buildings places rather than addresses. Buying is subject
+    /// to the same rule: a pip cannot shop from across the map, or money
+    /// quietly reintroduces the model that ADR replaced.
+    #[test]
+    fn a_pip_cannot_buy_from_a_building_it_is_not_inside() {
+        let mut w = World::new(42);
+        w.step(&spawn(1));
+        w.step(&[build(9, 8)]);
+        w.step(&[Intent::Transfer {
+            payer: AccountId::Treasury,
+            payee: AccountId::Pip(1),
+            amount: 10,
+            resource_kind: None,
+            kind: TransferKind::Issuance,
+        }]);
+        assert_eq!(w.inside[0], None, "the pip is outside to begin with");
+
+        let social_before = w.needs[0].social;
+        let events = w.step(&[Intent::Transfer {
+            payer: AccountId::Pip(1),
+            payee: AccountId::Workplace(9),
+            amount: 4,
+            resource_kind: Some(ResourceKind::Ale),
+            kind: TransferKind::Purchase,
+        }]);
+
+        assert_eq!(w.balances[0], 10, "no money moved");
+        assert_eq!(w.workplace_balances[0], 0);
+        assert!(w.needs[0].social <= social_before, "nothing was consumed");
+        assert!(
+            !events
+                .iter()
+                .any(|e| matches!(e, DomainEvent::PurchaseMade { .. })),
+            "a rejected purchase is not a fact"
+        );
+    }
+
+    /// The treasury may go negative, but only for an issuance. The privilege
+    /// is carried by the transfer, never inferred from who is paying —
+    /// otherwise any movement out of the treasury could mint.
+    #[test]
+    fn only_an_issuance_lets_the_treasury_run_negative() {
+        let mut w = World::new(42);
+        w.step(&spawn(1));
+
+        w.step(&[Intent::Transfer {
+            payer: AccountId::Treasury,
+            payee: AccountId::Pip(1),
+            amount: 100,
+            resource_kind: None,
+            kind: TransferKind::Wage,
+        }]);
+        assert_eq!(w.balances[0], 0, "a treasury with nothing cannot pay wages");
+        assert_eq!(w.treasury_balance, 0);
+
+        w.step(&[Intent::Transfer {
+            payer: AccountId::Treasury,
+            payee: AccountId::Pip(1),
+            amount: 100,
+            resource_kind: None,
+            kind: TransferKind::Issuance,
+        }]);
+        assert_eq!(w.balances[0], 100, "an issuance mints");
+        assert_eq!(w.treasury_balance, -100);
+        assert_eq!(total_money(&w), 0, "and the supply stays closed");
     }
 
     /// A pip can never spend money it does not have — the transfer is
@@ -1365,6 +1525,7 @@ mod tests {
             payee: AccountId::Workplace(9),
             amount: 4,
             resource_kind: Some(ResourceKind::Ale),
+            kind: TransferKind::Purchase,
         }]);
 
         assert_eq!(w.balances[0], 0);
@@ -1384,6 +1545,7 @@ mod tests {
             payee: AccountId::Pip(1),
             amount: 10,
             resource_kind: None,
+            kind: TransferKind::Issuance,
         }]);
 
         assert_ne!(before, w.state_hash());
@@ -1412,6 +1574,7 @@ mod tests {
             payee: AccountId::Pip(1),
             amount: 500,
             resource_kind: None,
+            kind: TransferKind::Issuance,
         }]);
         assert_eq!(w.balances[0], 500);
         assert_eq!(total_money(&w), 0, "issuance keeps the supply closed");
@@ -1442,6 +1605,7 @@ mod tests {
             payee: AccountId::Workplace(9),
             amount: 1_000,
             resource_kind: None,
+            kind: TransferKind::Issuance,
         }]);
         let before = total_money(&w);
 
@@ -1471,6 +1635,7 @@ mod tests {
             payee: AccountId::Workplace(9),
             amount: 10,
             resource_kind: None,
+            kind: TransferKind::Issuance,
         }]);
 
         // 10 covers the living pip alone; it would not cover both entries.

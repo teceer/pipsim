@@ -16,7 +16,7 @@ use tokio_stream::wrappers::BroadcastStream;
 use tokio_stream::{Stream, StreamExt};
 use tonic::{Request, Response, Status};
 
-use sim::{AccountId, Activity, Intent, ResourceKind, Vec2, World};
+use sim::{AccountId, Activity, Intent, ResourceKind, TransferKind, Vec2, World};
 
 use crate::pb::pips::sim::v1 as pb;
 use pb::sim_service_server::SimService;
@@ -25,6 +25,19 @@ use pb::sim_service_server::SimService;
 const NEED_FOOD: i32 = 1;
 const NEED_REST: i32 = 2;
 const NEED_SOCIAL: i32 = 3;
+
+/// Mirrors `pips.sim.v1.TransferKind`. An unrecognised value maps to
+/// `Unspecified`, which grants no privilege — a transfer whose kind did not
+/// survive the wire must not be able to mint.
+fn transfer_kind(value: i32) -> TransferKind {
+    match pb::TransferKind::try_from(value) {
+        Ok(pb::TransferKind::Wage) => TransferKind::Wage,
+        Ok(pb::TransferKind::Purchase) => TransferKind::Purchase,
+        Ok(pb::TransferKind::Issuance) => TransferKind::Issuance,
+        Ok(pb::TransferKind::Escheat) => TransferKind::Escheat,
+        _ => TransferKind::Unspecified,
+    }
+}
 
 /// Mirrors `pips.workplace.v1.ResourceKind`. `TransferIntent.resource_kind`
 /// carries it as a bare int32 rather than the generated enum type, because
@@ -170,6 +183,7 @@ impl SimService for SimServiceImpl {
                 needs: needs_map(&w.needs[i]),
                 employer_workplace_id: w.employers[i],
                 inside_workplace_id: w.inside[i],
+                balance: w.balances[i],
             })
             .collect();
 
@@ -274,6 +288,7 @@ impl SimService for SimServiceImpl {
                     payee,
                     amount: t.amount,
                     resource_kind: resource_kind(t.resource_kind),
+                    kind: transfer_kind(t.kind),
                 }
             }
             pb::submit_intent_request::Intent::CreditBalances(c) => {

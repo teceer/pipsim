@@ -135,6 +135,66 @@ func (PipActivity) EnumDescriptor() ([]byte, []int) {
 	return file_pips_sim_v1_sim_proto_rawDescGZIP(), []int{1}
 }
 
+// Mirrors pips.bank.v1.TransferKind. Deliberately a second declaration rather
+// than an import: the bank's enum describes a row in a journal, this one
+// describes a privilege the core grants while applying an intent. They happen
+// to have the same members today; tying them together would make the core's
+// rules change whenever bookkeeping gains a category.
+type TransferKind int32
+
+const (
+	TransferKind_TRANSFER_KIND_UNSPECIFIED TransferKind = 0
+	TransferKind_TRANSFER_KIND_WAGE        TransferKind = 1
+	TransferKind_TRANSFER_KIND_PURCHASE    TransferKind = 2
+	TransferKind_TRANSFER_KIND_ISSUANCE    TransferKind = 3
+	TransferKind_TRANSFER_KIND_ESCHEAT     TransferKind = 4
+)
+
+// Enum value maps for TransferKind.
+var (
+	TransferKind_name = map[int32]string{
+		0: "TRANSFER_KIND_UNSPECIFIED",
+		1: "TRANSFER_KIND_WAGE",
+		2: "TRANSFER_KIND_PURCHASE",
+		3: "TRANSFER_KIND_ISSUANCE",
+		4: "TRANSFER_KIND_ESCHEAT",
+	}
+	TransferKind_value = map[string]int32{
+		"TRANSFER_KIND_UNSPECIFIED": 0,
+		"TRANSFER_KIND_WAGE":        1,
+		"TRANSFER_KIND_PURCHASE":    2,
+		"TRANSFER_KIND_ISSUANCE":    3,
+		"TRANSFER_KIND_ESCHEAT":     4,
+	}
+)
+
+func (x TransferKind) Enum() *TransferKind {
+	p := new(TransferKind)
+	*p = x
+	return p
+}
+
+func (x TransferKind) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (TransferKind) Descriptor() protoreflect.EnumDescriptor {
+	return file_pips_sim_v1_sim_proto_enumTypes[2].Descriptor()
+}
+
+func (TransferKind) Type() protoreflect.EnumType {
+	return &file_pips_sim_v1_sim_proto_enumTypes[2]
+}
+
+func (x TransferKind) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use TransferKind.Descriptor instead.
+func (TransferKind) EnumDescriptor() ([]byte, []int) {
+	return file_pips_sim_v1_sim_proto_rawDescGZIP(), []int{2}
+}
+
 type Vec2 struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	XMilli        int32                  `protobuf:"varint,1,opt,name=x_milli,json=xMilli,proto3" json:"x_milli,omitempty"`
@@ -200,8 +260,13 @@ type Pip struct {
 	// who employs it: a hired pip is outside for the whole walk there, and stays
 	// outside if it arrives to a full building.
 	InsideWorkplaceId *uint64 `protobuf:"varint,7,opt,name=inside_workplace_id,json=insideWorkplaceId,proto3,oneof" json:"inside_workplace_id,omitempty"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
+	// The core's replica of the pip's bank balance. Exposed so the gateway can
+	// answer "can this pip afford it" before submitting an intent, and so a
+	// client can draw it. The bank remains authoritative for history and
+	// solvency — this is what the core will actually settle a purchase against.
+	Balance       int64 `protobuf:"varint,8,opt,name=balance,proto3" json:"balance,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Pip) Reset() {
@@ -279,6 +344,13 @@ func (x *Pip) GetEmployerWorkplaceId() uint64 {
 func (x *Pip) GetInsideWorkplaceId() uint64 {
 	if x != nil && x.InsideWorkplaceId != nil {
 		return *x.InsideWorkplaceId
+	}
+	return 0
+}
+
+func (x *Pip) GetBalance() int64 {
+	if x != nil {
+		return x.Balance
 	}
 	return 0
 }
@@ -1414,8 +1486,15 @@ type TransferIntent struct {
 	// also runs Consume for the payer in the same intent. Declared as int32,
 	// not pips.workplace.v1.ResourceKind, because workplace.proto already
 	// imports this file and a back-import would be circular.
-	ResourceKind  int32  `protobuf:"varint,4,opt,name=resource_kind,json=resourceKind,proto3" json:"resource_kind,omitempty"`
-	Tick          uint64 `protobuf:"varint,5,opt,name=tick,proto3" json:"tick,omitempty"`
+	ResourceKind int32  `protobuf:"varint,4,opt,name=resource_kind,json=resourceKind,proto3" json:"resource_kind,omitempty"`
+	Tick         uint64 `protobuf:"varint,5,opt,name=tick,proto3" json:"tick,omitempty"`
+	// What kind of movement this is. Load-bearing, not descriptive: the
+	// treasury is exempt from the balance check because issuance is the money
+	// supply growing on purpose, and that exemption is granted by this field
+	// rather than inferred from the payer being the treasury. Without it every
+	// transfer out of the treasury can mint, and the core has no way to tell an
+	// issuance from a mistake.
+	Kind          TransferKind `protobuf:"varint,6,opt,name=kind,proto3,enum=pips.sim.v1.TransferKind" json:"kind,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1483,6 +1562,13 @@ func (x *TransferIntent) GetTick() uint64 {
 		return x.Tick
 	}
 	return 0
+}
+
+func (x *TransferIntent) GetKind() TransferKind {
+	if x != nil {
+		return x.Kind
+	}
+	return TransferKind_TRANSFER_KIND_UNSPECIFIED
 }
 
 // Payroll, batched. A workplace's shift population is paid in one intent
@@ -1607,7 +1693,7 @@ const file_pips_sim_v1_sim_proto_rawDesc = "" +
 	"\x15pips/sim/v1/sim.proto\x12\vpips.sim.v1\"8\n" +
 	"\x04Vec2\x12\x17\n" +
 	"\ax_milli\x18\x01 \x01(\x05R\x06xMilli\x12\x17\n" +
-	"\ay_milli\x18\x02 \x01(\x05R\x06yMilli\"\x9b\x03\n" +
+	"\ay_milli\x18\x02 \x01(\x05R\x06yMilli\"\xb5\x03\n" +
 	"\x03Pip\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x04R\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12-\n" +
@@ -1615,7 +1701,8 @@ const file_pips_sim_v1_sim_proto_rawDesc = "" +
 	"\bactivity\x18\x04 \x01(\x0e2\x18.pips.sim.v1.PipActivityR\bactivity\x121\n" +
 	"\x05needs\x18\x05 \x03(\v2\x1b.pips.sim.v1.Pip.NeedsEntryR\x05needs\x127\n" +
 	"\x15employer_workplace_id\x18\x06 \x01(\x04H\x00R\x13employerWorkplaceId\x88\x01\x01\x123\n" +
-	"\x13inside_workplace_id\x18\a \x01(\x04H\x01R\x11insideWorkplaceId\x88\x01\x01\x1a8\n" +
+	"\x13inside_workplace_id\x18\a \x01(\x04H\x01R\x11insideWorkplaceId\x88\x01\x01\x12\x18\n" +
+	"\abalance\x18\b \x01(\x03R\abalance\x1a8\n" +
 	"\n" +
 	"NeedsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\x05R\x03key\x12\x14\n" +
@@ -1707,13 +1794,14 @@ const file_pips_sim_v1_sim_proto_rawDesc = "" +
 	"needDeltas\x1a=\n" +
 	"\x0fNeedDeltasEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\x05R\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\x05R\x05value:\x028\x01\"\xb5\x01\n" +
+	"\x05value\x18\x02 \x01(\x05R\x05value:\x028\x01\"\xe4\x01\n" +
 	"\x0eTransferIntent\x12(\n" +
 	"\x10payer_account_id\x18\x01 \x01(\tR\x0epayerAccountId\x12(\n" +
 	"\x10payee_account_id\x18\x02 \x01(\tR\x0epayeeAccountId\x12\x16\n" +
 	"\x06amount\x18\x03 \x01(\x03R\x06amount\x12#\n" +
 	"\rresource_kind\x18\x04 \x01(\x05R\fresourceKind\x12\x12\n" +
-	"\x04tick\x18\x05 \x01(\x04R\x04tick\"\xd1\x01\n" +
+	"\x04tick\x18\x05 \x01(\x04R\x04tick\x12-\n" +
+	"\x04kind\x18\x06 \x01(\x0e2\x19.pips.sim.v1.TransferKindR\x04kind\"\xd1\x01\n" +
 	"\x14CreditBalancesIntent\x12(\n" +
 	"\x10payer_account_id\x18\x01 \x01(\tR\x0epayerAccountId\x12B\n" +
 	"\acredits\x18\x02 \x03(\v2(.pips.sim.v1.CreditBalancesIntent.CreditR\acredits\x12\x12\n" +
@@ -1733,7 +1821,13 @@ const file_pips_sim_v1_sim_proto_rawDesc = "" +
 	"\x14PIP_ACTIVITY_WORKING\x10\x03\x12\x17\n" +
 	"\x13PIP_ACTIVITY_EATING\x10\x04\x12\x19\n" +
 	"\x15PIP_ACTIVITY_SLEEPING\x10\x05\x12\x1a\n" +
-	"\x16PIP_ACTIVITY_COMMUTING\x10\x062\xbb\x02\n" +
+	"\x16PIP_ACTIVITY_COMMUTING\x10\x06*\x98\x01\n" +
+	"\fTransferKind\x12\x1d\n" +
+	"\x19TRANSFER_KIND_UNSPECIFIED\x10\x00\x12\x16\n" +
+	"\x12TRANSFER_KIND_WAGE\x10\x01\x12\x1a\n" +
+	"\x16TRANSFER_KIND_PURCHASE\x10\x02\x12\x1a\n" +
+	"\x16TRANSFER_KIND_ISSUANCE\x10\x03\x12\x19\n" +
+	"\x15TRANSFER_KIND_ESCHEAT\x10\x042\xbb\x02\n" +
 	"\n" +
 	"SimService\x12;\n" +
 	"\x04Step\x12\x18.pips.sim.v1.StepRequest\x1a\x19.pips.sim.v1.StepResponse\x12G\n" +
@@ -1754,77 +1848,79 @@ func file_pips_sim_v1_sim_proto_rawDescGZIP() []byte {
 	return file_pips_sim_v1_sim_proto_rawDescData
 }
 
-var file_pips_sim_v1_sim_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
+var file_pips_sim_v1_sim_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
 var file_pips_sim_v1_sim_proto_msgTypes = make([]protoimpl.MessageInfo, 25)
 var file_pips_sim_v1_sim_proto_goTypes = []any{
 	(Need)(0),                           // 0: pips.sim.v1.Need
 	(PipActivity)(0),                    // 1: pips.sim.v1.PipActivity
-	(*Vec2)(nil),                        // 2: pips.sim.v1.Vec2
-	(*Pip)(nil),                         // 3: pips.sim.v1.Pip
-	(*Workplace)(nil),                   // 4: pips.sim.v1.Workplace
-	(*StepRequest)(nil),                 // 5: pips.sim.v1.StepRequest
-	(*StepResponse)(nil),                // 6: pips.sim.v1.StepResponse
-	(*WorldDelta)(nil),                  // 7: pips.sim.v1.WorldDelta
-	(*PipDelta)(nil),                    // 8: pips.sim.v1.PipDelta
-	(*SnapshotRequest)(nil),             // 9: pips.sim.v1.SnapshotRequest
-	(*SnapshotResponse)(nil),            // 10: pips.sim.v1.SnapshotResponse
-	(*WatchDeltasRequest)(nil),          // 11: pips.sim.v1.WatchDeltasRequest
-	(*WatchDeltasResponse)(nil),         // 12: pips.sim.v1.WatchDeltasResponse
-	(*SubmitIntentRequest)(nil),         // 13: pips.sim.v1.SubmitIntentRequest
-	(*SubmitIntentResponse)(nil),        // 14: pips.sim.v1.SubmitIntentResponse
-	(*HireIntent)(nil),                  // 15: pips.sim.v1.HireIntent
-	(*EndEmploymentIntent)(nil),         // 16: pips.sim.v1.EndEmploymentIntent
-	(*RegisterWorkplaceIntent)(nil),     // 17: pips.sim.v1.RegisterWorkplaceIntent
-	(*MoveIntent)(nil),                  // 18: pips.sim.v1.MoveIntent
-	(*SpawnPipIntent)(nil),              // 19: pips.sim.v1.SpawnPipIntent
-	(*ApplyNeedsIntent)(nil),            // 20: pips.sim.v1.ApplyNeedsIntent
-	(*TransferIntent)(nil),              // 21: pips.sim.v1.TransferIntent
-	(*CreditBalancesIntent)(nil),        // 22: pips.sim.v1.CreditBalancesIntent
-	nil,                                 // 23: pips.sim.v1.Pip.NeedsEntry
-	nil,                                 // 24: pips.sim.v1.PipDelta.NeedsEntry
-	nil,                                 // 25: pips.sim.v1.ApplyNeedsIntent.NeedDeltasEntry
-	(*CreditBalancesIntent_Credit)(nil), // 26: pips.sim.v1.CreditBalancesIntent.Credit
+	(TransferKind)(0),                   // 2: pips.sim.v1.TransferKind
+	(*Vec2)(nil),                        // 3: pips.sim.v1.Vec2
+	(*Pip)(nil),                         // 4: pips.sim.v1.Pip
+	(*Workplace)(nil),                   // 5: pips.sim.v1.Workplace
+	(*StepRequest)(nil),                 // 6: pips.sim.v1.StepRequest
+	(*StepResponse)(nil),                // 7: pips.sim.v1.StepResponse
+	(*WorldDelta)(nil),                  // 8: pips.sim.v1.WorldDelta
+	(*PipDelta)(nil),                    // 9: pips.sim.v1.PipDelta
+	(*SnapshotRequest)(nil),             // 10: pips.sim.v1.SnapshotRequest
+	(*SnapshotResponse)(nil),            // 11: pips.sim.v1.SnapshotResponse
+	(*WatchDeltasRequest)(nil),          // 12: pips.sim.v1.WatchDeltasRequest
+	(*WatchDeltasResponse)(nil),         // 13: pips.sim.v1.WatchDeltasResponse
+	(*SubmitIntentRequest)(nil),         // 14: pips.sim.v1.SubmitIntentRequest
+	(*SubmitIntentResponse)(nil),        // 15: pips.sim.v1.SubmitIntentResponse
+	(*HireIntent)(nil),                  // 16: pips.sim.v1.HireIntent
+	(*EndEmploymentIntent)(nil),         // 17: pips.sim.v1.EndEmploymentIntent
+	(*RegisterWorkplaceIntent)(nil),     // 18: pips.sim.v1.RegisterWorkplaceIntent
+	(*MoveIntent)(nil),                  // 19: pips.sim.v1.MoveIntent
+	(*SpawnPipIntent)(nil),              // 20: pips.sim.v1.SpawnPipIntent
+	(*ApplyNeedsIntent)(nil),            // 21: pips.sim.v1.ApplyNeedsIntent
+	(*TransferIntent)(nil),              // 22: pips.sim.v1.TransferIntent
+	(*CreditBalancesIntent)(nil),        // 23: pips.sim.v1.CreditBalancesIntent
+	nil,                                 // 24: pips.sim.v1.Pip.NeedsEntry
+	nil,                                 // 25: pips.sim.v1.PipDelta.NeedsEntry
+	nil,                                 // 26: pips.sim.v1.ApplyNeedsIntent.NeedDeltasEntry
+	(*CreditBalancesIntent_Credit)(nil), // 27: pips.sim.v1.CreditBalancesIntent.Credit
 }
 var file_pips_sim_v1_sim_proto_depIdxs = []int32{
-	2,  // 0: pips.sim.v1.Pip.position:type_name -> pips.sim.v1.Vec2
+	3,  // 0: pips.sim.v1.Pip.position:type_name -> pips.sim.v1.Vec2
 	1,  // 1: pips.sim.v1.Pip.activity:type_name -> pips.sim.v1.PipActivity
-	23, // 2: pips.sim.v1.Pip.needs:type_name -> pips.sim.v1.Pip.NeedsEntry
-	2,  // 3: pips.sim.v1.Workplace.position:type_name -> pips.sim.v1.Vec2
-	7,  // 4: pips.sim.v1.StepResponse.delta:type_name -> pips.sim.v1.WorldDelta
-	8,  // 5: pips.sim.v1.WorldDelta.pips:type_name -> pips.sim.v1.PipDelta
-	4,  // 6: pips.sim.v1.WorldDelta.workplaces:type_name -> pips.sim.v1.Workplace
-	2,  // 7: pips.sim.v1.PipDelta.position:type_name -> pips.sim.v1.Vec2
+	24, // 2: pips.sim.v1.Pip.needs:type_name -> pips.sim.v1.Pip.NeedsEntry
+	3,  // 3: pips.sim.v1.Workplace.position:type_name -> pips.sim.v1.Vec2
+	8,  // 4: pips.sim.v1.StepResponse.delta:type_name -> pips.sim.v1.WorldDelta
+	9,  // 5: pips.sim.v1.WorldDelta.pips:type_name -> pips.sim.v1.PipDelta
+	5,  // 6: pips.sim.v1.WorldDelta.workplaces:type_name -> pips.sim.v1.Workplace
+	3,  // 7: pips.sim.v1.PipDelta.position:type_name -> pips.sim.v1.Vec2
 	1,  // 8: pips.sim.v1.PipDelta.activity:type_name -> pips.sim.v1.PipActivity
-	24, // 9: pips.sim.v1.PipDelta.needs:type_name -> pips.sim.v1.PipDelta.NeedsEntry
-	3,  // 10: pips.sim.v1.SnapshotResponse.pips:type_name -> pips.sim.v1.Pip
-	4,  // 11: pips.sim.v1.SnapshotResponse.workplaces:type_name -> pips.sim.v1.Workplace
-	7,  // 12: pips.sim.v1.WatchDeltasResponse.delta:type_name -> pips.sim.v1.WorldDelta
-	15, // 13: pips.sim.v1.SubmitIntentRequest.hire:type_name -> pips.sim.v1.HireIntent
-	18, // 14: pips.sim.v1.SubmitIntentRequest.move:type_name -> pips.sim.v1.MoveIntent
-	19, // 15: pips.sim.v1.SubmitIntentRequest.spawn:type_name -> pips.sim.v1.SpawnPipIntent
-	20, // 16: pips.sim.v1.SubmitIntentRequest.apply_needs:type_name -> pips.sim.v1.ApplyNeedsIntent
-	17, // 17: pips.sim.v1.SubmitIntentRequest.register_workplace:type_name -> pips.sim.v1.RegisterWorkplaceIntent
-	16, // 18: pips.sim.v1.SubmitIntentRequest.end_employment:type_name -> pips.sim.v1.EndEmploymentIntent
-	21, // 19: pips.sim.v1.SubmitIntentRequest.transfer:type_name -> pips.sim.v1.TransferIntent
-	22, // 20: pips.sim.v1.SubmitIntentRequest.credit_balances:type_name -> pips.sim.v1.CreditBalancesIntent
-	2,  // 21: pips.sim.v1.RegisterWorkplaceIntent.position:type_name -> pips.sim.v1.Vec2
-	2,  // 22: pips.sim.v1.MoveIntent.destination:type_name -> pips.sim.v1.Vec2
-	2,  // 23: pips.sim.v1.SpawnPipIntent.position:type_name -> pips.sim.v1.Vec2
-	25, // 24: pips.sim.v1.ApplyNeedsIntent.need_deltas:type_name -> pips.sim.v1.ApplyNeedsIntent.NeedDeltasEntry
-	26, // 25: pips.sim.v1.CreditBalancesIntent.credits:type_name -> pips.sim.v1.CreditBalancesIntent.Credit
-	5,  // 26: pips.sim.v1.SimService.Step:input_type -> pips.sim.v1.StepRequest
-	9,  // 27: pips.sim.v1.SimService.Snapshot:input_type -> pips.sim.v1.SnapshotRequest
-	11, // 28: pips.sim.v1.SimService.WatchDeltas:input_type -> pips.sim.v1.WatchDeltasRequest
-	13, // 29: pips.sim.v1.SimService.SubmitIntent:input_type -> pips.sim.v1.SubmitIntentRequest
-	6,  // 30: pips.sim.v1.SimService.Step:output_type -> pips.sim.v1.StepResponse
-	10, // 31: pips.sim.v1.SimService.Snapshot:output_type -> pips.sim.v1.SnapshotResponse
-	12, // 32: pips.sim.v1.SimService.WatchDeltas:output_type -> pips.sim.v1.WatchDeltasResponse
-	14, // 33: pips.sim.v1.SimService.SubmitIntent:output_type -> pips.sim.v1.SubmitIntentResponse
-	30, // [30:34] is the sub-list for method output_type
-	26, // [26:30] is the sub-list for method input_type
-	26, // [26:26] is the sub-list for extension type_name
-	26, // [26:26] is the sub-list for extension extendee
-	0,  // [0:26] is the sub-list for field type_name
+	25, // 9: pips.sim.v1.PipDelta.needs:type_name -> pips.sim.v1.PipDelta.NeedsEntry
+	4,  // 10: pips.sim.v1.SnapshotResponse.pips:type_name -> pips.sim.v1.Pip
+	5,  // 11: pips.sim.v1.SnapshotResponse.workplaces:type_name -> pips.sim.v1.Workplace
+	8,  // 12: pips.sim.v1.WatchDeltasResponse.delta:type_name -> pips.sim.v1.WorldDelta
+	16, // 13: pips.sim.v1.SubmitIntentRequest.hire:type_name -> pips.sim.v1.HireIntent
+	19, // 14: pips.sim.v1.SubmitIntentRequest.move:type_name -> pips.sim.v1.MoveIntent
+	20, // 15: pips.sim.v1.SubmitIntentRequest.spawn:type_name -> pips.sim.v1.SpawnPipIntent
+	21, // 16: pips.sim.v1.SubmitIntentRequest.apply_needs:type_name -> pips.sim.v1.ApplyNeedsIntent
+	18, // 17: pips.sim.v1.SubmitIntentRequest.register_workplace:type_name -> pips.sim.v1.RegisterWorkplaceIntent
+	17, // 18: pips.sim.v1.SubmitIntentRequest.end_employment:type_name -> pips.sim.v1.EndEmploymentIntent
+	22, // 19: pips.sim.v1.SubmitIntentRequest.transfer:type_name -> pips.sim.v1.TransferIntent
+	23, // 20: pips.sim.v1.SubmitIntentRequest.credit_balances:type_name -> pips.sim.v1.CreditBalancesIntent
+	3,  // 21: pips.sim.v1.RegisterWorkplaceIntent.position:type_name -> pips.sim.v1.Vec2
+	3,  // 22: pips.sim.v1.MoveIntent.destination:type_name -> pips.sim.v1.Vec2
+	3,  // 23: pips.sim.v1.SpawnPipIntent.position:type_name -> pips.sim.v1.Vec2
+	26, // 24: pips.sim.v1.ApplyNeedsIntent.need_deltas:type_name -> pips.sim.v1.ApplyNeedsIntent.NeedDeltasEntry
+	2,  // 25: pips.sim.v1.TransferIntent.kind:type_name -> pips.sim.v1.TransferKind
+	27, // 26: pips.sim.v1.CreditBalancesIntent.credits:type_name -> pips.sim.v1.CreditBalancesIntent.Credit
+	6,  // 27: pips.sim.v1.SimService.Step:input_type -> pips.sim.v1.StepRequest
+	10, // 28: pips.sim.v1.SimService.Snapshot:input_type -> pips.sim.v1.SnapshotRequest
+	12, // 29: pips.sim.v1.SimService.WatchDeltas:input_type -> pips.sim.v1.WatchDeltasRequest
+	14, // 30: pips.sim.v1.SimService.SubmitIntent:input_type -> pips.sim.v1.SubmitIntentRequest
+	7,  // 31: pips.sim.v1.SimService.Step:output_type -> pips.sim.v1.StepResponse
+	11, // 32: pips.sim.v1.SimService.Snapshot:output_type -> pips.sim.v1.SnapshotResponse
+	13, // 33: pips.sim.v1.SimService.WatchDeltas:output_type -> pips.sim.v1.WatchDeltasResponse
+	15, // 34: pips.sim.v1.SimService.SubmitIntent:output_type -> pips.sim.v1.SubmitIntentResponse
+	31, // [31:35] is the sub-list for method output_type
+	27, // [27:31] is the sub-list for method input_type
+	27, // [27:27] is the sub-list for extension type_name
+	27, // [27:27] is the sub-list for extension extendee
+	0,  // [0:27] is the sub-list for field type_name
 }
 
 func init() { file_pips_sim_v1_sim_proto_init() }
@@ -1849,7 +1945,7 @@ func file_pips_sim_v1_sim_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pips_sim_v1_sim_proto_rawDesc), len(file_pips_sim_v1_sim_proto_rawDesc)),
-			NumEnums:      2,
+			NumEnums:      3,
 			NumMessages:   25,
 			NumExtensions: 0,
 			NumServices:   1,

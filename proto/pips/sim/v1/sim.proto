@@ -52,6 +52,11 @@ message Pip {
   // who employs it: a hired pip is outside for the whole walk there, and stays
   // outside if it arrives to a full building.
   optional uint64 inside_workplace_id = 7;
+  // The core's replica of the pip's bank balance. Exposed so the gateway can
+  // answer "can this pip afford it" before submitting an intent, and so a
+  // client can draw it. The bank remains authoritative for history and
+  // solvency — this is what the core will actually settle a purchase against.
+  int64 balance = 8;
 }
 
 enum PipActivity {
@@ -231,6 +236,26 @@ message TransferIntent {
   // imports this file and a back-import would be circular.
   int32 resource_kind = 4;
   uint64 tick = 5;
+  // What kind of movement this is. Load-bearing, not descriptive: the
+  // treasury is exempt from the balance check because issuance is the money
+  // supply growing on purpose, and that exemption is granted by this field
+  // rather than inferred from the payer being the treasury. Without it every
+  // transfer out of the treasury can mint, and the core has no way to tell an
+  // issuance from a mistake.
+  TransferKind kind = 6;
+}
+
+// Mirrors pips.bank.v1.TransferKind. Deliberately a second declaration rather
+// than an import: the bank's enum describes a row in a journal, this one
+// describes a privilege the core grants while applying an intent. They happen
+// to have the same members today; tying them together would make the core's
+// rules change whenever bookkeeping gains a category.
+enum TransferKind {
+  TRANSFER_KIND_UNSPECIFIED = 0;
+  TRANSFER_KIND_WAGE = 1;
+  TRANSFER_KIND_PURCHASE = 2;
+  TRANSFER_KIND_ISSUANCE = 3;
+  TRANSFER_KIND_ESCHEAT = 4;
 }
 
 // Payroll, batched. A workplace's shift population is paid in one intent
