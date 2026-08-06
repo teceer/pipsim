@@ -15,13 +15,34 @@
  * itself, which keeps the renderer developable without a cluster.
  */
 
-import { Application, Container, Graphics, Text } from "pixi.js";
+import { Application, Container, Graphics, Text, type Texture } from "pixi.js";
 import init, {
 	SimHandle,
 	pip_stride,
 	workplace_stride,
 } from "./sim-wasm/sim_wasm.js";
+import { parseTexture, texturesFromParsed } from "./textures";
 import { type WorldClient, connect, join, streamDeltas } from "./world";
+
+/**
+ * Every `.txt` under `assets/textures/`, inlined at build time. ADR 0009:
+ * these are agent-authored text files, not binary assets, so a build-time
+ * glob is enough — there is no server to list a directory against.
+ */
+const TEXTURE_SOURCES = import.meta.glob("../assets/textures/*.txt", {
+	query: "?raw",
+	import: "default",
+	eager: true,
+}) as Record<string, string>;
+
+/** Rasterizes a shipped texture file, keyed by filename, at `cellPx` per glyph. */
+function loadTexture(fileName: string, cellPx: number): Texture[] {
+	const path = Object.keys(TEXTURE_SOURCES).find((p) =>
+		p.endsWith(`/${fileName}`),
+	);
+	if (!path) throw new Error(`texture not found: ${fileName}`);
+	return texturesFromParsed(parseTexture(TEXTURE_SOURCES[path]), cellPx);
+}
 
 // --- world constants --------------------------------------------------------
 
@@ -222,7 +243,7 @@ const isoDepth = (tileX: number, tileY: number) => tileX + tileY;
  * Redrawn each tick rather than tinted, because `occupants` changes and Pixi's
  * Graphics has no cheap way to resize a filled rectangle in place.
  */
-function drawBuilding(g: Graphics, b: Building) {
+function drawBuilding(g: Graphics, b: Building, roofTexture: Texture) {
 	const cx = toTile(b.x);
 	const cy = toTile(b.y);
 	const h = BUILDING_TILES / 2;
@@ -242,7 +263,7 @@ function drawBuilding(g: Graphics, b: Building) {
 	// door: it is exactly the position the core walks pips to.
 	g.poly([roof[3], roof[2], corners[2], corners[3]]).fill({ color: 0x2b3444 });
 	g.poly([roof[2], roof[1], corners[1], corners[2]]).fill({ color: 0x212938 });
-	g.poly(roof).fill({ color: 0x3d4a60 });
+	g.poly(roof).fill({ texture: roofTexture });
 	g.poly(roof).stroke({ color: 0x5b6b86, width: 1 });
 
 	// Occupancy, as a band rising up the left wall.
@@ -284,6 +305,10 @@ function drawGrid(parent: Container) {
 
 async function main() {
 	await init();
+
+	// 4px per glyph: roof.shingle.txt is 8x8, so this lands at 32x32 — the same
+	// scale as ISO_TILE_W, close enough that the shingle rows read at this zoom.
+	const [roofTexture] = loadTexture("roof.shingle.txt", 4);
 
 	const app = new Application();
 	await app.init({ background: "#11131a", resizeTo: window, antialias: true });
@@ -449,7 +474,7 @@ async function main() {
 				blocks.set(id, block);
 			}
 
-			drawBuilding(block.body, b);
+			drawBuilding(block.body, b, roofTexture);
 			const centre = isoProject(toTile(b.x), toTile(b.y));
 			block.label.position.set(
 				centre.x,
