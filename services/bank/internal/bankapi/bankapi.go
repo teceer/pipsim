@@ -85,7 +85,11 @@ func (h *Handler) Transfer(ctx context.Context, req *connect.Request[bankv1.Tran
 		case ledger.KindWage:
 			h.events.WagePaid(ctx, m.GetPayer(), m.GetPayee(), m.GetAmount(), m.GetTick())
 		case ledger.KindPurchase:
-			h.events.PurchaseMade(ctx, m.GetPayer(), m.GetPayee(), m.GetAmount(), 0, m.GetTick())
+			// Deliberately silent. Purchases are gated by sim-core and reach
+			// the journal through PurchaseConsumer, which books a fact the
+			// core already published — republishing it here would put two
+			// producers on one event and make "who decided this" unanswerable
+			// from the log.
 		case ledger.KindIssuance:
 			h.events.MoneyIssued(ctx, m.GetPayee(), m.GetAmount(), m.GetTick())
 		}

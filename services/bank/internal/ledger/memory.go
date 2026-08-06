@@ -18,12 +18,16 @@ type Memory struct {
 	balances   map[string]int64
 	journal    []JournalEntry
 	idempotent map[string]Result
+	// Keys of facts already booked by Post, which carry their own id rather
+	// than being keyed by (payer, payee, tick, kind).
+	posted map[string]struct{}
 }
 
 func NewMemory() *Memory {
 	return &Memory{
 		balances:   make(map[string]int64),
 		idempotent: make(map[string]Result),
+		posted:     make(map[string]struct{}),
 	}
 }
 
@@ -51,9 +55,12 @@ func (m *Memory) Transfer(_ context.Context, payer, payee string, amount int64, 
 
 	payerBalance := m.balances[payer]
 	if payer != TreasuryAccount && payerBalance < amount {
-		r := Result{OK: false, Reason: "insufficient funds", PayerBalance: payerBalance}
-		m.idempotent[key] = r
-		return r, nil
+		// Not recorded under the idempotency key. A rejection is not a
+		// result: nothing moved, so there is nothing to replay. Caching it
+		// would mean a payer that is funded later in the same tick still
+		// cannot pay, because it would be answered from a memory of being
+		// broke.
+		return Result{OK: false, Reason: "insufficient funds", PayerBalance: payerBalance}, nil
 	}
 
 	transferID := uuid.NewString()
@@ -88,9 +95,8 @@ func (m *Memory) BatchTransfer(_ context.Context, payer string, credits []Credit
 
 	payerBalance := m.balances[payer]
 	if payer != TreasuryAccount && payerBalance < total {
-		r := Result{OK: false, Reason: "insufficient funds", PayerBalance: payerBalance}
-		m.idempotent[key] = r
-		return r, nil
+		// Not cached — see Transfer.
+		return Result{OK: false, Reason: "insufficient funds", PayerBalance: payerBalance}, nil
 	}
 
 	transferID := uuid.NewString()
@@ -104,6 +110,26 @@ func (m *Memory) BatchTransfer(_ context.Context, payer string, credits []Credit
 	r := Result{OK: true, PayerBalance: m.balances[payer]}
 	m.idempotent[key] = r
 	return r, nil
+}
+
+// Post books a decided movement. See Ledger.Post — no balance check, and the
+// caller's transferID is the idempotency key.
+func (m *Memory) Post(_ context.Context, transferID, payer, payee string, amount int64, kind Kind, tick uint64) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if _, seen := m.posted[transferID]; seen {
+		return nil
+	}
+	m.posted[transferID] = struct{}{}
+
+	m.balances[payer] -= amount
+	m.balances[payee] += amount
+	m.journal = append(m.journal,
+		JournalEntry{TransferID: transferID, Account: payer, Amount: -amount, Kind: kind, Tick: tick},
+		JournalEntry{TransferID: transferID, Account: payee, Amount: amount, Kind: kind, Tick: tick},
+	)
+	return nil
 }
 
 func (m *Memory) GetBalance(_ context.Context, accountID string) (int64, error) {

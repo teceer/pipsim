@@ -222,6 +222,19 @@ func main() {
 		defer cancelEconomy()
 
 		fleet.KeepRegistered(ctx, 10*time.Second)
+
+		// Money has to enter the world before anyone can be paid out of it.
+		// Deferred a little, because a workplace has to have registered and
+		// been given an id before it can hold an account.
+		go func() {
+			select {
+			case <-ctx.Done():
+				return
+			case <-time.After(3 * time.Second):
+			}
+			fleet.Endow(ctx, int64(envUint("WORKPLACE_CAPITAL", 10_000)))
+		}()
+
 		go fleet.Run(ctx, time.Second)
 		go economy.RunOutcomes(ctx, amqpURL, fleet.OnHired)
 

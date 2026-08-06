@@ -151,11 +151,11 @@ func (p *Postgres) Transfer(ctx context.Context, payer, payee string, amount int
 	payerBalance := balances[payer]
 
 	if payer != TreasuryAccount && payerBalance < amount {
-		r := Result{OK: false, Reason: "insufficient funds", PayerBalance: payerBalance}
-		if err := recordIdempotent(ctx, tx, payer, payee, tick, kind, r); err != nil {
-			return Result{}, err
-		}
-		return r, tx.Commit(ctx)
+		// Not recorded under the idempotency key. A rejection is not a
+		// result: nothing moved, so there is nothing to replay. Caching it
+		// would mean a payer funded later in the same tick is still refused,
+		// answered from a memory of having been broke.
+		return Result{OK: false, Reason: "insufficient funds", PayerBalance: payerBalance}, nil
 	}
 
 	transferID := uuid.NewString()
@@ -177,6 +177,48 @@ func (p *Postgres) Transfer(ctx context.Context, payer, payee string, amount int
 		return Result{}, err
 	}
 	return r, tx.Commit(ctx)
+}
+
+// Post books a decided movement. See Ledger.Post — no balance check, and the
+// caller's transferID is the idempotency key. The journal's own primary key
+// does that work: a repeated insert conflicts and is dropped, so a redelivered
+// fact books exactly once without a separate idempotency row.
+func (p *Postgres) Post(ctx context.Context, transferID, payer, payee string, amount int64, kind Kind, tick uint64) error {
+	tx, err := p.pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	for _, id := range lockOrder(payer, payee) {
+		if err := ensureAccount(ctx, tx, id); err != nil {
+			return err
+		}
+		if _, err := lockAccount(ctx, tx, id); err != nil {
+			return err
+		}
+	}
+
+	tag, err := tx.Exec(ctx, `
+		INSERT INTO bank.journal (transfer_id, account_id, amount, kind, tick) VALUES
+		($1, $2, $3, $4, $5), ($1, $6, $7, $4, $5)
+		ON CONFLICT DO NOTHING
+	`, transferID, payer, -amount, string(kind), tick, payee, amount)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		// Already booked. The balances were moved by the first delivery.
+		return tx.Commit(ctx)
+	}
+
+	if _, err := tx.Exec(ctx, `UPDATE bank.accounts SET balance = balance - $1 WHERE id = $2`, amount, payer); err != nil {
+		return err
+	}
+	if _, err := tx.Exec(ctx, `UPDATE bank.accounts SET balance = balance + $1 WHERE id = $2`, amount, payee); err != nil {
+		return err
+	}
+	return tx.Commit(ctx)
 }
 
 func (p *Postgres) BatchTransfer(ctx context.Context, payer string, credits []Credit, kind Kind, tick uint64) (Result, error) {
@@ -209,11 +251,8 @@ func (p *Postgres) BatchTransfer(ctx context.Context, payer string, credits []Cr
 	}
 
 	if payer != TreasuryAccount && payerBalance < total {
-		r := Result{OK: false, Reason: "insufficient funds", PayerBalance: payerBalance}
-		if err := recordIdempotent(ctx, tx, payer, "batch", tick, kind, r); err != nil {
-			return Result{}, err
-		}
-		return r, tx.Commit(ctx)
+		// Not cached — see Transfer.
+		return Result{OK: false, Reason: "insufficient funds", PayerBalance: payerBalance}, nil
 	}
 
 	transferID := uuid.NewString()

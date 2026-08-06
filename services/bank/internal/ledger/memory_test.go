@@ -174,3 +174,35 @@ func TestClosedSupplyUnderRandomTransfers(t *testing.T) {
 		t.Fatalf("money supply is not closed: sum(balances) = %d, want 0", sum)
 	}
 }
+
+// A rejection is not a result and must not be replayed. Under the old
+// behaviour the refusal was stored under the idempotency key, so a payer
+// funded later in the same tick was still refused — answered from a memory of
+// having been broke rather than from its balance.
+func TestARejectionIsNotCached(t *testing.T) {
+	ctx := context.Background()
+	m := NewMemory()
+
+	res, err := m.Transfer(ctx, "pip:1", "workplace:9", 50, KindPurchase, 7)
+	if err != nil {
+		t.Fatalf("transfer: %v", err)
+	}
+	if res.OK {
+		t.Fatal("a pip with nothing should not be able to pay")
+	}
+
+	// Paid within the same tick, then tries again.
+	if _, err := m.Transfer(ctx, TreasuryAccount, "pip:1", 100, KindIssuance, 7); err != nil {
+		t.Fatalf("issuance: %v", err)
+	}
+	res, err = m.Transfer(ctx, "pip:1", "workplace:9", 50, KindPurchase, 7)
+	if err != nil {
+		t.Fatalf("second transfer: %v", err)
+	}
+	if !res.OK {
+		t.Fatal("the pip can afford it now, but was refused from cache")
+	}
+	if got, _ := m.GetBalance(ctx, "workplace:9"); got != 50 {
+		t.Errorf("payee balance = %d, want 50", got)
+	}
+}

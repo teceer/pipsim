@@ -81,6 +81,14 @@ func main() {
 		defer func() { _ = lifecycle.Close() }()
 		go lifecycle.Run(ctx)
 		slog.Info("reclaiming balances of dead pips", "brokers", brokers)
+
+		// Purchases are decided by sim-core against a pip's replica balance
+		// inside a tick — the bank books them rather than gating them, so
+		// that exactly one side gates each movement. See ADR 0006.
+		purchases := bankapi.NewPurchaseConsumer(brokers, store)
+		defer func() { _ = purchases.Close() }()
+		go purchases.Run(ctx)
+		slog.Info("booking purchases decided by sim-core", "brokers", brokers)
 	} else {
 		slog.Info("KAFKA_BROKERS not set; money facts will not be published " +
 			"and dead pips' balances will not be reclaimed")

@@ -70,5 +70,20 @@ type Ledger interface {
 	// nobody, rather than paying whoever came first in the list.
 	BatchTransfer(ctx context.Context, payer string, credits []Credit, kind Kind, tick uint64) (Result, error)
 
+	// Post books a movement that some other authority has already decided,
+	// rather than deciding one. This is how a purchase reaches the journal:
+	// the pip's balance is settled against sim-core's replica inside a tick,
+	// which is the only place that decision can be made without a network
+	// call, so the core gates it and the bank records it.
+	//
+	// No balance check, deliberately. Refusing to book what has already
+	// happened would not undo it — it would only make the ledger disagree
+	// with the world while claiming to be authoritative. A balance that goes
+	// somewhere it should not is a divergence to surface, not to hide.
+	//
+	// `transferID` is the caller's idempotency key, not ours: it is the id of
+	// the fact being booked, so a redelivered event books once.
+	Post(ctx context.Context, transferID, payer, payee string, amount int64, kind Kind, tick uint64) error
+
 	GetBalance(ctx context.Context, accountID string) (int64, error)
 }

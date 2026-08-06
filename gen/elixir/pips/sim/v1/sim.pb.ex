@@ -31,6 +31,22 @@ defmodule Pips.Sim.V1.PipActivity do
   field :PIP_ACTIVITY_COMMUTING, 6
 end
 
+defmodule Pips.Sim.V1.TransferKind do
+  @moduledoc false
+
+  use Protobuf,
+    enum: true,
+    full_name: "pips.sim.v1.TransferKind",
+    protoc_gen_elixir_version: "0.17.0",
+    syntax: :proto3
+
+  field :TRANSFER_KIND_UNSPECIFIED, 0
+  field :TRANSFER_KIND_WAGE, 1
+  field :TRANSFER_KIND_PURCHASE, 2
+  field :TRANSFER_KIND_ISSUANCE, 3
+  field :TRANSFER_KIND_ESCHEAT, 4
+end
+
 defmodule Pips.Sim.V1.Vec2 do
   @moduledoc false
 
@@ -76,6 +92,8 @@ defmodule Pips.Sim.V1.Pip do
     proto3_optional: true,
     type: :uint64,
     json_name: "insideWorkplaceId"
+
+  field :balance, 8, type: :int64
 end
 
 defmodule Pips.Sim.V1.Workplace do
@@ -358,6 +376,7 @@ defmodule Pips.Sim.V1.TransferIntent do
   field :amount, 3, type: :int64
   field :resource_kind, 4, type: :int32, json_name: "resourceKind"
   field :tick, 5, type: :uint64
+  field :kind, 6, type: Pips.Sim.V1.TransferKind, enum: true
 end
 
 defmodule Pips.Sim.V1.CreditBalancesIntent.Credit do
