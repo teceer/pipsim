@@ -1,0 +1,53 @@
+# Redpanda Console, taught to read the fact log.
+#
+# Without this every message in every topic renders as a deserialization
+# failure and a hex dump — the console tries JSON, XML, Avro, msgpack and a
+# dozen others, and reports "no protobuf file registry configured" because
+# protobuf is the one thing it cannot guess. The bytes were always fine; the
+# reader was not.
+#
+# There is no schema registry in this project, on purpose: proto/ is the single
+# source of truth (rule 1), and a registry would be a second place for a
+# contract to live and drift. The console reads the same .proto files
+# everything else compiles from, mounted read-only.
+
+kafka:
+  brokers:
+    - redpanda:29092
+
+  protobuf:
+    enabled: true
+
+    # Every topic in this project carries a pips.events.v1.EventEnvelope, with
+    # the specific fact in its `payload` oneof. That uniformity is deliberate —
+    # one envelope means one consumer shape and one place to put trace ids —
+    # and it makes the mapping below repetitive rather than complicated.
+    #
+    # Keys are plain strings (`pip:6094`, `workplace:1`), so only the value is
+    # mapped; leaving keyProtoType unset lets the console decode them as text.
+    mappings:
+      - topicName: pipsim.economy.money.v1
+        valueProtoType: pips.events.v1.EventEnvelope
+      - topicName: pipsim.economy.purchases.v1
+        valueProtoType: pips.events.v1.EventEnvelope
+      - topicName: pipsim.pip.lifecycle.v1
+        valueProtoType: pips.events.v1.EventEnvelope
+      - topicName: pipsim.pip.work.v1
+        valueProtoType: pips.events.v1.EventEnvelope
+      - topicName: pipsim.world.buildings.v1
+        valueProtoType: pips.events.v1.EventEnvelope
+
+    fileSystem:
+      enabled: true
+      # The repo's proto/ directory, mounted at this path. Imports resolve
+      # relative to it — events.proto imports pips/sim/v1/sim.proto — so the
+      # mount has to be the directory buf treats as the module root, not the
+      # events subdirectory.
+      paths:
+        - /etc/pipsim/proto
+      # Re-read on a timer so editing a .proto and reloading the console shows
+      # the new shape without restarting the container.
+      refreshInterval: 5m
+
+server:
+  listenPort: 8080

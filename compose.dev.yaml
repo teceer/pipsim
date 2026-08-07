@@ -31,7 +31,17 @@ services:
     image: redpandadata/console:v2.7.2
     ports: ["8085:8080"]
     environment:
-      KAFKA_BROKERS: redpanda:29092
+      # A config file rather than KAFKA_BROKERS, because protobuf decoding
+      # cannot be expressed in the flat env vars — and without it every message
+      # in the fact log renders as "no protobuf file registry configured" over
+      # a hex dump.
+      CONFIG_FILEPATH: /etc/pipsim/console.yaml
+    volumes:
+      - "./infra/redpanda/console.yaml:/etc/pipsim/console.yaml:ro"
+      # The same .proto files everything else compiles from. proto/ is the
+      # single source of truth (rule 1), so the console reads it directly
+      # instead of a schema registry that could drift from it.
+      - "./proto:/etc/pipsim/proto:ro"
     depends_on: { redpanda: { condition: service_healthy } }
 
   rabbitmq:
