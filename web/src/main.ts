@@ -15,7 +15,20 @@
  * itself, which keeps the renderer developable without a cluster.
  */
 
-import { Application, Container, Graphics, Text, type Texture } from "pixi.js";
+import {
+	Application,
+	Container,
+	type FederatedPointerEvent,
+	Graphics,
+	Text,
+	type Texture,
+} from "pixi.js";
+import { basesFromEnv, structureLinks, workplaceLinks } from "./links";
+import {
+	type PopoverContent,
+	hide as hidePopover,
+	show as showPopover,
+} from "./popover";
 import init, {
 	SimHandle,
 	pip_stride,
@@ -119,6 +132,16 @@ type Building = {
 	y: number;
 	capacity: number;
 	occupants: number;
+	/** What it sells and for how much — shown in the hover card. */
+	sells: { resourceKind: number; price: bigint }[];
+};
+
+/** pips.workplace.v1.ResourceKind, which travels as a bare int32. */
+const RESOURCE_NAMES: Record<number, string> = {
+	1: "grain",
+	2: "food",
+	3: "tool",
+	4: "ale",
 };
 type Buildings = Map<number, Building>;
 
@@ -163,6 +186,9 @@ function buildingsFromWasm(flat: Int32Array, stride: number): Buildings {
 			y: flat[i + 2],
 			capacity: flat[i + 3],
 			occupants: flat[i + 4],
+			// The flat encoding carries numbers only, so prices do not survive
+			// it. Offline there is no workplace service to have set one anyway.
+			sells: [],
 		});
 	}
 	return out;
@@ -204,6 +230,7 @@ function buildingsFromDelta(
 		position?: { xMilli: number; yMilli: number };
 		capacity: number;
 		occupants: number;
+		sells?: { resourceKind: number; price: bigint }[];
 	}[],
 ): Buildings {
 	const out: Buildings = new Map();
@@ -214,6 +241,7 @@ function buildingsFromDelta(
 			y: w.position?.yMilli ?? 0,
 			capacity: w.capacity,
 			occupants: w.occupants,
+			sells: w.sells ?? [],
 		});
 	}
 	return out;
@@ -354,6 +382,85 @@ function drawStructure(g: Graphics, s: Structure) {
 	g.poly([top[2], top[1], corners[1], corners[2]]).fill({ color: walls[1] });
 	g.poly(top).fill({ color: cap });
 	g.poly(top).stroke({ color: edge, width: s.healthy ? 1 : 2 });
+}
+
+const PANELS = basesFromEnv(import.meta.env ?? {});
+
+/**
+ * Operational links are dev-only.
+ *
+ * They point at admin panels — Grafana, the RabbitMQ management UI — and
+ * embedding those addresses in a client anyone can open publishes the shape of
+ * the infrastructure behind it. Locally that is the entire point; anywhere else
+ * it is an information leak in a game client.
+ *
+ * The facts above the links are not gated: occupancy and prices are world
+ * state, and the map already draws them.
+ */
+const SHOW_LINKS = import.meta.env?.DEV ?? false;
+
+function buildingCard(b: Building): PopoverContent {
+	const facts: [string, string][] = [
+		["occupancy", `${b.occupants}/${b.capacity}`],
+		["position", `${toTile(b.x).toFixed(1)}, ${toTile(b.y).toFixed(1)}`],
+	];
+
+	for (const offer of b.sells) {
+		const name =
+			RESOURCE_NAMES[offer.resourceKind] ?? `resource ${offer.resourceKind}`;
+		facts.push([`sells ${name}`, `${offer.price}`]);
+	}
+
+	return {
+		title: b.kind,
+		subtitle:
+			b.occupants >= b.capacity
+				? "full — arrivals queue at the door"
+				: "workplace",
+		facts,
+		links: SHOW_LINKS ? workplaceLinks(b.kind, PANELS) : [],
+		ok: true,
+	};
+}
+
+function structureCard(s: Structure): PopoverContent {
+	return {
+		title: s.kind,
+		subtitle: s.role,
+		facts: [["health", s.healthy ? "responding" : "not responding"]],
+		links: SHOW_LINKS ? structureLinks(s.kind, PANELS) : [],
+		ok: s.healthy,
+	};
+}
+
+/**
+ * Makes a drawn body show a card while the pointer is over it.
+ *
+ * `content` is a callback rather than a value because the world is rebuilt
+ * every tick — a card built at wiring time would show whatever the building
+ * looked like when its sprite was first created.
+ *
+ * The body needs an explicit `hitArea`: these are `Graphics` filled with
+ * `poly()`, and pixi's default hit test on a Graphics is its bounding box,
+ * which for an isometric diamond includes a good deal of empty ground.
+ */
+function hoverable(body: Graphics, content: () => PopoverContent | undefined) {
+	body.eventMode = "static";
+	body.cursor = "pointer";
+
+	body.on("pointerover", (e: FederatedPointerEvent) => {
+		const card = content();
+		if (card) showPopover(card, e.globalX, e.globalY);
+	});
+
+	// Moving with the pointer, so the card does not sit behind the cursor when
+	// the pointer travels across a wide building.
+	body.on("pointermove", (e: FederatedPointerEvent) => {
+		const card = content();
+		if (card) showPopover(card, e.globalX, e.globalY);
+	});
+
+	body.on("pointerout", () => hidePopover());
 }
 
 function drawGrid(parent: Container) {
@@ -554,6 +661,13 @@ async function main() {
 				entityLayer.addChild(body, label);
 				block = { body, label };
 				blocks.set(id, block);
+				// Hover reads `buildings` at event time rather than closing over
+				// `b`: the map is rebuilt every tick, so a captured value would be
+				// a snapshot from whenever the sprite happened to be created.
+				hoverable(body, () => {
+					const current = buildings.get(id);
+					return current && buildingCard(current);
+				});
 			}
 
 			drawBuilding(block.body, b, roofTexture);
@@ -585,6 +699,10 @@ async function main() {
 				entityLayer.addChild(body, label);
 				slab = { body, label };
 				slabs.set(id, slab);
+				hoverable(body, () => {
+					const current = structures.get(id);
+					return current && structureCard(current);
+				});
 			}
 
 			drawStructure(slab.body, s);
