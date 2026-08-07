@@ -510,12 +510,22 @@ async function main() {
 	document.body.appendChild(app.canvas);
 
 	const world = new Container();
-	// The diamond's leftmost point (tileX=0, tileY=GRID_H) sits at a negative
-	// x offset — shift the whole world right by that amount so nothing is
-	// clipped off-canvas, then drop it a bit from the top edge.
-	world.position.set((GRID_H * ISO_TILE_W) / 2 + 40, 40);
 	app.stage.addChild(world);
 	drawGrid(world);
+
+	// Centres the isometric diamond's bounding box on the canvas. Recomputed
+	// every frame (cheap) rather than once, so a window resize — resizeTo:
+	// window means the canvas changes size under us — keeps the map centred
+	// instead of drifting toward a stale top-left offset.
+	const centerWorld = () => {
+		const bboxCenterX = ((GRID_W - GRID_H) * ISO_TILE_W) / 4;
+		const bboxCenterY = ((GRID_W + GRID_H) * ISO_TILE_H) / 4;
+		world.position.set(
+			app.screen.width / 2 - bboxCenterX,
+			app.screen.height / 2 - bboxCenterY,
+		);
+	};
+	centerWorld();
 
 	// One sortable layer for everything that stands on the grid. Isometric depth:
 	// whatever is further along x+y is "further back" and must be drawn first, or
@@ -661,6 +671,8 @@ async function main() {
 	const slabs = new Map<number, { body: Graphics; label: Text }>();
 
 	app.ticker.add(() => {
+		centerWorld();
+
 		// How far we are between the last authoritative tick and the next one.
 		const alpha = Math.min(1, (performance.now() - lastTickAt) / tickMs);
 
