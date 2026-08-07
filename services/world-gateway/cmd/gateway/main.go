@@ -223,17 +223,11 @@ func main() {
 
 		fleet.KeepRegistered(ctx, 10*time.Second)
 
-		// Money has to enter the world before anyone can be paid out of it.
-		// Deferred a little, because a workplace has to have registered and
-		// been given an id before it can hold an account.
-		go func() {
-			select {
-			case <-ctx.Done():
-				return
-			case <-time.After(3 * time.Second):
-			}
-			fleet.Endow(ctx, int64(envUint("WORKPLACE_CAPITAL", 10_000)))
-		}()
+		// Money has to enter the world before anyone can be paid out of it, and
+		// has to keep entering: escheat returns a dead pip's balance to the
+		// treasury, so circulation drains steadily and a one-off endowment ran
+		// the workplaces dry within the hour. See Fleet.Endow.
+		go fleet.KeepEndowed(ctx, int64(envUint("WORKPLACE_CAPITAL", 10_000)), 10*time.Second)
 
 		go fleet.Run(ctx, time.Second)
 		go economy.RunOutcomes(ctx, amqpURL, fleet.OnHired)

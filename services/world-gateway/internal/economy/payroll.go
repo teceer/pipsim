@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"time"
 
 	"connectrpc.com/connect"
 
@@ -172,13 +173,28 @@ func (f *Fleet) Buy(ctx context.Context, pipID, workplaceID uint64, kind workpla
 // treasury is the one sanctioned way — ADR 0006 keeps the supply closed by
 // making every other movement a transfer between existing accounts.
 //
-// Idempotent by balance rather than by key: a workplace that already holds
-// money is left alone, so restarting the gateway does not double the supply.
-// That is deliberately not the same as "only once ever" — a workplace that
-// has genuinely spent itself down to nothing gets refunded, which is a
-// bailout policy nobody has decided on yet. It is the cheapest thing that
-// makes the economy run, and the place to revisit when insolvency gets its
-// own decision.
+// Tops up to `capital` whenever a workplace falls below a quarter of it,
+// rather than only funding an account at exactly zero.
+//
+// The old rule — skip anything holding more than nothing — starved the economy
+// dead. Money leaves circulation permanently: a pip that dies with wages in
+// its pocket has that balance escheated to the treasury (ADR 0006), and
+// nothing ever sends it back out. Both workplaces were issued 10,000, drained
+// to 304 and 15 within the hour, and were then skipped forever because a
+// balance of 15 is "more than nothing". Payroll rejected for insufficient
+// funds on every cycle, so no pip was paid, so no pip could buy food.
+//
+// The treasury is therefore the redistributor as well as the issuer, which is
+// what closes the loop: escheat pulls money in, endowment pushes it back out.
+// That is a bailout, named as one. It is the right shape for a simulation
+// whose population turns over constantly — a workplace here does not fail
+// through mismanagement, it fails because its customers keep dying — and it
+// keeps money supply auditable, since every movement is still a transfer
+// between existing accounts.
+//
+// The quarter is hysteresis, not a magic number: topping up on any shortfall
+// would issue a transfer per cycle forever, and the gap has to be wide enough
+// that a workplace can pay a full round of wages between refills.
 func (f *Fleet) Endow(ctx context.Context, capital int64) {
 	if f.bank == nil || capital <= 0 {
 		return
@@ -205,14 +221,16 @@ func (f *Fleet) Endow(ctx context.Context, capital int64) {
 			slog.Warn("could not read a workplace balance", "workplace", id, "err", err)
 			continue
 		}
-		if balance.Msg.GetBalance() > 0 {
+		held := balance.Msg.GetBalance()
+		amount := endowmentFor(held, capital)
+		if amount == 0 {
 			continue
 		}
 
 		res, err := f.bank.Transfer(ctx, connect.NewRequest(&bankv1.TransferRequest{
 			Payer:  "treasury",
 			Payee:  account,
-			Amount: capital,
+			Amount: amount,
 			Kind:   bankv1.TransferKind_TRANSFER_KIND_ISSUANCE,
 			Tick:   tick,
 		}))
@@ -229,9 +247,12 @@ func (f *Fleet) Endow(ctx context.Context, capital int64) {
 				Transfer: &simv1.TransferIntent{
 					PayerAccountId: "treasury",
 					PayeeAccountId: account,
-					Amount:         capital,
-					Kind:           simv1.TransferKind_TRANSFER_KIND_ISSUANCE,
-					Tick:           tick,
+					// `amount`, not `capital`: the core's replica has to move by
+					// exactly what the ledger moved, or the two disagree about
+					// what the workplace can afford.
+					Amount: amount,
+					Kind:   simv1.TransferKind_TRANSFER_KIND_ISSUANCE,
+					Tick:   tick,
 				},
 			},
 		})); err != nil {
@@ -239,6 +260,57 @@ func (f *Fleet) Endow(ctx context.Context, capital int64) {
 			continue
 		}
 
-		slog.Info("endowed a workplace", "workplace", id, "capital", capital)
+		slog.Info("endowed a workplace",
+			"workplace", id, "held", held, "issued", amount, "capital", capital)
+	}
+}
+
+// endowmentFor answers how much to issue to a workplace holding `held`.
+//
+// Zero means leave it alone. Split out from Endow because it is the whole
+// policy — the rest of that function is two RPCs — and because a rule about
+// money is worth testing without standing up a bank.
+func endowmentFor(held, capital int64) int64 {
+	// Half, and the number is measured rather than chosen: two workplaces
+	// paying ~26 working pips drain about 300 a second, so 10,000 lasts barely
+	// thirty. A quarter-mark checked every 30s left them empty for the tail of
+	// every window — the "insufficient funds" warnings did not stop, they
+	// merely became periodic. Refilling from half, three times as often, keeps
+	// the balance clear of zero between passes.
+	//
+	// It is still hysteresis and not a target: topping up on any shortfall at
+	// all would issue a transfer every single pass.
+	if held >= capital/2 {
+		return 0
+	}
+	// Top up *to* capital rather than *by* it. Issuing the full amount to a
+	// workplace that still holds some would inflate the supply a little on
+	// every pass, and money supply in this project is meant to be closed.
+	//
+	// A negative balance is possible in principle — nothing stops a workplace
+	// being overdrawn — and subtraction handles it: the shortfall is larger, so
+	// the issuance is larger, and it lands at exactly `capital`.
+	return capital - held
+}
+
+// KeepEndowed tops workplaces up for as long as ctx lives.
+//
+// Endowing once at startup was enough only while nothing spent the money. It
+// is not a retry loop: the treasury has to keep refilling because escheat
+// keeps draining, so this runs for the life of the process rather than until
+// it first succeeds.
+func (f *Fleet) KeepEndowed(ctx context.Context, capital int64, every time.Duration) {
+	// The first pass is deferred: a workplace has to have registered and been
+	// given an id before it can hold an account.
+	t := time.NewTimer(3 * time.Second)
+	defer t.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-t.C:
+		}
+		f.Endow(ctx, capital)
+		t.Reset(every)
 	}
 }

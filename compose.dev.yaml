@@ -112,6 +112,14 @@ services:
       # silently been doing — "economy disabled; WORKPLACE_ADDRS and AMQP_URL
       # are both required" was in every dev log.
       AMQP_URL: amqp://guest:guest@rabbitmq:5672
+      # Two workplaces paying ~26 pips drain roughly 300 a second, so the
+      # default 10,000 empties between top-ups and payroll rejects for the tail
+      # of every window. This covers a refill interval several times over.
+      #
+      # Worth knowing what it compensates for: pips earn faster than they
+      # spend, so wages pile up in pip accounts and only return to the treasury
+      # when a pip dies. The figure is a symptom of that imbalance, not a fix.
+      WORKPLACE_CAPITAL: "50000"
       # Addresses only; each workplace reports its own id and kind through
       # Describe. Mirrors workplaceAddrs in infra/helm/world-gateway/values.yaml.
       WORKPLACE_ADDRS: farm:8090,tavern:8090
