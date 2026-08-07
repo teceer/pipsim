@@ -105,7 +105,7 @@ const esc = (s: string) =>
 export type Point = { x: number; y: number };
 
 let hideTimer: number | undefined;
-let safeTriangle: [Point, Point, Point] | undefined;
+let safeZone: Point[] | undefined;
 let pointerInside = false;
 /** Which building the visible card belongs to, so a move to another re-anchors. */
 let shownKey: string | undefined;
@@ -116,27 +116,62 @@ let shownHtml: string | undefined;
 // produces another move event to resolve the question.
 const GRACE_MS = 400;
 
-function sign(a: Point, b: Point, c: Point): number {
-	return (a.x - c.x) * (b.y - c.y) - (b.x - c.x) * (a.y - c.y);
+const cross = (o: Point, a: Point, b: Point) =>
+	(a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
+
+/**
+ * Convex hull of a handful of points, by monotone chain.
+ *
+ * Used on the pointer's exit point plus the card's four corners, which gives
+ * the exact region "between where I left and the thing I am reaching for" —
+ * for any relative position of the two.
+ *
+ * The earlier version hard-coded a triangle whose base was the card's left or
+ * right edge, and that is what broke: the base was always vertical, so a card
+ * sitting directly above or below the pointer — which happens whenever it
+ * flips away from a screen edge — produced a degenerate sliver that the direct
+ * path fell outside of. A hull has no such orientation to get wrong.
+ */
+export function convexHull(points: Point[]): Point[] {
+	const pts = [...points].sort((a, b) => a.x - b.x || a.y - b.y);
+	if (pts.length < 3) return pts;
+
+	const half = (source: Point[]): Point[] => {
+		const out: Point[] = [];
+		for (const p of source) {
+			while (
+				out.length >= 2 &&
+				cross(out[out.length - 2], out[out.length - 1], p) <= 0
+			) {
+				out.pop();
+			}
+			out.push(p);
+		}
+		out.pop();
+		return out;
+	};
+
+	return [...half(pts), ...half([...pts].reverse())];
 }
 
 /**
- * Standard half-plane test: inside when all three edge signs agree.
+ * Point-in-convex-polygon, for a hull wound consistently.
  *
- * Exported for its test. The rest of this module needs a DOM to exercise; this
- * is arithmetic, and it is the part that decides whether the card is reachable
- * — worth pinning on its own.
+ * Inclusive of the boundary: a pointer exactly on the edge of the card is
+ * arriving, not leaving.
  */
-export function inTriangle(
-	p: Point,
-	[a, b, c]: [Point, Point, Point],
-): boolean {
-	const d1 = sign(p, a, b);
-	const d2 = sign(p, b, c);
-	const d3 = sign(p, c, a);
-	const hasNeg = d1 < 0 || d2 < 0 || d3 < 0;
-	const hasPos = d1 > 0 || d2 > 0 || d3 > 0;
-	return !(hasNeg && hasPos);
+export function inConvexPolygon(p: Point, poly: Point[]): boolean {
+	if (poly.length < 3) return false;
+
+	let neg = false;
+	let pos = false;
+	for (let i = 0; i < poly.length; i++) {
+		const d = cross(poly[i], poly[(i + 1) % poly.length], p);
+		if (d < 0) neg = true;
+		if (d > 0) pos = true;
+		if (neg && pos) return false;
+	}
+	return true;
 }
 
 function clearHide(): void {
@@ -144,7 +179,7 @@ function clearHide(): void {
 		clearTimeout(hideTimer);
 		hideTimer = undefined;
 	}
-	safeTriangle = undefined;
+	safeZone = undefined;
 }
 
 // One listener for the life of the page rather than one per hover: the pointer
@@ -152,9 +187,9 @@ function clearHide(): void {
 // a leak waiting to happen.
 if (typeof window !== "undefined") {
 	window.addEventListener("mousemove", (e) => {
-		if (!safeTriangle) return;
-		// Left the wedge — it was not coming here after all.
-		if (!inTriangle({ x: e.clientX, y: e.clientY }, safeTriangle)) hide();
+		if (!safeZone || pointerInside) return;
+		// Left the corridor — it was not coming here after all.
+		if (!inConvexPolygon({ x: e.clientX, y: e.clientY }, safeZone)) hide();
 	});
 }
 
@@ -174,15 +209,17 @@ export function requestHide(x: number, y: number): void {
 	}
 
 	const box = el.getBoundingClientRect();
-	// The two corners on the side facing the pointer. Using the near edge
-	// rather than all four corners keeps the wedge tight enough that sweeping
-	// past a building does not hold its card open.
-	const nearX = x < box.left ? box.left : box.right;
-	safeTriangle = [
+	// A few pixels of slack around the card. Without it the corridor ends
+	// exactly on the border, and the last pixel of the journey — the one that
+	// puts the pointer onto the card — reads as having left.
+	const pad = 8;
+	safeZone = convexHull([
 		{ x, y },
-		{ x: nearX, y: box.top },
-		{ x: nearX, y: box.bottom },
-	];
+		{ x: box.left - pad, y: box.top - pad },
+		{ x: box.right + pad, y: box.top - pad },
+		{ x: box.right + pad, y: box.bottom + pad },
+		{ x: box.left - pad, y: box.bottom + pad },
+	]);
 
 	clearTimeout(hideTimer);
 	hideTimer = window.setTimeout(() => {

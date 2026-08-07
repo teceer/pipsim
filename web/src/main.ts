@@ -448,6 +448,12 @@ function structureCard(id: number, s: Structure): PopoverContent {
  * The body needs an explicit `hitArea`: these are `Graphics` filled with
  * `poly()`, and pixi's default hit test on a Graphics is its bounding box,
  * which for an isometric diamond includes a good deal of empty ground.
+ *
+ * Coordinates come from `e.client`, not `e.global`. The card is positioned
+ * `fixed`, which is viewport space, while pixi's `global` is stage space —
+ * identical today only because the canvas happens to fill the window at
+ * origin. Any offset, margin or zoom would silently misplace the card and,
+ * worse, misplace the corridor that keeps it open.
  */
 function hoverable(body: Graphics, content: () => PopoverContent | undefined) {
 	body.eventMode = "static";
@@ -455,7 +461,7 @@ function hoverable(body: Graphics, content: () => PopoverContent | undefined) {
 
 	body.on("pointerover", (e: FederatedPointerEvent) => {
 		const card = content();
-		if (card) showPopover(card, e.globalX, e.globalY);
+		if (card) showPopover(card, e.client.x, e.client.y);
 	});
 
 	// Refreshes the numbers while the pointer is over the building — occupancy
@@ -464,13 +470,13 @@ function hoverable(body: Graphics, content: () => PopoverContent | undefined) {
 	// retreats as fast as you approach it.
 	body.on("pointermove", (e: FederatedPointerEvent) => {
 		const card = content();
-		if (card) showPopover(card, e.globalX, e.globalY);
+		if (card) showPopover(card, e.client.x, e.client.y);
 	});
 
 	// Not an immediate hide: the pointer may be on its way to the card, and
 	// leaving the building is the first thing that happens on that journey.
 	body.on("pointerout", (e: FederatedPointerEvent) =>
-		requestHidePopover(e.globalX, e.globalY),
+		requestHidePopover(e.client.x, e.client.y),
 	);
 }
 
