@@ -26,7 +26,7 @@ import {
 import { basesFromEnv, structureLinks, workplaceLinks } from "./links";
 import {
 	type PopoverContent,
-	hide as hidePopover,
+	requestHide as requestHidePopover,
 	show as showPopover,
 } from "./popover";
 import init, {
@@ -399,7 +399,7 @@ const PANELS = basesFromEnv(import.meta.env ?? {});
  */
 const SHOW_LINKS = import.meta.env?.DEV ?? false;
 
-function buildingCard(b: Building): PopoverContent {
+function buildingCard(id: number, b: Building): PopoverContent {
 	const facts: [string, string][] = [
 		["occupancy", `${b.occupants}/${b.capacity}`],
 		["position", `${toTile(b.x).toFixed(1)}, ${toTile(b.y).toFixed(1)}`],
@@ -412,6 +412,10 @@ function buildingCard(b: Building): PopoverContent {
 	}
 
 	return {
+		// Namespaced, because workplace and structure ids come from different
+		// spaces (ADR 0011): a bare number could collide across the two and
+		// leave the card anchored where the other one stood.
+		key: `workplace:${id}`,
 		title: b.kind,
 		subtitle:
 			b.occupants >= b.capacity
@@ -423,8 +427,9 @@ function buildingCard(b: Building): PopoverContent {
 	};
 }
 
-function structureCard(s: Structure): PopoverContent {
+function structureCard(id: number, s: Structure): PopoverContent {
 	return {
+		key: `structure:${id}`,
 		title: s.kind,
 		subtitle: s.role,
 		facts: [["health", s.healthy ? "responding" : "not responding"]],
@@ -453,14 +458,20 @@ function hoverable(body: Graphics, content: () => PopoverContent | undefined) {
 		if (card) showPopover(card, e.globalX, e.globalY);
 	});
 
-	// Moving with the pointer, so the card does not sit behind the cursor when
-	// the pointer travels across a wide building.
+	// Refreshes the numbers while the pointer is over the building — occupancy
+	// changes every tick — but the coordinates are ignored once the card is up.
+	// A card that tracks the pointer is a card you can never click, because it
+	// retreats as fast as you approach it.
 	body.on("pointermove", (e: FederatedPointerEvent) => {
 		const card = content();
 		if (card) showPopover(card, e.globalX, e.globalY);
 	});
 
-	body.on("pointerout", () => hidePopover());
+	// Not an immediate hide: the pointer may be on its way to the card, and
+	// leaving the building is the first thing that happens on that journey.
+	body.on("pointerout", (e: FederatedPointerEvent) =>
+		requestHidePopover(e.globalX, e.globalY),
+	);
 }
 
 function drawGrid(parent: Container) {
@@ -666,7 +677,7 @@ async function main() {
 				// a snapshot from whenever the sprite happened to be created.
 				hoverable(body, () => {
 					const current = buildings.get(id);
-					return current && buildingCard(current);
+					return current && buildingCard(id, current);
 				});
 			}
 
@@ -701,7 +712,7 @@ async function main() {
 				slabs.set(id, slab);
 				hoverable(body, () => {
 					const current = structures.get(id);
-					return current && structureCard(current);
+					return current && structureCard(id, current);
 				});
 			}
 
