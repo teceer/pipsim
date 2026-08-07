@@ -72,7 +72,12 @@ fn now_timestamp() -> prost_types::Timestamp {
     }
 }
 
-fn route(tick: u64, event: &DomainEvent) -> Routed {
+/// `None` means the fact never reaches Kafka. Reserved for events that concern
+/// operators rather than "many independent consumers" — rule 2 in
+/// `CLAUDE.md`. `WorkplaceRegistrationRejected` is the one case today; the
+/// tick loop turns it into a log line and a counter instead
+/// (`crates/server/src/tick.rs`).
+fn route(tick: u64, event: &DomainEvent) -> Option<Routed> {
     let (topic, key, payload) = match event {
         DomainEvent::PipSpawned {
             pip,
@@ -165,9 +170,12 @@ fn route(tick: u64, event: &DomainEvent) -> Routed {
                 kind: resource_kind_pb(*resource) as i32,
             }),
         ),
+        // Handled in `tick.rs` as a log line and a counter, not a Kafka fact.
+        // See the doc comment on `route`.
+        DomainEvent::WorkplaceRegistrationRejected { .. } => return None,
     };
 
-    Routed {
+    Some(Routed {
         topic,
         key,
         envelope: EventEnvelope {
@@ -182,7 +190,7 @@ fn route(tick: u64, event: &DomainEvent) -> Routed {
             producer: telemetry::SERVICE_NAME.to_string(),
             payload: Some(payload),
         },
-    }
+    })
 }
 
 /// Publishes a tick's worth of facts.
@@ -196,7 +204,9 @@ pub async fn publish(producer: &FutureProducer, tick: u64, events: &[DomainEvent
 
     let mut sent = 0;
     for event in events {
-        let routed = route(tick, event);
+        let Some(routed) = route(tick, event) else {
+            continue;
+        };
         let mut buf = Vec::with_capacity(routed.envelope.encoded_len());
         if routed.envelope.encode(&mut buf).is_err() {
             tracing::error!(topic = routed.topic, "failed to encode envelope");

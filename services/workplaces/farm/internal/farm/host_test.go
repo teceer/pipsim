@@ -10,7 +10,7 @@ import (
 )
 
 func twoFarms() *Host {
-	return NewHost(New(1, 12_000, 8_000), New(3, 32_000, 20_000))
+	return NewHost(New(1), New(3))
 }
 
 func TestListReportsEveryBuilding(t *testing.T) {
@@ -30,9 +30,6 @@ func TestListReportsEveryBuilding(t *testing.T) {
 		t.Errorf("want ids 1,3 in order, got %d,%d",
 			got[0].GetWorkplaceId(), got[1].GetWorkplaceId())
 	}
-	if got[0].GetPosition().GetXMilli() == got[1].GetPosition().GetXMilli() {
-		t.Error("both buildings report the same position")
-	}
 }
 
 func TestDescribeWithoutAnIdIsRefusedWhenHostingSeveral(t *testing.T) {
@@ -50,7 +47,7 @@ func TestDescribeWithoutAnIdIsRefusedWhenHostingSeveral(t *testing.T) {
 // every workplace written before List all address a service without naming a
 // building.
 func TestDescribeWithoutAnIdWorksWhenHostingOne(t *testing.T) {
-	h := NewHost(New(7, 1_000, 2_000))
+	h := NewHost(New(7))
 	res, err := h.Describe(context.Background(),
 		connect.NewRequest(&workplacev1.DescribeRequest{}))
 	if err != nil {
@@ -206,17 +203,17 @@ func TestWorkersSumsAcrossBuildings(t *testing.T) {
 }
 
 func TestParseSpecs(t *testing.T) {
-	got, err := ParseSpecs(" 1:12000:8000 , 3:32000:20000 ")
+	got, err := ParseSpecs(" 1 , 3 ")
 	if err != nil {
 		t.Fatalf("ParseSpecs: %v", err)
 	}
-	if len(got) != 2 || got[0].ID != 1 || got[1].Y != 20_000 {
+	if len(got) != 2 || got[0].ID != 1 || got[1].ID != 3 {
 		t.Errorf("unexpected specs: %+v", got)
 	}
 
 	// Strict on purpose: a dropped building is an economy quietly smaller than
 	// the one that was configured, and nothing would report it.
-	for _, bad := range []string{"", "1:2", "0:1:2", "x:1:2", "1:1:2:3"} {
+	for _, bad := range []string{"", "0", "x", "1,x"} {
 		if _, err := ParseSpecs(bad); err == nil {
 			t.Errorf("ParseSpecs(%q) should have failed", bad)
 		}

@@ -13,7 +13,7 @@ import (
 // newAt builds a farm whose lease reaping is driven by a clock the test owns,
 // so "fifteen seconds pass" costs nothing.
 func newAt(clock func() time.Time) *Service {
-	return NewWithStore(newMemStore(MaxWorkers, ShiftLease, MaxTicksPerWork, clock), 1, 0, 0)
+	return NewWithStore(newMemStore(MaxWorkers, ShiftLease, MaxTicksPerWork, clock), 1)
 }
 
 func hire(t *testing.T, s *Service, pip uint64) bool {
@@ -27,7 +27,7 @@ func hire(t *testing.T, s *Service, pip uint64) bool {
 }
 
 func TestCapacityIsEnforced(t *testing.T) {
-	s := New(1, 0, 0)
+	s := New(1)
 	for i := 1; i <= MaxWorkers; i++ {
 		if !hire(t, s, uint64(i)) {
 			t.Fatalf("pip %d should have been hired", i)
@@ -84,7 +84,7 @@ func TestWorkingRenewsTheLease(t *testing.T) {
 }
 
 func TestWorkForAnUnknownPipEndsTheShift(t *testing.T) {
-	s := New(1, 0, 0)
+	s := New(1)
 	res, err := s.Work(context.Background(),
 		connect.NewRequest(&workplacev1.WorkRequest{PipId: 404, Tick: 1}))
 	if err != nil {
@@ -99,7 +99,7 @@ func TestWorkForAnUnknownPipEndsTheShift(t *testing.T) {
 // world ticks ten times. Flat per-call amounts made employment a slower death
 // than idling, because a working pip drains food every tick and was paid once.
 func TestWorkPaysForEveryElapsedTick(t *testing.T) {
-	s := New(1, 0, 0)
+	s := New(1)
 	if !hire(t, s, 3) {
 		t.Fatal("precondition: hire failed")
 	}
@@ -121,7 +121,7 @@ func TestWorkPaysForEveryElapsedTick(t *testing.T) {
 }
 
 func TestWorkTwiceInOneTickPaysOnce(t *testing.T) {
-	s := New(1, 0, 0)
+	s := New(1)
 	hire(t, s, 4)
 
 	first, _ := s.Work(context.Background(),
@@ -139,7 +139,7 @@ func TestWorkTwiceInOneTickPaysOnce(t *testing.T) {
 
 // A driver that stalls and resumes must not hand out a windfall.
 func TestWorkIsCappedAfterALongGap(t *testing.T) {
-	s := New(1, 0, 0)
+	s := New(1)
 	hire(t, s, 5)
 
 	res, _ := s.Work(context.Background(),

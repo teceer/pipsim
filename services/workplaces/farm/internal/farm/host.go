@@ -43,17 +43,19 @@ func NewHost(buildings ...*Service) *Host {
 }
 
 // Spec is one building as configuration names it.
+//
+// Just an id: where the building stands is not this service's business, only
+// sim-core's — see ADR 0008. The gateway supplies position separately when it
+// registers the building.
 type Spec struct {
-	ID   uint64
-	X, Y int32
+	ID uint64
 }
 
-// ParseSpecs reads the multi-building form: "1:12000:8000,3:32000:20000".
+// ParseSpecs reads the multi-building form: "1,3".
 //
 // Deliberately strict. A typo here used to be survivable because there was one
-// building and a wrong coordinate merely put it in the wrong field; with several
-// of them, silently dropping one means a building that never appears and an
-// economy that is quietly smaller than intended.
+// building; with several of them, silently dropping one means a building that
+// never appears and an economy that is quietly smaller than intended.
 func ParseSpecs(raw string) ([]Spec, error) {
 	var out []Spec
 	for _, part := range strings.Split(raw, ",") {
@@ -61,23 +63,11 @@ func ParseSpecs(raw string) ([]Spec, error) {
 		if part == "" {
 			continue
 		}
-		f := strings.Split(part, ":")
-		if len(f) != 3 {
-			return nil, fmt.Errorf("want id:x:y, got %q", part)
-		}
-		id, err := strconv.ParseUint(strings.TrimSpace(f[0]), 10, 64)
+		id, err := strconv.ParseUint(part, 10, 64)
 		if err != nil || id == 0 {
 			return nil, fmt.Errorf("bad workplace id in %q", part)
 		}
-		x, err := strconv.ParseInt(strings.TrimSpace(f[1]), 10, 32)
-		if err != nil {
-			return nil, fmt.Errorf("bad x in %q", part)
-		}
-		y, err := strconv.ParseInt(strings.TrimSpace(f[2]), 10, 32)
-		if err != nil {
-			return nil, fmt.Errorf("bad y in %q", part)
-		}
-		out = append(out, Spec{ID: id, X: int32(x), Y: int32(y)})
+		out = append(out, Spec{ID: id})
 	}
 	if len(out) == 0 {
 		return nil, fmt.Errorf("no buildings configured")

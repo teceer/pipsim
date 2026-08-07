@@ -4,7 +4,7 @@
 //! in sync between compose and the cluster.
 
 use anyhow::Result;
-use opentelemetry::metrics::{Gauge, Histogram, MeterProvider as _};
+use opentelemetry::metrics::{Counter, Gauge, Histogram, MeterProvider as _};
 use opentelemetry::KeyValue;
 use opentelemetry_otlp::WithExportConfig;
 use opentelemetry_sdk::metrics::SdkMeterProvider;
@@ -18,6 +18,12 @@ pub struct Metrics {
     pub tick_duration: Histogram<f64>,
     /// Pips currently alive in the world.
     pub pips_alive: Gauge<u64>,
+    /// `RegisterWorkplace` intents sim-core refused — off the map, or
+    /// overlapping another building (ADR 0008). Not a Kafka fact (see
+    /// `events::route`), because it concerns whoever runs the cluster, not
+    /// other services; this counter and the log line next to it are that
+    /// audience's channel.
+    pub workplace_registration_rejected: Counter<u64>,
 }
 
 /// Returns the provider so `main` can flush it on shutdown, same reasoning as
@@ -53,12 +59,19 @@ pub fn init() -> Result<(SdkMeterProvider, Metrics)> {
         .u64_gauge("pipsim.sim.pips_alive")
         .with_description("Pips currently alive in the world")
         .build();
+    let workplace_registration_rejected = meter
+        .u64_counter("pipsim.sim.workplace_registration_rejected")
+        .with_description(
+            "RegisterWorkplace intents refused: off the map or overlapping another building",
+        )
+        .build();
 
     Ok((
         provider,
         Metrics {
             tick_duration,
             pips_alive,
+            workplace_registration_rejected,
         },
     ))
 }

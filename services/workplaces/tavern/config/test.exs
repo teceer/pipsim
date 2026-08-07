@@ -7,8 +7,8 @@ config :tavern, start_server: false
 # checks that they do not share seats and that `Describe` with no id is refused.
 config :tavern,
   buildings: [
-    %{id: 2, x: 32_000, y: 20_000},
-    %{id: 4, x: 40_000, y: 12_000}
+    %{id: 2},
+    %{id: 4}
   ]
 
 config :logger, level: :warning

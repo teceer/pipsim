@@ -25,7 +25,6 @@ import (
 
 	"connectrpc.com/connect"
 
-	simv1 "github.com/teceer/pipsim/gen/go/pips/sim/v1"
 	workplacev1 "github.com/teceer/pipsim/gen/go/pips/workplace/v1"
 )
 
@@ -86,24 +85,22 @@ const (
 
 // Service answers the workplace contract. Shift state lives in the Store.
 type Service struct {
-	store    Store
-	id       uint64
-	position *simv1.Vec2
+	store Store
+	id    uint64
 }
 
 // New builds a farm holding its shifts in memory — correct at one replica.
-func New(workplaceID uint64, x, y int32) *Service {
+func New(workplaceID uint64) *Service {
 	return NewWithStore(
 		newMemStore(MaxWorkers, ShiftLease, MaxTicksPerWork, time.Now),
-		workplaceID, x, y,
+		workplaceID,
 	)
 }
 
-func NewWithStore(store Store, workplaceID uint64, x, y int32) *Service {
+func NewWithStore(store Store, workplaceID uint64) *Service {
 	return &Service{
-		store:    store,
-		id:       workplaceID,
-		position: &simv1.Vec2{XMilli: x, YMilli: y},
+		store: store,
+		id:    workplaceID,
 	}
 }
 
@@ -124,10 +121,11 @@ func (s *Service) Describe(
 		DisplayName:    "Farm #" + strconv.FormatUint(s.id, 10),
 		MaxWorkers:     MaxWorkers,
 		CurrentWorkers: int32(workers),
-		Position:       s.position,
-		Produces:       []workplacev1.ResourceKind{workplacev1.ResourceKind_RESOURCE_KIND_GRAIN},
-		Wage:           wagePerTick,
-		Effort:         effort,
+		// Position is deliberately left unset — where this building stands is
+		// sim-core's fact, not the farm's. See ADR 0008.
+		Produces: []workplacev1.ResourceKind{workplacev1.ResourceKind_RESOURCE_KIND_GRAIN},
+		Wage:     wagePerTick,
+		Effort:   effort,
 		Sells: []*workplacev1.Offer{{
 			Kind:  workplacev1.ResourceKind_RESOURCE_KIND_FOOD,
 			Price: foodPrice,

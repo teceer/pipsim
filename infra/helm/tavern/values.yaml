@@ -12,17 +12,13 @@ image:
 # building. Adding a second tavern is another entry here, not another Helm
 # release — see ADR 0005.
 #
-# 1 is the farm. Ids are configuration until BuildWorkplace exists.
+# 1 is the farm. Ids are configuration until BuildWorkplace exists. Position
+# is not: it is world-gateway's `workplacePositions`, never the tavern's own —
+# see ADR 0008. There it is kept deliberately far from the farm, since the
+# commute is the point, and two buildings on top of each other would hide
+# whether pips actually walk to the one that hired them.
 workplaces:
   - id: 2
-  # Named in full because YAML 1.1 — which Helm parses — reads a bare `y`
-  # key as the boolean true. The farm carried that bug silently for weeks:
-  # WORKPLACE_Y rendered empty and Go fell back to a default that happened
-  # to match, so nothing looked wrong. Deliberately far from the
-  # farm: the commute is the point, and two buildings on top of each other would
-  # hide whether pips actually walk to the one that hired them.
-    xMilli: 32000
-    yMilli: 20000
 
 platformNamespace: pipsim-platform
 

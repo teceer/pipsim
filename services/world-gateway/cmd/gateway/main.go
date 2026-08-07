@@ -9,6 +9,7 @@ import (
 	"context"
 	"crypto/tls"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net"
 	"net/http"
@@ -27,6 +28,7 @@ import (
 	"golang.org/x/net/http2/h2c"
 
 	"github.com/teceer/pipsim/gen/go/pips/bank/v1/bankv1connect"
+	simv1 "github.com/teceer/pipsim/gen/go/pips/sim/v1"
 	"github.com/teceer/pipsim/gen/go/pips/sim/v1/simv1connect"
 	"github.com/teceer/pipsim/gen/go/pips/workplace/v1/workplacev1connect"
 	"github.com/teceer/pipsim/gen/go/pips/world/v1/worldv1connect"
@@ -124,6 +126,45 @@ func workplaceAddrs() []string {
 	return out
 }
 
+// workplacePositions reads where each building stands.
+//
+// This is the gateway's own configuration, not the workplace's (ADR 0008): a
+// building's kind decides employment, capacity and prices, and reports them
+// through Describe, but position is a fact about the map, and the map is
+// sim-core's — the gateway only carries the value from config to intent.
+// Format matches farm/tavern's own WORKPLACES: "id:x:y,...".
+func workplacePositions() (map[uint64]*simv1.Vec2, error) {
+	out := make(map[uint64]*simv1.Vec2)
+	raw := strings.TrimSpace(os.Getenv("WORKPLACE_POSITIONS"))
+	if raw == "" {
+		return out, nil
+	}
+	for _, part := range strings.Split(raw, ",") {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+		f := strings.Split(part, ":")
+		if len(f) != 3 {
+			return nil, fmt.Errorf("want id:x:y, got %q", part)
+		}
+		id, err := strconv.ParseUint(strings.TrimSpace(f[0]), 10, 64)
+		if err != nil || id == 0 {
+			return nil, fmt.Errorf("bad workplace id in %q", part)
+		}
+		x, err := strconv.ParseInt(strings.TrimSpace(f[1]), 10, 32)
+		if err != nil {
+			return nil, fmt.Errorf("bad x in %q", part)
+		}
+		y, err := strconv.ParseInt(strings.TrimSpace(f[2]), 10, 32)
+		if err != nil {
+			return nil, fmt.Errorf("bad y in %q", part)
+		}
+		out[id] = &simv1.Vec2{XMilli: int32(x), YMilli: int32(y)}
+	}
+	return out, nil
+}
+
 func main() {
 	ctx := context.Background()
 	shutdown, err := gotel.Init(ctx, "world-gateway")
@@ -161,6 +202,11 @@ func main() {
 	// policy deliberately lives elsewhere.
 	amqpURL := os.Getenv("AMQP_URL")
 	addrs := workplaceAddrs()
+	positions, err := workplacePositions()
+	if err != nil {
+		slog.Error("bad WORKPLACE_POSITIONS", "err", err)
+		os.Exit(1)
+	}
 	if len(addrs) > 0 && amqpURL != "" {
 		offers, err := economy.Dial(amqpURL)
 		if err != nil {
@@ -186,6 +232,7 @@ func main() {
 					gotel.WithInterceptor(otelInterceptor)),
 				addr,
 				offers,
+				positions,
 			)
 			if err != nil {
 				// Not fatal: a workplace that is down at startup should not stop

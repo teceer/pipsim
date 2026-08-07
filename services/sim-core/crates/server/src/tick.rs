@@ -8,8 +8,9 @@
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
+use opentelemetry::KeyValue;
 use rdkafka::producer::FutureProducer;
-use sim::{Intent, World};
+use sim::{DomainEvent, Intent, World};
 use tokio::sync::broadcast;
 use tracing::Instrument;
 
@@ -113,6 +114,36 @@ impl Driver {
             // Logged every tick on purpose: when a replay diverges, this pins
             // down the exact tick where it happened.
             span.record("state_hash", format!("{hash:016x}"));
+
+            // Not a Kafka fact (see events::route) — this is the operator's
+            // channel for a mistake that will not fix itself by retrying,
+            // which is exactly what the gateway's registration loop does.
+            for event in &events {
+                if let DomainEvent::WorkplaceRegistrationRejected {
+                    workplace,
+                    kind,
+                    position,
+                    reason,
+                } = event
+                {
+                    tracing::warn!(
+                        tick,
+                        workplace,
+                        kind,
+                        x = position.x,
+                        y = position.y,
+                        reason,
+                        "workplace registration rejected"
+                    );
+                    self.metrics.workplace_registration_rejected.add(
+                        1,
+                        &[
+                            KeyValue::new("kind", kind.clone()),
+                            KeyValue::new("reason", *reason),
+                        ],
+                    );
+                }
+            }
 
             if !events.is_empty() {
                 let sent = events::publish(&self.producer, tick, &events).await;

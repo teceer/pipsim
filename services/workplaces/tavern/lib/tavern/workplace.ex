@@ -14,8 +14,6 @@ defmodule Tavern.Workplace do
 
   require Logger
 
-  alias Pips.Sim.V1.Vec2
-
   alias Pips.Workplace.V1.{
     BuyRequest,
     BuyResponse,
@@ -211,7 +209,8 @@ defmodule Tavern.Workplace do
       display_name: "Tavern ##{b.id}",
       max_workers: Shifts.max_workers(),
       current_workers: store().count(b.id),
-      position: %Vec2{x_milli: b.x, y_milli: b.y},
+      # Position is deliberately absent — where this building stands is
+      # sim-core's fact, not the tavern's. See ADR 0008.
       produces: [:RESOURCE_KIND_ALE],
       consumes: [:RESOURCE_KIND_GRAIN],
       wage: Shifts.wage_per_tick(),
