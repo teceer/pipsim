@@ -22,11 +22,32 @@ across processes is non-deterministic, which would break replay. See
 
 ## Shape
 
-- `Broadcast.WorldChannel` — one Channel topic per world region, so a client
-  subscribes to what it can see rather than to everything
-- `Broadcast.Presence` — who is watching, and where
-- `Broadcast.GatewayClient` — consumes the `StreamWorld` server stream from
-  world-gateway and pushes deltas into PubSub
+- `Broadcast.GatewayClient` — **one** `StreamWorld` subscription per node,
+  splitting each delta by cell and publishing into PubSub. The one-per-node
+  part is the reason this service exists: before it, every browser cost
+  sim-core its own stream of identical bytes
+- `Broadcast.WorldChannel` — one topic per world cell, so a client subscribes
+  to what it can see rather than to everything
+- `Broadcast.Grid` — position → cell, and the topic format. The core knows
+  nothing about cells; growing the world is a change here
+- `Broadcast.Endpoint` / `Broadcast.UserSocket` — the socket, plus `/healthz`
+
+`Broadcast.Presence` is **not** here, deliberately. ADR 0010 decision 7 defers
+it: a CRDT replicated across the cluster costs what its churn costs, and
+nothing in pipsim needs to know who else is watching yet.
+
+## Two things that will surprise you
+
+**The payload is `{:binary, bytes}`, not a map.** That shape is what makes
+Phoenix fastlane a delta straight into a binary WebSocket frame; a plain map
+goes through JSON and costs a decode plus re-encode per client per tick. ADR
+0010 called for a custom serializer to get this — the default V2 serializer
+already does it, so there is no serializer of ours to maintain. Keep the tuple.
+
+**Buildings and structures ride along in every cell**, only pips are
+partitioned. There are a handful of buildings, they change rarely, and a client
+panning into an empty cell would otherwise have to be told separately that the
+farm it can see still exists.
 
 ## Elixir idioms used here
 

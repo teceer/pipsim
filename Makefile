@@ -73,6 +73,13 @@ gen: gen-elixir
 # Generating into a scratch directory and lifting the inner tree out is less
 # clever than fighting the plugin's path logic, and it does not care if a future
 # version stops doubling.
+#
+# Messages only — no `plugins=grpc`. The stubs it emits carry `use
+# GRPC.Service` into every generated file, and this tree is compiled by every
+# Elixir service: the tavern deliberately has no gRPC dependency (it serves
+# Connect with Plug), so a stub in bank.pb.ex breaks a service that will never
+# call bank over gRPC. The one consumer that needs a stub declares it itself,
+# in services/broadcast/lib/broadcast/world_service.ex.
 gen-elixir:
 	@command -v protoc-gen-elixir >/dev/null || { \
 	  echo "protoc-gen-elixir missing: mix escript.install hex protobuf"; exit 1; }
