@@ -70,7 +70,23 @@ impl Vec2 {
             y: self.y + dy,
         }
     }
+
+    /// Squared distance to `other`. Compared against a squared threshold
+    /// rather than taking a square root, for the same reason `step_towards`
+    /// avoids one: `sqrt` is not guaranteed bit-identical between native and
+    /// WASM, and determinism cannot tolerate that.
+    fn distance_squared(self, other: Vec2) -> i64 {
+        let dx = (self.x - other.x) as i64;
+        let dy = (self.y - other.y) as i64;
+        dx * dx + dy * dy
+    }
 }
+
+/// How close two buildings may stand. A placeholder for real building
+/// footprints — sim-core has no notion of building size yet — but it is
+/// enough to catch the case that actually matters: two workplaces registered
+/// on top of each other, which used to be possible because nothing checked.
+pub const WORKPLACE_MIN_SPACING_MILLI: Milli = 1000;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Activity {
@@ -298,6 +314,18 @@ pub enum DomainEvent {
         workplace: WorkplaceId,
         amount: i64,
         resource: ResourceKind,
+    },
+    /// A `RegisterWorkplace` intent was refused: off the map, or on top of
+    /// another building (ADR 0008). Not a Kafka fact — rule 2 in `CLAUDE.md`
+    /// reserves Kafka for things many independent consumers might care about,
+    /// and this concerns exactly one audience: whoever misconfigured a
+    /// position. `crates/server` turns it into a log line and a counter
+    /// instead of an envelope.
+    WorkplaceRegistrationRejected {
+        workplace: WorkplaceId,
+        kind: String,
+        position: Vec2,
+        reason: &'static str,
     },
 }
 
@@ -578,6 +606,41 @@ impl World {
                     capacity,
                     sells,
                 } => {
+                    // Where a building stands is sim-core's fact, never the
+                    // workplace's (ADR 0008) — so this is the one place that
+                    // gets to say no. Off the map, or on top of another
+                    // building, and the intent has no effect on the world —
+                    // the gateway re-registers on a loop, so a rejected
+                    // registration is retried for free. It is not, however,
+                    // silent: unlike `Transfer` failing on an ordinary
+                    // insufficient balance, this is almost always a
+                    // configuration mistake that will not resolve itself, so
+                    // it is worth a fact `server` can turn into a log line.
+                    let in_bounds = (0..=WORLD_W_MILLI).contains(&position.x)
+                        && (0..=WORLD_H_MILLI).contains(&position.y);
+                    let min_spacing_sq =
+                        (WORKPLACE_MIN_SPACING_MILLI as i64) * (WORKPLACE_MIN_SPACING_MILLI as i64);
+                    let overlaps_another = self
+                        .workplace_ids
+                        .iter()
+                        .zip(self.workplace_positions.iter())
+                        .any(|(&other_id, &other_pos)| {
+                            other_id != *id && position.distance_squared(other_pos) < min_spacing_sq
+                        });
+                    if !in_bounds || overlaps_another {
+                        events.push(DomainEvent::WorkplaceRegistrationRejected {
+                            workplace: *id,
+                            kind: kind.clone(),
+                            position: *position,
+                            reason: if !in_bounds {
+                                "off the map"
+                            } else {
+                                "overlaps another building"
+                            },
+                        });
+                        continue;
+                    }
+
                     // Upsert: the gateway re-registers on every reconnect, and
                     // a workplace that came back with a different capacity
                     // should be believed. Nobody is evicted if the new capacity
@@ -1506,6 +1569,104 @@ mod tests {
         assert_eq!(w.workplace_ids.len(), 1);
         assert_eq!(w.workplace_capacities[0], 9);
         assert_eq!(w.workplace_positions[0], Vec2 { x: 1, y: 2 });
+    }
+
+    #[test]
+    fn a_workplace_cannot_register_on_top_of_another() {
+        let mut w = World::new(24);
+        w.step(&[build(5, 24)]);
+
+        // Same door, different id: the gateway never asks for this, but
+        // nothing stops it either, and sim-core is the only place left to say
+        // no — see ADR 0008.
+        let rejected = w.step(&[Intent::RegisterWorkplace {
+            id: 7,
+            kind: "tavern".into(),
+            position: DOOR,
+            capacity: 24,
+            sells: Vec::new(),
+        }]);
+
+        assert!(!rejected
+            .iter()
+            .any(|e| matches!(e, DomainEvent::WorkplaceBuilt { .. })));
+        assert_eq!(w.workplace_ids.len(), 1, "the second building never lands");
+        assert!(rejected.iter().any(|e| matches!(
+            e,
+            DomainEvent::WorkplaceRegistrationRejected {
+                workplace: 7,
+                reason: "overlaps another building",
+                ..
+            }
+        )));
+    }
+
+    #[test]
+    fn a_workplace_cannot_register_off_the_map() {
+        let mut w = World::new(24);
+        let rejected = w.step(&[Intent::RegisterWorkplace {
+            id: 5,
+            kind: "farm".into(),
+            position: Vec2 {
+                x: WORLD_W_MILLI + 1,
+                y: 0,
+            },
+            capacity: 24,
+            sells: Vec::new(),
+        }]);
+
+        assert!(!rejected
+            .iter()
+            .any(|e| matches!(e, DomainEvent::WorkplaceBuilt { .. })));
+        assert!(w.workplace_ids.is_empty());
+        assert!(rejected.iter().any(|e| matches!(
+            e,
+            DomainEvent::WorkplaceRegistrationRejected {
+                workplace: 5,
+                reason: "off the map",
+                ..
+            }
+        )));
+    }
+
+    #[test]
+    fn moving_a_registered_workplace_onto_another_is_also_rejected() {
+        let mut w = World::new(24);
+        w.step(&[
+            build(5, 24),
+            Intent::RegisterWorkplace {
+                id: 7,
+                kind: "tavern".into(),
+                position: Vec2 {
+                    x: DOOR.x + WORKPLACE_MIN_SPACING_MILLI * 4,
+                    y: DOOR.y,
+                },
+                capacity: 24,
+                sells: Vec::new(),
+            },
+        ]);
+
+        // 7 tries to update itself onto 5's door. Not just insertion is
+        // guarded — an update that would collide is refused the same way, so
+        // the position on file for 7 is left exactly where it was.
+        let rejected = w.step(&[Intent::RegisterWorkplace {
+            id: 7,
+            kind: "tavern".into(),
+            position: DOOR,
+            capacity: 24,
+            sells: Vec::new(),
+        }]);
+
+        let wi = w.workplace_index(7).unwrap();
+        assert_ne!(w.workplace_positions[wi], DOOR);
+        assert!(rejected.iter().any(|e| matches!(
+            e,
+            DomainEvent::WorkplaceRegistrationRejected {
+                workplace: 7,
+                reason: "overlaps another building",
+                ..
+            }
+        )));
     }
 
     // --- money ----------------------------------------------------------
