@@ -107,9 +107,18 @@ services:
       SIM_CORE_ADDR: sim-core:50051
       BANK_ADDR: bank:8082
       KAFKA_BROKERS: redpanda:29092
-      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      # AMQP_URL, not RABBITMQ_URL: the gateway reads the former and the
+      # economy stays switched off without it, which is what this file has
+      # silently been doing — "economy disabled; WORKPLACE_ADDRS and AMQP_URL
+      # are both required" was in every dev log.
+      AMQP_URL: amqp://guest:guest@rabbitmq:5672
+      # Addresses only; each workplace reports its own id and kind through
+      # Describe. Mirrors workplaceAddrs in infra/helm/world-gateway/values.yaml.
+      WORKPLACE_ADDRS: farm:8090,tavern:8090
       OTEL_EXPORTER_OTLP_ENDPOINT: http://observability:4317
-    depends_on: { redpanda: { condition: service_healthy } }
+    depends_on:
+      redpanda: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
 
   # The double-entry ledger. Its own Postgres schema (bank.*), migrated on
   # startup — see services/bank/internal/ledger/postgres.go. world-gateway

@@ -26,8 +26,10 @@ import (
 
 const (
 	exchange    = "pipsim.work"
+	dlx         = "pipsim.work.dlx"
 	hiredQueue  = "pipsim.work.hired"
 	offerPrefix = "offer."
+	hiredKey    = "hired"
 	// The naming convention every workplace's consumer follows — see e.g.
 	// services/workplaces/farm/internal/queue: offerQueue = "pipsim.work.farm".
 	// Restated here rather than imported, because a Go workplace consumer is
@@ -122,12 +124,43 @@ func (p *Publisher) Offer(ctx context.Context, kind string, pipID, tick uint64, 
 	})
 }
 
+// declare builds the exchange and outcome queue the gateway depends on.
+//
+// Note what is missing: the per-workplace offer queues. Publishing to a topic
+// exchange with no matching binding is not an error and the message is simply
+// dropped, which is the correct behaviour here — a workplace that is not
+// running should not accumulate offers it will answer minutes late. Each
+// workplace binds its own queue when it starts.
+func (p *Publisher) declare() error {
+	if err := p.ch.ExchangeDeclare(exchange, "topic", true, false, false, false, nil); err != nil {
+		return err
+	}
+	if err := p.ch.ExchangeDeclare(dlx, "fanout", true, false, false, false, nil); err != nil {
+		return err
+	}
+	if _, err := p.ch.QueueDeclare(hiredQueue, true, false, false, false, amqp.Table{
+		"x-dead-letter-exchange": dlx,
+	}); err != nil {
+		return err
+	}
+	return p.ch.QueueBind(hiredQueue, hiredKey, exchange, false, nil)
+}
+
 // ConsumeOutcomes calls onHired for every accepted outcome until ctx is done.
 //
 // Rejections are counted and dropped: a full workplace declining an offer is
 // the system working, and turning that into a retry loop would just be polling
 // with extra steps.
 func (p *Publisher) ConsumeOutcomes(ctx context.Context, onHired func(pipID, workplaceID uint64)) error {
+	// The gateway consumes this queue, so the gateway declares it — the same
+	// division the workplaces follow for their offer queues, and the reason
+	// QueueDepth above inspects passively instead. Layer 20 declares the same
+	// topology for the cluster; AMQP makes the overlap a no-op as long as the
+	// arguments match, which is why they are restated here exactly.
+	if err := p.declare(); err != nil {
+		return err
+	}
+
 	deliveries, err := p.ch.Consume(hiredQueue, "", false, false, false, false, nil)
 	if err != nil {
 		return err
