@@ -311,20 +311,49 @@ resource "helm_release" "redpanda" {
   # the protobuf section is added.
   values = [yamlencode({
     console = {
-      extraVolumes = [{
-        name = "protos"
-        configMap = {
-          name = kubernetes_config_map.console_protos.metadata[0].name
-          # key is the flattened ConfigMap entry, path rebuilds the directory
-          # the imports expect.
-          items = [
-            for f in local.proto_files : {
-              key  = replace(f, "/", "__")
-              path = f
-            }
+      extraVolumes = [
+        {
+          name = "protos-src"
+          configMap = {
+            name = kubernetes_config_map.console_protos.metadata[0].name
+            # key is the flattened ConfigMap entry, path rebuilds the directory
+            # the imports expect.
+            items = [
+              for f in local.proto_files : {
+                key  = replace(f, "/", "__")
+                path = f
+              }
+            ]
+          }
+        },
+        { name = "protos", emptyDir = {} },
+      ]
+
+      # A ConfigMap volume is not a plain directory: Kubernetes materialises it
+      # as `..2026_08_07_13_56_39.../pips/...` with a `..data` symlink pointing
+      # at the current one, so it can swap the contents atomically. The console
+      # walks the tree recursively and takes each file's path *relative to the
+      # mount* as its proto import path — which came out as
+      # `..2026_08_07_.../pips/world/v1/world.proto`, and then
+      # `import "pips/sim/v1/sim.proto"` resolved against nothing:
+      #
+      #   failed to parse proto file to descriptor:
+      #   pips/sim/v1/sim.proto: file does not exist
+      #
+      # `cp -rL` dereferences the symlinks into a plain emptyDir, and copying
+      # `pips` specifically rather than `.` leaves the dot-directories behind.
+      # helm template cannot catch this; only a running pod can.
+      initContainers = {
+        extraInitContainers = yamlencode([{
+          name    = "flatten-protos"
+          image   = "busybox:1.36"
+          command = ["sh", "-c", "cp -rL /src/pips /out/"]
+          volumeMounts = [
+            { name = "protos-src", mountPath = "/src" },
+            { name = "protos", mountPath = "/out" },
           ]
-        }
-      }]
+        }])
+      }
 
       extraVolumeMounts = [{
         name      = "protos"
