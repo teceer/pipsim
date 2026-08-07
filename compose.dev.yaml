@@ -115,6 +115,20 @@ services:
       # Addresses only; each workplace reports its own id and kind through
       # Describe. Mirrors workplaceAddrs in infra/helm/world-gateway/values.yaml.
       WORKPLACE_ADDRS: farm:8090,tavern:8090
+      # The services drawn on the map as buildings — `kind|role|health-url`,
+      # separated by `;`. See ADR 0011.
+      #
+      # farm and tavern are deliberately absent: they are already on the map as
+      # workplaces, and listing them here would draw each of them twice.
+      # sim-core has no health URL to give — it serves gRPC on 50051 and no HTTP
+      # — so it is drawn as up, which is honest: if it were down, this gateway
+      # would have nothing to register against in the first place.
+      STRUCTURES: >-
+        sim-core|the deterministic world|;
+        world-gateway|aggregation and routing|http://localhost:8081/healthz;
+        bank|double-entry ledger|http://bank:8082/healthz;
+        broadcast|phoenix channels|http://broadcast:4000/healthz;
+        bff|timers and delayed jobs|http://bff:3000/healthz
       OTEL_EXPORTER_OTLP_ENDPOINT: http://observability:4317
     depends_on:
       redpanda: { condition: service_healthy }

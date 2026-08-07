@@ -64,6 +64,23 @@ gateway relies on this: it keeps calling `Work` while a pip commutes, because
 the farm's shift lease is shorter than a long walk, but it applies the need
 deltas only once the pip is actually inside.
 
+## Structures, which are not buildings
+
+The core also keeps a `Structure` registry: one entry per microservice, so the
+map doubles as a diagram of what is deployed (ADR 0011). They have a position, a
+role and a `healthy` flag, and nothing else — no capacity, no occupancy, no
+balance.
+
+Two rules about them:
+
+- **Nothing in the tick loop may read one.** They are inert scenery. The test
+  `a_structure_does_not_touch_the_simulation` runs two worlds, registers a
+  structure in one, and asserts the state hashes still match.
+- **They are not in `state_hash()`, on purpose.** `healthy` flips because a
+  container restarted, and the browser's WASM core registers no structures at
+  all. Mixing them in would make a perfectly matching world look divergent and
+  fail `make parity` for a reason unrelated to the core.
+
 ## Data layout
 
 Structure-of-arrays: `positions[i]`, `needs[i]`, `activities[i]` all describe

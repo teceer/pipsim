@@ -96,6 +96,21 @@ defmodule Pips.Sim.V1.Pip do
   field :balance, 8, type: :int64
 end
 
+defmodule Pips.Sim.V1.Structure do
+  @moduledoc false
+
+  use Protobuf,
+    full_name: "pips.sim.v1.Structure",
+    protoc_gen_elixir_version: "0.17.0",
+    syntax: :proto3
+
+  field :id, 1, type: :uint64
+  field :kind, 2, type: :string
+  field :position, 3, type: Pips.Sim.V1.Vec2
+  field :role, 4, type: :string
+  field :healthy, 5, type: :bool
+end
+
 defmodule Pips.Sim.V1.Workplace do
   @moduledoc false
 
@@ -148,6 +163,7 @@ defmodule Pips.Sim.V1.WorldDelta do
   field :pips, 2, repeated: true, type: Pips.Sim.V1.PipDelta
   field :removed_pip_ids, 3, repeated: true, type: :uint64, json_name: "removedPipIds"
   field :workplaces, 4, repeated: true, type: Pips.Sim.V1.Workplace
+  field :structures, 5, repeated: true, type: Pips.Sim.V1.Structure
 end
 
 defmodule Pips.Sim.V1.PipDelta.NeedsEntry do
@@ -203,6 +219,7 @@ defmodule Pips.Sim.V1.SnapshotResponse do
   field :pips, 2, repeated: true, type: Pips.Sim.V1.Pip
   field :state_hash, 3, type: :bytes, json_name: "stateHash"
   field :workplaces, 4, repeated: true, type: Pips.Sim.V1.Workplace
+  field :structures, 5, repeated: true, type: Pips.Sim.V1.Structure
 end
 
 defmodule Pips.Sim.V1.WatchDeltasRequest do
@@ -258,6 +275,11 @@ defmodule Pips.Sim.V1.SubmitIntentRequest do
     type: Pips.Sim.V1.CreditBalancesIntent,
     json_name: "creditBalances",
     oneof: 0
+
+  field :register_structure, 9,
+    type: Pips.Sim.V1.RegisterStructureIntent,
+    json_name: "registerStructure",
+    oneof: 0
 end
 
 defmodule Pips.Sim.V1.SubmitIntentResponse do
@@ -309,6 +331,21 @@ defmodule Pips.Sim.V1.RegisterWorkplaceIntent do
   field :position, 3, type: Pips.Sim.V1.Vec2
   field :capacity, 4, type: :uint32
   field :sells, 5, repeated: true, type: Pips.Sim.V1.WorkplaceOffer
+end
+
+defmodule Pips.Sim.V1.RegisterStructureIntent do
+  @moduledoc false
+
+  use Protobuf,
+    full_name: "pips.sim.v1.RegisterStructureIntent",
+    protoc_gen_elixir_version: "0.17.0",
+    syntax: :proto3
+
+  field :structure_id, 1, type: :uint64, json_name: "structureId"
+  field :kind, 2, type: :string
+  field :position, 3, type: Pips.Sim.V1.Vec2
+  field :role, 4, type: :string
+  field :healthy, 5, type: :bool
 end
 
 defmodule Pips.Sim.V1.WorkplaceOffer do

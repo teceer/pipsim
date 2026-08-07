@@ -77,6 +77,28 @@ enum PipActivity {
 // bodies fit inside, and how many are in there now. `capacity` is a copy of the
 // workplace's own `max_workers` — the gateway registers it, so the number keeps
 // one owner and the core only enforces it.
+// A thing that stands in the world without employing anyone.
+//
+// Every service in the cluster gets one, so the map doubles as a diagram of
+// what is deployed: the bank, broadcast, the gateway itself. A Workplace is the
+// special case of a structure that also has a payroll, and stayed its own
+// message rather than growing a flag — the two are told apart by every consumer
+// on the map, and one of them has capacity, occupancy, prices and a hiring
+// contract that make no sense for the other.
+//
+// See ADR 0011.
+message Structure {
+  uint64 id = 1;
+  // The service this stands for: "bank", "broadcast", "world-gateway".
+  string kind = 2;
+  Vec2 position = 3;
+  // Shown under the label — "double-entry ledger", "Phoenix channels".
+  string role = 4;
+  // Whether the service answered its last health check. The map is meant to be
+  // a live diagram, so a service that is down should look like it.
+  bool healthy = 5;
+}
+
 message Workplace {
   uint64 id = 1;
   string kind = 2;
@@ -115,6 +137,10 @@ message WorldDelta {
   // and a client that missed a delta would otherwise draw a stale headcount
   // indefinitely.
   repeated Workplace workplaces = 4;
+  // Services on the map, in full for the same reason. `healthy` flips when one
+  // stops answering, and a client that missed that delta would keep drawing a
+  // dead service as live.
+  repeated Structure structures = 5;
 }
 
 message PipDelta {
@@ -139,6 +165,7 @@ message SnapshotResponse {
   // Hash of the full state. Replay compares this to detect divergence.
   bytes state_hash = 3;
   repeated Workplace workplaces = 4;
+  repeated Structure structures = 5;
 }
 
 message WatchDeltasRequest {
@@ -164,6 +191,7 @@ message SubmitIntentRequest {
     EndEmploymentIntent end_employment = 6;
     TransferIntent transfer = 7;
     CreditBalancesIntent credit_balances = 8;
+    RegisterStructureIntent register_structure = 9;
   }
 }
 
@@ -204,6 +232,21 @@ message RegisterWorkplaceIntent {
   // it here, and the core only enforces it — a pip deciding inside a tick
   // whether it can afford lunch cannot make a network call to ask.
   repeated WorkplaceOffer sells = 5;
+}
+
+// Puts a service on the map, or updates the one already there.
+//
+// Registration is the gateway's job, not the service's: the gateway is already
+// the only thing that knows where every other service lives, so a bank does not
+// have to implement anything to be drawn. Idempotent like
+// RegisterWorkplaceIntent — it is re-sent on a loop as health is polled, and
+// `healthy` is the field that actually changes.
+message RegisterStructureIntent {
+  uint64 structure_id = 1;
+  string kind = 2;
+  Vec2 position = 3;
+  string role = 4;
+  bool healthy = 5;
 }
 
 // Mirrors pips.workplace.v1.Offer. A second declaration rather than an import

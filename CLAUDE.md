@@ -22,6 +22,12 @@ Built so far: `sim-core` (Rust), `world-gateway` (Go), `workplaces/farm` (Go),
 contract with the gateway's own client — point it at a new one before believing
 it works.
 
+The map draws two kinds of building: **workplaces**, which employ pips, and
+**structures**, which are the services themselves — the bank, broadcast, the
+gateway. The second kind is registered by the gateway from `STRUCTURES` and
+carries a live health flag, so the map is also a diagram of what is running. See
+ADR 0011.
+
 ## Non-negotiable rules
 
 1. **`proto/` is the single source of truth for contracts.** An API change starts

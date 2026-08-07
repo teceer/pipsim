@@ -26,6 +26,19 @@ workplaceAddrs:
   - farm:8090
   - tavern:8090
 
+# Services shown on the map as buildings, so it diagrams the architecture and
+# not only the simulation — `kind|role|health-url`, and an empty URL for a
+# service with no HTTP endpoint to poll. See ADR 0011.
+#
+# The workplaces above are absent on purpose: they already stand on the map,
+# and repeating them here would draw each one twice.
+structures:
+  - "sim-core|the deterministic world|"
+  - "world-gateway|aggregation and routing|http://localhost:8081/healthz"
+  - "bank|double-entry ledger|http://bank:8082/healthz"
+  - "broadcast|phoenix channels|http://broadcast:4000/healthz"
+  - "bff|timers and delayed jobs|http://bff:3000/healthz"
+
 platformNamespace: pipsim-platform
 
 replicaCount: 1

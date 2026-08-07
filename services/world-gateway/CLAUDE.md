@@ -13,6 +13,21 @@ here, it is in the wrong place.
 It is also the only service allowed to publish to Kafka on behalf of sim-core —
 the core produces events but has no I/O, so the gateway forwards them.
 
+## Services on the map
+
+The gateway registers a `Structure` per microservice, so the map is also a
+diagram of what is deployed — see ADR 0011. Configured through `STRUCTURES`
+(`kind|role|health-url`, `;`-separated), polled every five seconds, and pushed
+to sim-core as `RegisterStructureIntent`.
+
+This is the one place the gateway decides something visual: where the buildings
+stand, and whether they are lit. That is presentation rather than domain logic
+— it holds no rule about what a structure *means* — but it is worth knowing the
+boundary is here and not somewhere else.
+
+Do not list a workplace in `STRUCTURES`. Workplaces reach the map by registering
+themselves through `Describe`, and listing one here draws it twice.
+
 ## Why Connect-RPC and not plain gRPC
 
 Browsers cannot speak gRPC natively; the usual workaround is gRPC-Web plus an

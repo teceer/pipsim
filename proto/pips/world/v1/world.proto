@@ -46,6 +46,9 @@ message JoinWorldResponse {
   // second ago is employed but still walking there — and the renderer needs
   // this one, because it draws bodies rather than contracts.
   repeated pips.sim.v1.Workplace buildings = 6;
+  // The services behind all of the above, as buildings. See ADR 0011: the map
+  // is a diagram of what is deployed, not only of what the pips do.
+  repeated pips.sim.v1.Structure structures = 7;
 }
 
 message StreamWorldRequest {
