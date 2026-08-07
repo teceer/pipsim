@@ -23,9 +23,13 @@ services:
       interval: 5s
       retries: 20
 
+  # 8085 rather than 8080, which k3d-pipsim-serverlb takes the moment the
+  # cluster is up — and having both environments running at once is normal
+  # here. It is also the port `make infra-forward` already gives the console
+  # on the cluster, so the URL is the same either way.
   console:
     image: redpandadata/console:v2.7.2
-    ports: ["8080:8080"]
+    ports: ["8085:8080"]
     environment:
       KAFKA_BROKERS: redpanda:29092
     depends_on: { redpanda: { condition: service_healthy } }
@@ -72,9 +76,18 @@ services:
 
   # --- services ---------------------------------------------------------------
   # Behind a profile so that `make dev-platform` brings up the platform alone.
+  #
+  # Every build here names `context: .` explicitly. The short `build: ./services/x`
+  # form sets the context to the service directory, and none of these images can
+  # be built that way: they copy gen/go, go.work and their sibling modules'
+  # manifests, and sim-core's build.rs reads proto/ — all of it outside the
+  # service tree. The Tiltfile has always passed context='.'; compose kept the
+  # short form and so could only ever rebuild what Tilt had already produced.
 
   sim-core:
-    build: ./services/sim-core
+    build:
+      context: .
+      dockerfile: services/sim-core/Dockerfile
     profiles: ["services"]
     ports: ["50051:50051"]
     environment:
@@ -85,7 +98,9 @@ services:
     depends_on: { redpanda: { condition: service_healthy } }
 
   world-gateway:
-    build: ./services/world-gateway
+    build:
+      context: .
+      dockerfile: services/world-gateway/Dockerfile
     profiles: ["services"]
     ports: ["8081:8081"]
     environment:
@@ -101,19 +116,26 @@ services:
   # degrades gracefully without it (no wages, no purchases), so this is not a
   # hard dependency the way sim-core is.
   bank:
-    build: ./services/bank
+    build:
+      context: .
+      dockerfile: services/bank/Dockerfile
     profiles: ["services"]
     ports: ["8082:8082"]
     environment:
       DATABASE_URL: postgres://pipsim:pipsim@postgres:5432/pipsim
       KAFKA_BROKERS: redpanda:29092
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      # The collector is part of the otel-lgtm image above, which this file
+      # calls `observability`; there has never been an `otel-collector` host on
+      # this network, so bank's traces were going nowhere.
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://observability:4317
     depends_on:
       postgres: { condition: service_healthy }
       redpanda: { condition: service_healthy }
 
   broadcast:
-    build: ./services/broadcast
+    build:
+      context: .
+      dockerfile: services/broadcast/Dockerfile
     profiles: ["services"]
     ports: ["4000:4000"]
     environment:
@@ -122,7 +144,9 @@ services:
       OTEL_EXPORTER_OTLP_ENDPOINT: http://observability:4317
 
   bff:
-    build: ./services/bff
+    build:
+      context: .
+      dockerfile: services/bff/Dockerfile
     profiles: ["services"]
     ports: ["3000:3000"]
     environment:
@@ -131,3 +155,40 @@ services:
       OTEL_SERVICE_NAME: bff
       OTEL_EXPORTER_OTLP_ENDPOINT: http://observability:4317
     depends_on: { redis: { condition: service_healthy } }
+
+  # --- workplaces -------------------------------------------------------------
+  # The two that exist. Both listen on 8090 inside their own container, which
+  # only collides on the host, so tavern is the one published elsewhere.
+  #
+  # Neither needs WORKPLACES here: without it each falls back to a single
+  # building at its default coordinates, which is what a dev world wants.
+
+  farm:
+    build:
+      context: .
+      dockerfile: services/workplaces/farm/Dockerfile
+    profiles: ["services"]
+    ports: ["8090:8090"]
+    environment:
+      BANK_ADDR: bank:8082
+      AMQP_URL: amqp://guest:guest@rabbitmq:5672
+      REDIS_URL: redis://redis:6379
+      OTEL_SERVICE_NAME: farm
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://observability:4317
+    depends_on:
+      rabbitmq: { condition: service_healthy }
+      redis: { condition: service_healthy }
+
+  tavern:
+    build:
+      context: .
+      dockerfile: services/workplaces/tavern/Dockerfile
+    profiles: ["services"]
+    ports: ["8091:8090"]
+    environment:
+      BANK_ADDR: bank:8082
+      AMQP_URL: amqp://guest:guest@rabbitmq:5672
+      OTEL_SERVICE_NAME: tavern
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://observability:4317
+    depends_on:
+      rabbitmq: { condition: service_healthy }
