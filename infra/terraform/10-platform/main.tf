@@ -222,6 +222,40 @@ resource "kubernetes_service" "simple" {
 # and roughly an order of magnitude lighter than Kafka on a laptop.
 # ---------------------------------------------------------------------------
 
+# The contracts, so the console can decode the fact log.
+#
+# Without them every message renders as a hex dump and a deserialization error:
+# the console guesses JSON, Avro, msgpack and a dozen others, and protobuf is
+# the one encoding it cannot guess. Same fix as compose, which mounts proto/
+# directly — a cluster needs the files carried in.
+#
+# ConfigMap keys may not contain `/`, so they are flattened here and the
+# directory structure is rebuilt by `items[].path` at mount time. That is not
+# cosmetic: events.proto imports pips/sim/v1/sim.proto, and an import resolves
+# against the mount root, so a flat directory would fail to load every file
+# that imports another.
+locals {
+  proto_dir   = "${path.module}/../../../proto"
+  proto_files = fileset("${path.module}/../../../proto", "**/*.proto")
+
+  # Read from the file compose already uses, rather than restating the topic
+  # mappings in HCL. One list of topics, one place to add the next one.
+  console_protobuf = yamldecode(
+    file("${path.module}/../../redpanda/console.yaml")
+  ).kafka.protobuf
+}
+
+resource "kubernetes_config_map" "console_protos" {
+  metadata {
+    name      = "console-protos"
+    namespace = kubernetes_namespace.platform.metadata[0].name
+  }
+
+  data = {
+    for f in local.proto_files : replace(f, "/", "__") => file("${local.proto_dir}/${f}")
+  }
+}
+
 resource "helm_release" "redpanda" {
   name       = "redpanda"
   repository = "https://charts.redpanda.com"
@@ -267,6 +301,44 @@ resource "helm_release" "redpanda" {
     name  = "console.enabled"
     value = true
   }
+
+  # Protobuf decoding for the console, as YAML rather than `set` blocks: the
+  # mappings and volumes are lists of objects, and expressing those through
+  # dotted-path indices is unreadable and easy to get subtly wrong.
+  #
+  # `config` merges into what the chart generates rather than replacing it, so
+  # the broker addresses the subchart wires up on its own are left alone — only
+  # the protobuf section is added.
+  values = [yamlencode({
+    console = {
+      extraVolumes = [{
+        name = "protos"
+        configMap = {
+          name = kubernetes_config_map.console_protos.metadata[0].name
+          # key is the flattened ConfigMap entry, path rebuilds the directory
+          # the imports expect.
+          items = [
+            for f in local.proto_files : {
+              key  = replace(f, "/", "__")
+              path = f
+            }
+          ]
+        }
+      }]
+
+      extraVolumeMounts = [{
+        name      = "protos"
+        mountPath = "/etc/pipsim/proto"
+        readOnly  = true
+      }]
+
+      config = {
+        kafka = {
+          protobuf = local.console_protobuf
+        }
+      }
+    }
+  })]
   # Advertise a host-resolvable address on the external listener. The default is
   # the node's in-cluster IP, which a client on the laptop cannot route to, so a
   # connection would bootstrap and then immediately fail.
