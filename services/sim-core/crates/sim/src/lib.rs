@@ -1625,7 +1625,11 @@ mod tests {
         without.step(&spawn(20));
 
         for t in 0..300 {
-            let extra = if t == 10 { vec![deploy(1, true)] } else { vec![] };
+            let extra = if t == 10 {
+                vec![deploy(1, true)]
+            } else {
+                vec![]
+            };
             with.step(&extra);
             without.step(&[]);
         }
