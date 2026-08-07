@@ -18,6 +18,31 @@ test:
 	  echo "==> $$s"; $(MAKE) -C services/$$s test || exit 1; \
 	done
 
+## fmt: format everything this repo can format
+#
+# The counterpart to the pre-commit hook: the hook says no, this fixes it.
+# Formatters only — nothing here rewrites code for clippy or credo.
+#
+# No `buf format`: it reflows .proto comments onto a single space, destroying
+# the column alignment those files use deliberately. `make proto-lint` covers
+# the contract checks that actually matter.
+fmt:
+	cd services/sim-core && cargo fmt
+	gofmt -w $$(git ls-files '*.go' | grep -v '^gen/')
+	for s in services/broadcast services/workplaces/tavern; do \
+	  [ -f $$s/.formatter.exs ] && (cd $$s && mix format) || true; \
+	done
+
+## hooks: install the repo's git hooks (formatting check before each commit)
+#
+# core.hooksPath rather than copying into .git/hooks, so the hooks stay
+# versioned and everyone gets the same ones without a second install step when
+# they change.
+hooks:
+	git config core.hooksPath .githooks
+	@echo "hooks installed — .githooks/pre-commit checks formatting on staged files"
+	@echo "uninstall with: git config --unset core.hooksPath"
+
 ## lint: lint every service
 lint:
 	@for s in $(SERVICES); do \
@@ -180,5 +205,5 @@ parity:
 replay:
 	go run ./tools/replay -from-beginning
 
-.PHONY: help test lint build gen gen-check proto-lint dev dev-platform reset \
+.PHONY: help fmt hooks test lint build gen gen-check proto-lint dev dev-platform reset \
         infra-up infra-down infra-plan infra-forward infra-recreate e2e parity replay

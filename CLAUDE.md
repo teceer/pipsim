@@ -78,6 +78,12 @@ make e2e        # bring everything up, run 60s of simulation, assert world state
 Work in `make dev` by default. The cluster is for integration testing, not for
 iterating on code.
 
+Run `make hooks` once per clone. It points `core.hooksPath` at `.githooks/`,
+where a pre-commit hook checks formatting on staged files only — rustfmt,
+gofmt, `mix format`. It is deliberately not `make lint`: clippy, golangci-lint
+and credo across nine services is a CI job, and a hook slow enough to be
+skipped protects nothing. Whatever it rejects, `make fmt` fixes.
+
 ## Notes for agents
 
 - `gen/` is committed on purpose — read the generated types from there instead of

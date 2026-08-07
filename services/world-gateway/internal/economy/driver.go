@@ -382,7 +382,6 @@ func (d *Driver) endShift(ctx context.Context, pip, tick uint64, reason string) 
 	d.mu.Unlock()
 }
 
-
 // offers converts a workplace's own price list into the core's copy of it.
 func offers(sells []*workplacev1.Offer) []*simv1.WorkplaceOffer {
 	if len(sells) == 0 {

@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+#
+# Formatting check on staged files. Install with `make hooks`.
+#
+# Deliberately *only* formatting. `make lint` runs clippy, golangci-lint and
+# credo across nine services; that belongs in CI, where waiting is free. A hook
+# people wait thirty seconds for is a hook people pass --no-verify to, and then
+# it protects nothing.
+#
+# Each language is checked only when a file of that language is staged, because
+# the two slow starts here are the BEAM and cargo, and neither should be paid
+# for a change that did not touch them.
+#
+# Everything this rejects, `make fmt` fixes.
+
+set -uo pipefail
+
+staged() {
+	git diff --cached --name-only --diff-filter=ACM | grep -E "$1" || true
+}
+
+failed=()
+
+# --- Rust -------------------------------------------------------------------
+#
+# The whole workspace rather than the staged files: rustfmt run per file needs
+# the edition passed by hand, and getting that wrong silently formats to the
+# wrong rules. `cargo fmt --check` reads Cargo.toml and is fast enough.
+if [[ -n "$(staged '\.rs$')" ]]; then
+	if ! (cd services/sim-core && cargo fmt --check >/dev/null 2>&1); then
+		failed+=("rust      cargo fmt --check")
+	fi
+fi
+
+# --- Go ---------------------------------------------------------------------
+#
+# Per file, because gofmt needs no project context and starts instantly.
+go_files="$(staged '\.go$' | grep -v '^gen/' || true)"
+if [[ -n "$go_files" ]]; then
+	# shellcheck disable=SC2086
+	unformatted="$(gofmt -l $go_files 2>/dev/null)"
+	if [[ -n "$unformatted" ]]; then
+		failed+=("go        gofmt: ${unformatted//$'\n'/, }")
+	fi
+fi
+
+# --- Elixir -----------------------------------------------------------------
+#
+# Per service, since `mix format` needs the .formatter.exs next to the project.
+for service in services/broadcast services/workplaces/tavern; do
+	# A service without a .formatter.exs has nothing to check — broadcast is
+	# still an empty shell (ADR 0010).
+	if [[ -f "$service/.formatter.exs" && -n "$(staged "^${service}/.*\.exs?$")" ]]; then
+		if ! (cd "$service" && mix format --check-formatted >/dev/null 2>&1); then
+			failed+=("elixir    mix format --check-formatted ($service)")
+		fi
+	fi
+done
+
+# --- Protobuf: deliberately not checked -------------------------------------
+#
+# `buf format` reflows comments onto one space before the slashes, which
+# destroys the column alignment several .proto files use to make a field's
+# meaning readable next to its number. That alignment is a deliberate style
+# choice by the author, and a hook is the wrong place to overrule it.
+#
+# `buf lint` and `buf breaking` — the checks that catch real contract mistakes —
+# already run in CI via `make proto-lint`.
+
+if [[ ${#failed[@]} -gt 0 ]]; then
+	echo
+	echo "  commit blocked — formatting:"
+	echo
+	for f in "${failed[@]}"; do echo "    $f"; done
+	echo
+	echo "  fix:  make fmt"
+	echo "  skip: git commit --no-verify"
+	echo
+	exit 1
+fi
