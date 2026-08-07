@@ -86,7 +86,7 @@ defmodule Tavern.Workplace.Actor do
   end
 
   def consider_offer(pip, tick) do
-    Enum.reduce_while(Workplace.buildings_for_actors(), {false, "no free seats"}, fn b, acc ->
+    Enum.reduce_while(Workplace.buildings_for_actors(), {false, "no free seats", 0}, fn b, acc ->
       case forward(
              %StartShiftRequest{workplace_id: b.id, pip_id: pip, tick: tick},
              "StartShift",
@@ -94,7 +94,7 @@ defmodule Tavern.Workplace.Actor do
            ) do
         %StartShiftResponse{accepted: true} ->
           Logger.info("offer accepted", workplace: b.id, pip: pip, tick: tick)
-          {:halt, {true, ""}}
+          {:halt, {true, "", b.id}}
 
         %StartShiftResponse{reason: reason} ->
           {:cont, put_elem(acc, 1, reason)}
