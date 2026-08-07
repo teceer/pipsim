@@ -219,7 +219,7 @@ func TestDaprStoreReapsAnExpiredLease(t *testing.T) {
 // contract as the Connect handler, because the whole point of encoding the
 // bodies as protojson is that there is one shape rather than two.
 func TestDispatchRunsTheContractAgainstABuilding(t *testing.T) {
-	b := New(1, 12_000, 8_000)
+	b := New(1)
 	ctx := context.Background()
 
 	raw, err := dispatch(ctx, b, "StartShift",
@@ -241,7 +241,7 @@ func TestDispatchRunsTheContractAgainstABuilding(t *testing.T) {
 }
 
 func TestDispatchRejectsAnUnknownMethod(t *testing.T) {
-	if _, err := dispatch(context.Background(), New(1, 0, 0), "Nope", nil); err == nil {
+	if _, err := dispatch(context.Background(), New(1), "Nope", nil); err == nil {
 		t.Fatal("want an error for a method that is not in the contract")
 	}
 }
@@ -249,7 +249,7 @@ func TestDispatchRejectsAnUnknownMethod(t *testing.T) {
 // An empty body is what Dapr sends for a method with no arguments, and
 // protojson refuses to unmarshal nothing.
 func TestDispatchAcceptsAnEmptyBody(t *testing.T) {
-	if _, err := dispatch(context.Background(), New(1, 0, 0), "Describe", nil); err != nil {
+	if _, err := dispatch(context.Background(), New(1), "Describe", nil); err != nil {
 		t.Fatalf("dispatch with no body: %v", err)
 	}
 }
@@ -258,7 +258,7 @@ func TestDispatchAcceptsAnEmptyBody(t *testing.T) {
 // wrong and actors are never registered, which fails as "actor instance is
 // missing" a long way from the cause.
 func TestHandlerDeclaresTheEntity(t *testing.T) {
-	srv := httptest.NewServer(NewHost(New(1, 0, 0)).Handler())
+	srv := httptest.NewServer(NewHost(New(1)).Handler())
 	t.Cleanup(srv.Close)
 
 	res, err := http.Get(srv.URL + "/dapr/config")
@@ -279,7 +279,7 @@ func TestHandlerDeclaresTheEntity(t *testing.T) {
 }
 
 func TestActorEndpointRoutesToTheNamedBuilding(t *testing.T) {
-	host := NewHost(New(1, 12_000, 8_000), New(3, 32_000, 20_000))
+	host := NewHost(New(1), New(3))
 	srv := httptest.NewServer(host.Handler())
 	t.Cleanup(srv.Close)
 
@@ -312,7 +312,7 @@ func TestActorEndpointRoutesToTheNamedBuilding(t *testing.T) {
 }
 
 func TestActorEndpointIsNotFoundForAnUnhostedBuilding(t *testing.T) {
-	srv := httptest.NewServer(NewHost(New(1, 0, 0)).Handler())
+	srv := httptest.NewServer(NewHost(New(1)).Handler())
 	t.Cleanup(srv.Close)
 
 	res, err := http.Post(srv.URL+"/actors/farm/404/method/Describe",
@@ -330,7 +330,7 @@ func TestActorEndpointIsNotFoundForAnUnhostedBuilding(t *testing.T) {
 // building keeps its state in the store, so there is nothing to build up or
 // tear down.
 func TestActorLifecycleProbesSucceed(t *testing.T) {
-	srv := httptest.NewServer(NewHost(New(1, 0, 0)).Handler())
+	srv := httptest.NewServer(NewHost(New(1)).Handler())
 	t.Cleanup(srv.Close)
 
 	res, err := http.Post(srv.URL+"/actors/farm/1", "application/json", nil)

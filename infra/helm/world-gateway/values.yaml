@@ -19,12 +19,28 @@ sim:
 # The workplaces the economy driver fills. An empty list disables the driver
 # entirely, which is how the gateway runs before any workplace is deployed.
 #
-# Addresses and nothing else: each workplace reports its own id, kind, position
-# and capacity through Describe, and the gateway copies them. Configuring an id
+# Addresses and nothing else: each workplace reports its own id, kind and
+# capacity through Describe, and the gateway copies them. Configuring an id
 # here as well would let a chart and a service disagree about who lives where.
 workplaceAddrs:
   - farm:8090
   - tavern:8090
+
+# Where each workplace stands. The one exception to the rule above: position
+# is not the workplace's to declare, only sim-core's to enforce (ADR 0008), so
+# it is configured here rather than read from Describe. Ids must match what
+# farm's and tavern's own `workplaces` lists carry, or that building is never
+# registered.
+#
+# Named in full for the same YAML-1.1 reason the farm and tavern charts used
+# to: a bare `y` key parses as the boolean true.
+workplacePositions:
+  - id: 1
+    xMilli: 12000
+    yMilli: 8000
+  - id: 2
+    xMilli: 32000
+    yMilli: 20000
 
 platformNamespace: pipsim-platform
 

@@ -23,14 +23,22 @@ const hireGrace = 5 * time.Second
 //
 // Those used to be the same thing. A workplace service now owns a kind of
 // building and may host several, so `Discover` asks an address what it has and
-// builds a driver per answer. What has not changed is who owns the facts: the
-// id, kind, position and capacity all come from the workplace describing
-// itself, never from a Helm value, so the two cannot disagree.
+// builds a driver per answer. What has not changed for id, kind and capacity:
+// they come from the workplace describing itself, never from a Helm value, so
+// the two cannot disagree. Position is the exception (ADR 0008) — the
+// workplace has no opinion about where it stands, so the gateway supplies it
+// from its own configuration.
 type Driver struct {
 	sim       simv1connect.SimServiceClient
 	workplace workplacev1connect.WorkplaceServiceClient
 	addr      string
 	offers    *Publisher
+
+	// Where this building stands. Never the workplace's own answer — see ADR
+	// 0008. Keyed by workplace_id and looked up at Register time because a
+	// driver discovered through the legacy `Describe`-only path does not know
+	// its id until then.
+	positions map[uint64]*simv1.Vec2
 
 	mu sync.Mutex
 
@@ -67,12 +75,14 @@ func NewDriver(
 	workplace workplacev1connect.WorkplaceServiceClient,
 	addr string,
 	offers *Publisher,
+	positions map[uint64]*simv1.Vec2,
 ) *Driver {
 	return &Driver{
 		sim:       sim,
 		workplace: workplace,
 		addr:      addr,
 		offers:    offers,
+		positions: positions,
 		employed:  make(map[uint64]bool),
 		hiredAt:   make(map[uint64]time.Time),
 		pending:   make(map[uint64]time.Time),
@@ -92,10 +102,11 @@ func NewDriverFor(
 	workplace workplacev1connect.WorkplaceServiceClient,
 	addr string,
 	offers *Publisher,
+	positions map[uint64]*simv1.Vec2,
 	workplaceID uint64,
 	kind string,
 ) *Driver {
-	d := NewDriver(sim, workplace, addr, offers)
+	d := NewDriver(sim, workplace, addr, offers, positions)
 	d.id, d.kind = workplaceID, kind
 	return d
 }
@@ -111,13 +122,14 @@ func Discover(
 	client workplacev1connect.WorkplaceServiceClient,
 	addr string,
 	offers *Publisher,
+	positions map[uint64]*simv1.Vec2,
 ) ([]*Driver, error) {
 	list, err := client.List(ctx, connect.NewRequest(&workplacev1.ListRequest{}))
 	switch {
 	case err == nil:
 		out := make([]*Driver, 0, len(list.Msg.GetWorkplaces()))
 		for _, w := range list.Msg.GetWorkplaces() {
-			out = append(out, NewDriverFor(sim, client, addr, offers,
+			out = append(out, NewDriverFor(sim, client, addr, offers, positions,
 				w.GetWorkplaceId(), w.GetKind()))
 		}
 		if len(out) == 0 {
@@ -128,7 +140,7 @@ func Discover(
 	case connect.CodeOf(err) == connect.CodeUnimplemented:
 		// One building, identifying itself the old way. The driver learns who it
 		// is on its first Register, as it always did.
-		return []*Driver{NewDriver(sim, client, addr, offers)}, nil
+		return []*Driver{NewDriver(sim, client, addr, offers, positions)}, nil
 
 	default:
 		return nil, err
@@ -155,10 +167,21 @@ func (d *Driver) Kind() string {
 // sim-core enforces it physically so that a building cannot hold more bodies
 // than it employs. Registering is idempotent, so calling it on a loop is the
 // intended usage rather than a compromise.
+//
+// Position is different (ADR 0008): the workplace has no opinion about where
+// it stands, so the gateway supplies it from its own configuration rather than
+// from `Describe`. A workplace with no configured position is not registered —
+// silently defaulting to the origin would put an unconfigured building on top
+// of whatever else is there.
 func (d *Driver) Register(ctx context.Context) error {
 	desc, err := d.Describe(ctx)
 	if err != nil {
 		return err
+	}
+
+	position, known := d.positions[desc.GetWorkplaceId()]
+	if !known {
+		return fmt.Errorf("no configured position for workplace %d", desc.GetWorkplaceId())
 	}
 
 	if _, err := d.sim.SubmitIntent(ctx, connect.NewRequest(&simv1.SubmitIntentRequest{
@@ -166,7 +189,7 @@ func (d *Driver) Register(ctx context.Context) error {
 			RegisterWorkplace: &simv1.RegisterWorkplaceIntent{
 				WorkplaceId: desc.GetWorkplaceId(),
 				Kind:        desc.GetKind(),
-				Position:    desc.GetPosition(),
+				Position:    position,
 				Capacity:    uint32(desc.GetMaxWorkers()),
 				// Prices travel the same road as capacity: the workplace owns
 				// the number, the gateway carries it, the core enforces it. A
@@ -190,7 +213,7 @@ func (d *Driver) Register(ctx context.Context) error {
 			"workplace", desc.GetWorkplaceId(),
 			"kind", desc.GetKind(),
 			"capacity", desc.GetMaxWorkers(),
-			"position", desc.GetPosition().String())
+			"position", position.String())
 	}
 	return nil
 }
@@ -381,7 +404,6 @@ func (d *Driver) endShift(ctx context.Context, pip, tick uint64, reason string) 
 	delete(d.pending, pip)
 	d.mu.Unlock()
 }
-
 
 // offers converts a workplace's own price list into the core's copy of it.
 func offers(sells []*workplacev1.Offer) []*simv1.WorkplaceOffer {

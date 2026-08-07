@@ -34,9 +34,17 @@ spec:
             - name: SIM_TICK_HZ
               value: "{{ .Values.sim.tickHz }}"
             # Addresses only. Each workplace answers Describe with its own id,
-            # kind, position and capacity, so none of those is configured twice.
+            # kind and capacity, so neither is configured twice.
             - name: WORKPLACE_ADDRS
               value: "{{ join "," .Values.workplaceAddrs }}"
+            # id:x:y, comma separated. Position is the one fact about a
+            # building this chart carries instead of reading it from
+            # Describe — see ADR 0008. Quoted as a whole so YAML never gets to
+            # interpret the colons.
+            - name: WORKPLACE_POSITIONS
+              value: "{{- range $i, $p := .Values.workplacePositions -}}
+                {{- if $i }},{{ end }}{{ $p.id }}:{{ $p.xMilli }}:{{ $p.yMilli }}
+                {{- end }}"
             - name: AMQP_URL
               value: "amqp://pipsim:pipsim@rabbitmq.{{ .Values.platformNamespace }}.svc.cluster.local:5672/pipsim"
             - name: OTEL_EXPORTER_OTLP_ENDPOINT

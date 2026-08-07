@@ -129,14 +129,13 @@ defmodule Tavern.BuildingsTest do
   alias Tavern.Buildings
 
   test "parses the multi-building form" do
-    assert [%{id: 2, x: 32_000, y: 20_000}, %{id: 4, x: 40_000, y: 12_000}] =
-             Buildings.parse!(" 2:32000:20000 , 4:40000:12000 ")
+    assert [%{id: 2}, %{id: 4}] = Buildings.parse!(" 2 , 4 ")
   end
 
   # Strict on purpose: a dropped building is an economy quietly smaller than the
   # one that was configured, and nothing would report it.
   test "refuses anything it cannot read exactly" do
-    for bad <- ["", "2:3", "2:3:4:5", "x:1:2", "2:y:3"] do
+    for bad <- ["", "x", "2,x"] do
       assert_raise ArgumentError, fn -> Buildings.parse!(bad) end
     end
   end

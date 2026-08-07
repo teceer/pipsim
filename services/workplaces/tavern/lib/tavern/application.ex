@@ -75,9 +75,9 @@ defmodule Tavern.Application do
     end
   end
 
-  # Ids and positions are configuration for now, exactly as they are for the
-  # farm. Once BuildWorkplace works, both arrive from the player action that
-  # created the building.
+  # Ids are configuration for now, exactly as they are for the farm. Once
+  # BuildWorkplace works, they arrive from the player action that created the
+  # building. Position is never this service's — see ADR 0008.
   #
   # The store is chosen by whether a sidecar injected DAPR_HTTP_PORT, so there
   # is no separate flag to fall out of step with reality.

@@ -58,7 +58,7 @@ defmodule Pips.Workplace.V1.DescribeResponse do
   field :display_name, 3, type: :string, json_name: "displayName"
   field :max_workers, 4, type: :int32, json_name: "maxWorkers"
   field :current_workers, 5, type: :int32, json_name: "currentWorkers"
-  field :position, 6, type: Pips.Sim.V1.Vec2
+  field :position, 6, type: Pips.Sim.V1.Vec2, deprecated: true
   field :produces, 7, repeated: true, type: Pips.Workplace.V1.ResourceKind, enum: true
   field :consumes, 8, repeated: true, type: Pips.Workplace.V1.ResourceKind, enum: true
   field :wage, 9, type: :int64

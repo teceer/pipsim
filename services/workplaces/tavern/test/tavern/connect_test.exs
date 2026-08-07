@@ -37,7 +37,6 @@ defmodule Tavern.ConnectTest do
     assert describe.kind == "tavern"
     assert describe.max_workers == Tavern.Shifts.max_workers()
     assert describe.produces == [:RESOURCE_KIND_ALE]
-    assert describe.position.x_milli > 0
   end
 
   # The reason Connect was chosen over gRPC in ADR 0003 is that this works at

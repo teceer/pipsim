@@ -113,17 +113,18 @@ func TestDescribeIdentifiesTheWorkplace(t *testing.T) {
 	if msg.GetMaxWorkers() <= 0 {
 		t.Error("max_workers must be positive; sim-core copies it as the building's capacity")
 	}
-	if msg.GetPosition() == nil {
-		t.Error("position must be set; pips walk to it")
-	}
+	// Position is deliberately not asserted here (ADR 0008): a workplace has
+	// no opinion about where it stands, so a conforming implementation may
+	// leave the deprecated field unset. The gateway supplies the position
+	// sim-core actually enforces.
 	if msg.GetCurrentWorkers() > msg.GetMaxWorkers() {
 		t.Errorf("current_workers %d exceeds max_workers %d",
 			msg.GetCurrentWorkers(), msg.GetMaxWorkers())
 	}
 
-	t.Logf("%s #%d, %d/%d workers at %v",
+	t.Logf("%s #%d, %d/%d workers",
 		msg.GetKind(), msg.GetWorkplaceId(),
-		msg.GetCurrentWorkers(), msg.GetMaxWorkers(), msg.GetPosition())
+		msg.GetCurrentWorkers(), msg.GetMaxWorkers())
 }
 
 // The shift lifecycle, in the order the gateway drives it.

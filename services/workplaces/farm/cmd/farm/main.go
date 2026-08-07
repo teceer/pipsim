@@ -37,17 +37,16 @@ func envInt(key string, def int64) int64 {
 
 // workplaceSpecs reads which buildings this process hosts.
 //
-// WORKPLACES wins when set; otherwise the single-building variables the chart
-// still carries are read as a one-entry list, so nothing that worked before
-// this change stops working.
+// WORKPLACES wins when set; otherwise the single-building WORKPLACE_ID the
+// chart still carries is read as a one-entry list, so nothing that worked
+// before this change stops working. Position is not part of a spec — where a
+// building stands is the gateway's configuration, not the farm's (ADR 0008).
 func workplaceSpecs() ([]farm.Spec, error) {
 	if raw := strings.TrimSpace(os.Getenv("WORKPLACES")); raw != "" {
 		return farm.ParseSpecs(raw)
 	}
 	return []farm.Spec{{
 		ID: uint64(envInt("WORKPLACE_ID", 1)),
-		X:  int32(envInt("WORKPLACE_X", 12_000)),
-		Y:  int32(envInt("WORKPLACE_Y", 8_000)),
 	}}, nil
 }
 
@@ -88,13 +87,13 @@ func main() {
 	}
 
 	// This process hosts a *kind* of building, not one building. WORKPLACES is
-	// the multi-building form; the single WORKPLACE_ID/X/Y triple still works
-	// and means exactly one farm, which is what the Helm chart and every local
+	// the multi-building form; the single WORKPLACE_ID variable still works and
+	// means exactly one farm, which is what the Helm chart and every local
 	// `make run` still pass.
 	//
-	// Ids and positions are configuration either way. Once BuildWorkplace
-	// exists they arrive from the player action that created the building, and
-	// this whole block becomes a bootstrap for an empty world.
+	// Ids are configuration either way. Once BuildWorkplace exists they arrive
+	// from the player action that created the building, and this whole block
+	// becomes a bootstrap for an empty world.
 	specs, err := workplaceSpecs()
 	if err != nil {
 		slog.Error("bad workplace configuration", "err", err)
@@ -136,16 +135,16 @@ func main() {
 			buildings = append(buildings, farm.NewWithStore(
 				farm.NewDaprStore(daprBase, sp.ID, farm.MaxWorkers,
 					farm.ShiftLease, farm.MaxTicksPerWork),
-				sp.ID, sp.X, sp.Y,
+				sp.ID,
 			))
 		case rdb != nil:
 			buildings = append(buildings, farm.NewWithStore(
 				farm.NewRedisStore(rdb, sp.ID, farm.MaxWorkers,
 					farm.ShiftLease, farm.MaxTicksPerWork),
-				sp.ID, sp.X, sp.Y,
+				sp.ID,
 			))
 		default:
-			buildings = append(buildings, farm.New(sp.ID, sp.X, sp.Y))
+			buildings = append(buildings, farm.New(sp.ID))
 		}
 	}
 	host := farm.NewHost(buildings...)

@@ -46,7 +46,7 @@ func TestDiscoverBuildsADriverPerBuilding(t *testing.T) {
 		{WorkplaceId: 3, Kind: "farm"},
 	}})
 
-	drivers, err := Discover(context.Background(), nil, client, "farm:8090", nil)
+	drivers, err := Discover(context.Background(), nil, client, "farm:8090", nil, nil)
 	if err != nil {
 		t.Fatalf("Discover: %v", err)
 	}
@@ -70,7 +70,7 @@ func TestDiscoverFallsBackForAWorkplaceWithoutList(t *testing.T) {
 		listErr: connect.NewError(connect.CodeUnimplemented, nil),
 	})
 
-	drivers, err := Discover(context.Background(), nil, client, "tavern:8090", nil)
+	drivers, err := Discover(context.Background(), nil, client, "tavern:8090", nil, nil)
 	if err != nil {
 		t.Fatalf("Discover: %v", err)
 	}
@@ -90,7 +90,7 @@ func TestDiscoverReportsARealFailure(t *testing.T) {
 		listErr: connect.NewError(connect.CodeUnavailable, nil),
 	})
 
-	if _, err := Discover(context.Background(), nil, client, "farm:8090", nil); err == nil {
+	if _, err := Discover(context.Background(), nil, client, "farm:8090", nil, nil); err == nil {
 		t.Fatal("want an error when the workplace is unreachable")
 	}
 }
@@ -98,7 +98,7 @@ func TestDiscoverReportsARealFailure(t *testing.T) {
 func TestDiscoverRejectsAHostWithNoBuildings(t *testing.T) {
 	client := serve(t, &stubWorkplace{})
 
-	if _, err := Discover(context.Background(), nil, client, "farm:8090", nil); err == nil {
+	if _, err := Discover(context.Background(), nil, client, "farm:8090", nil, nil); err == nil {
 		t.Fatal("want an error: a workplace service hosts at least one building")
 	}
 }

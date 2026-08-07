@@ -11,17 +11,14 @@ image:
 # A list, because the service owns a *kind* of building rather than one
 # building. Adding a second farm is another entry here, not another Helm
 # release — see ADR 0005. The chart renders these into WORKPLACES; the older
-# single WORKPLACE_ID/X/Y triple is still read by the binary, so a values file
+# single WORKPLACE_ID variable is still read by the binary, so a values file
 # that predates this list keeps working.
 #
-# Named in full because YAML 1.1 — which Helm parses — reads a bare `y`
-# key as the boolean true. The farm carried that bug silently for weeks:
-# WORKPLACE_Y rendered empty and Go fell back to a default that happened
-# to match, so nothing looked wrong.
+# Just an id. Where the farm stands is not this chart's business — it is
+# configured once, in world-gateway's `workplacePositions`, and never by the
+# workplace itself. See ADR 0008.
 workplaces:
   - id: 1
-    xMilli: 12000
-    yMilli: 8000
 
 platformNamespace: pipsim-platform
 

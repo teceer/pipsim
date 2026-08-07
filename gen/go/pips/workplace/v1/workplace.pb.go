@@ -210,9 +210,15 @@ type DescribeResponse struct {
 	DisplayName    string                 `protobuf:"bytes,3,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
 	MaxWorkers     int32                  `protobuf:"varint,4,opt,name=max_workers,json=maxWorkers,proto3" json:"max_workers,omitempty"`
 	CurrentWorkers int32                  `protobuf:"varint,5,opt,name=current_workers,json=currentWorkers,proto3" json:"current_workers,omitempty"`
-	Position       *v1.Vec2               `protobuf:"bytes,6,opt,name=position,proto3" json:"position,omitempty"`
-	Produces       []ResourceKind         `protobuf:"varint,7,rep,packed,name=produces,proto3,enum=pips.workplace.v1.ResourceKind" json:"produces,omitempty"`
-	Consumes       []ResourceKind         `protobuf:"varint,8,rep,packed,name=consumes,proto3,enum=pips.workplace.v1.ResourceKind" json:"consumes,omitempty"`
+	// Deprecated: where a building stands is not the workplace's business, only
+	// sim-core's — see ADR 0008. The workplace no longer populates this and the
+	// gateway no longer reads it; kept on the wire because buf breaking forbids
+	// removing a field outright.
+	//
+	// Deprecated: Marked as deprecated in pips/workplace/v1/workplace.proto.
+	Position *v1.Vec2       `protobuf:"bytes,6,opt,name=position,proto3" json:"position,omitempty"`
+	Produces []ResourceKind `protobuf:"varint,7,rep,packed,name=produces,proto3,enum=pips.workplace.v1.ResourceKind" json:"produces,omitempty"`
+	Consumes []ResourceKind `protobuf:"varint,8,rep,packed,name=consumes,proto3,enum=pips.workplace.v1.ResourceKind" json:"consumes,omitempty"`
 	// What a shift here pays, per tick worked. 0 means unpaid.
 	Wage int64 `protobuf:"varint,9,opt,name=wage,proto3" json:"wage,omitempty"`
 	// How demanding the work is. A scalar the building declares about the
@@ -292,6 +298,7 @@ func (x *DescribeResponse) GetCurrentWorkers() int32 {
 	return 0
 }
 
+// Deprecated: Marked as deprecated in pips/workplace/v1/workplace.proto.
 func (x *DescribeResponse) GetPosition() *v1.Vec2 {
 	if x != nil {
 		return x.Position
@@ -1055,15 +1062,15 @@ const file_pips_workplace_v1_workplace_proto_rawDesc = "" +
 	"workplaces\x18\x01 \x03(\v2#.pips.workplace.v1.DescribeResponseR\n" +
 	"workplaces\"4\n" +
 	"\x0fDescribeRequest\x12!\n" +
-	"\fworkplace_id\x18\x01 \x01(\x04R\vworkplaceId\"\xbb\x03\n" +
+	"\fworkplace_id\x18\x01 \x01(\x04R\vworkplaceId\"\xbf\x03\n" +
 	"\x10DescribeResponse\x12!\n" +
 	"\fworkplace_id\x18\x01 \x01(\x04R\vworkplaceId\x12\x12\n" +
 	"\x04kind\x18\x02 \x01(\tR\x04kind\x12!\n" +
 	"\fdisplay_name\x18\x03 \x01(\tR\vdisplayName\x12\x1f\n" +
 	"\vmax_workers\x18\x04 \x01(\x05R\n" +
 	"maxWorkers\x12'\n" +
-	"\x0fcurrent_workers\x18\x05 \x01(\x05R\x0ecurrentWorkers\x12-\n" +
-	"\bposition\x18\x06 \x01(\v2\x11.pips.sim.v1.Vec2R\bposition\x12;\n" +
+	"\x0fcurrent_workers\x18\x05 \x01(\x05R\x0ecurrentWorkers\x121\n" +
+	"\bposition\x18\x06 \x01(\v2\x11.pips.sim.v1.Vec2B\x02\x18\x01R\bposition\x12;\n" +
 	"\bproduces\x18\a \x03(\x0e2\x1f.pips.workplace.v1.ResourceKindR\bproduces\x12;\n" +
 	"\bconsumes\x18\b \x03(\x0e2\x1f.pips.workplace.v1.ResourceKindR\bconsumes\x12\x12\n" +
 	"\x04wage\x18\t \x01(\x03R\x04wage\x12\x16\n" +

@@ -62,7 +62,11 @@ message DescribeResponse {
   string display_name = 3;
   int32 max_workers = 4;
   int32 current_workers = 5;
-  pips.sim.v1.Vec2 position = 6;
+  // Deprecated: where a building stands is not the workplace's business, only
+  // sim-core's — see ADR 0008. The workplace no longer populates this and the
+  // gateway no longer reads it; kept on the wire because buf breaking forbids
+  // removing a field outright.
+  pips.sim.v1.Vec2 position = 6 [deprecated = true];
   repeated ResourceKind produces = 7;
   repeated ResourceKind consumes = 8;
   // What a shift here pays, per tick worked. 0 means unpaid.
