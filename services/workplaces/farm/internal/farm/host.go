@@ -222,10 +222,16 @@ func (h *Host) Buy(
 // rotation from a moving start, and the first to claim wins. Trying them in a
 // fixed order would fill the lowest id first and leave the rest empty until it
 // was full, which is a scheduling policy nobody chose.
-func (h *Host) ConsiderOffer(ctx context.Context, pipID, tick uint64) (bool, string) {
+//
+// The third return is the building that took it. The outcome published back has
+// to name that one specifically — the gateway hires against the id it is given,
+// and it was being handed the first configured farm no matter which one claimed
+// the pip. Harmless while a process hosts one building, a mis-hire as soon as it
+// hosts two, which is the whole point of the host.
+func (h *Host) ConsiderOffer(ctx context.Context, pipID, tick uint64) (bool, string, uint64) {
 	ids := h.ids()
 	if len(ids) == 0 {
-		return false, "no buildings"
+		return false, "no buildings", 0
 	}
 
 	h.mu.Lock()
@@ -242,13 +248,14 @@ func (h *Host) ConsiderOffer(ctx context.Context, pipID, tick uint64) (bool, str
 		}
 		accepted, reason := b.ConsiderOffer(ctx, pipID, tick)
 		if accepted {
-			return true, ""
+			return true, "", id
 		}
 		if reason != "" {
 			lastReason = reason
 		}
 	}
-	return false, lastReason
+	// No building declined it, the host did — and the gateway drops rejections.
+	return false, lastReason, 0
 }
 
 // Workers reports the headcount across every building, for /healthz.

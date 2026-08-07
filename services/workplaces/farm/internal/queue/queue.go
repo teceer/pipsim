@@ -40,17 +40,20 @@ const (
 // Decider is the workplace's own logic. Returning false with a reason is a
 // normal outcome, not an error: a full farm declining an offer is the system
 // working.
-type Decider func(ctx context.Context, pipID, tick uint64) (accepted bool, reason string)
+//
+// The id it returns is the building that took the offer, and the consumer has
+// no other way to know it — the host picks in rotation, so the answer differs
+// per offer and cannot come from configuration.
+type Decider func(ctx context.Context, pipID, tick uint64) (accepted bool, reason string, workplaceID uint64)
 
 type Consumer struct {
-	url         string
-	workplaceID uint64
-	kind        string
-	decide      Decider
+	url    string
+	kind   string
+	decide Decider
 }
 
-func NewConsumer(url string, workplaceID uint64, kind string, decide Decider) *Consumer {
-	return &Consumer{url: url, workplaceID: workplaceID, kind: kind, decide: decide}
+func NewConsumer(url, kind string, decide Decider) *Consumer {
+	return &Consumer{url: url, kind: kind, decide: decide}
 }
 
 // Run consumes until the context is cancelled, reconnecting on failure.
@@ -164,11 +167,11 @@ func (c *Consumer) handle(ctx context.Context, ch *amqp.Channel, d amqp.Delivery
 		return
 	}
 
-	accepted, reason := c.decide(ctx, offer.GetPipId(), offer.GetTick())
+	accepted, reason, workplaceID := c.decide(ctx, offer.GetPipId(), offer.GetTick())
 
 	outcome, err := proto.Marshal(&workv1.HireOutcome{
 		PipId:         offer.GetPipId(),
-		WorkplaceId:   c.workplaceID,
+		WorkplaceId:   workplaceID,
 		WorkplaceKind: c.kind,
 		Accepted:      accepted,
 		Reason:        reason,
