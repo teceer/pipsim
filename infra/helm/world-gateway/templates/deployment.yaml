@@ -45,6 +45,10 @@ spec:
               value: "{{- range $i, $p := .Values.workplacePositions -}}
                 {{- if $i }},{{ end }}{{ $p.id }}:{{ $p.xMilli }}:{{ $p.yMilli }}
                 {{- end }}"
+            # Services drawn on the map as buildings — `kind|role|health-url`.
+            # See ADR 0011. Workplaces are excluded: they are already there.
+            - name: STRUCTURES
+              value: "{{ join ";" .Values.structures }}"
             - name: AMQP_URL
               value: "amqp://pipsim:pipsim@rabbitmq.{{ .Values.platformNamespace }}.svc.cluster.local:5672/pipsim"
             - name: OTEL_EXPORTER_OTLP_ENDPOINT

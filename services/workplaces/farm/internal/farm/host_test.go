@@ -125,10 +125,20 @@ func TestOffersRotateBetweenBuildings(t *testing.T) {
 	h := twoFarms()
 	ctx := context.Background()
 
+	// The id that comes back is the one the outcome names, so it has to be the
+	// building that actually claimed the pip — not whichever farm happens to be
+	// configured first.
+	claimed := map[uint64]int{}
 	for pip := uint64(200); pip < 204; pip++ {
-		if ok, reason := h.ConsiderOffer(ctx, pip, 1); !ok {
+		ok, reason, id := h.ConsiderOffer(ctx, pip, 1)
+		if !ok {
 			t.Fatalf("offer for pip %d rejected: %s", pip, reason)
 		}
+		claimed[id]++
+	}
+
+	if claimed[1] != 2 || claimed[3] != 2 {
+		t.Errorf("want the claims reported 2/2 across farms 1 and 3, got %v", claimed)
 	}
 
 	one, _ := h.Describe(ctx, connect.NewRequest(
@@ -158,8 +168,15 @@ func TestAnOfferFallsThroughToABuildingWithRoom(t *testing.T) {
 	}
 
 	for pip := uint64(300); pip < 305; pip++ {
-		if ok, reason := h.ConsiderOffer(ctx, pip, 1); !ok {
+		ok, reason, id := h.ConsiderOffer(ctx, pip, 1)
+		if !ok {
 			t.Fatalf("offer for pip %d rejected with room at farm 3: %s", pip, reason)
+		}
+		// Farm 1 is full, so every one of these was taken by farm 3 and the
+		// outcome must say so. Reporting farm 1 here is the mis-hire: the
+		// gateway would employ the pip at a building that never claimed it.
+		if id != 3 {
+			t.Errorf("pip %d claimed by farm 3, reported as %d", pip, id)
 		}
 	}
 

@@ -22,6 +22,12 @@ Built so far: `sim-core` (Rust), `world-gateway` (Go), `workplaces/farm` (Go),
 contract with the gateway's own client — point it at a new one before believing
 it works.
 
+The map draws two kinds of building: **workplaces**, which employ pips, and
+**structures**, which are the services themselves — the bank, broadcast, the
+gateway. The second kind is registered by the gateway from `STRUCTURES` and
+carries a live health flag, so the map is also a diagram of what is running. See
+ADR 0011.
+
 ## Non-negotiable rules
 
 1. **`proto/` is the single source of truth for contracts.** An API change starts
@@ -63,6 +69,7 @@ shared schema, and OpenTelemetry spans named `pipsim.<service>.<operation>`.
 
 ```bash
 make dev        # compose.dev.yaml — platform + services locally, no k8s
+make reset      # drop the world — volumes included — and bring it back empty
 make infra-up   # k3d + terraform (00 -> 10 -> 20)
 tilt up         # hot reload on the cluster
 make e2e        # bring everything up, run 60s of simulation, assert world state
@@ -70,6 +77,12 @@ make e2e        # bring everything up, run 60s of simulation, assert world state
 
 Work in `make dev` by default. The cluster is for integration testing, not for
 iterating on code.
+
+Run `make hooks` once per clone. It points `core.hooksPath` at `.githooks/`,
+where a pre-commit hook checks formatting on staged files only — rustfmt,
+gofmt, `mix format`. It is deliberately not `make lint`: clippy, golangci-lint
+and credo across nine services is a CI job, and a hook slow enough to be
+skipped protects nothing. Whatever it rejects, `make fmt` fixes.
 
 ## Notes for agents
 

@@ -80,7 +80,10 @@ type JoinWorldResponse struct {
 	// physically inside. The two headcounts differ on purpose — a pip hired a
 	// second ago is employed but still walking there — and the renderer needs
 	// this one, because it draws bodies rather than contracts.
-	Buildings     []*v1.Workplace `protobuf:"bytes,6,rep,name=buildings,proto3" json:"buildings,omitempty"`
+	Buildings []*v1.Workplace `protobuf:"bytes,6,rep,name=buildings,proto3" json:"buildings,omitempty"`
+	// The services behind all of the above, as buildings. See ADR 0011: the map
+	// is a diagram of what is deployed, not only of what the pips do.
+	Structures    []*v1.Structure `protobuf:"bytes,7,rep,name=structures,proto3" json:"structures,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -153,6 +156,13 @@ func (x *JoinWorldResponse) GetWorkplaces() []*v11.DescribeResponse {
 func (x *JoinWorldResponse) GetBuildings() []*v1.Workplace {
 	if x != nil {
 		return x.Buildings
+	}
+	return nil
+}
+
+func (x *JoinWorldResponse) GetStructures() []*v1.Structure {
+	if x != nil {
+		return x.Structures
 	}
 	return nil
 }
@@ -597,7 +607,7 @@ const file_pips_world_v1_world_proto_rawDesc = "" +
 	"\n" +
 	"\x19pips/world/v1/world.proto\x12\rpips.world.v1\x1a\x15pips/sim/v1/sim.proto\x1a!pips/workplace/v1/workplace.proto\"/\n" +
 	"\x10JoinWorldRequest\x12\x1b\n" +
-	"\tclient_id\x18\x01 \x01(\tR\bclientId\"\xfc\x01\n" +
+	"\tclient_id\x18\x01 \x01(\tR\bclientId\"\xb4\x02\n" +
 	"\x11JoinWorldResponse\x12\x12\n" +
 	"\x04tick\x18\x01 \x01(\x04R\x04tick\x12\x17\n" +
 	"\atick_hz\x18\x02 \x01(\x05R\x06tickHz\x12\x19\n" +
@@ -606,7 +616,10 @@ const file_pips_world_v1_world_proto_rawDesc = "" +
 	"\n" +
 	"workplaces\x18\x05 \x03(\v2#.pips.workplace.v1.DescribeResponseR\n" +
 	"workplaces\x124\n" +
-	"\tbuildings\x18\x06 \x03(\v2\x16.pips.sim.v1.WorkplaceR\tbuildings\"N\n" +
+	"\tbuildings\x18\x06 \x03(\v2\x16.pips.sim.v1.WorkplaceR\tbuildings\x126\n" +
+	"\n" +
+	"structures\x18\a \x03(\v2\x16.pips.sim.v1.StructureR\n" +
+	"structures\"N\n" +
 	"\x12StreamWorldRequest\x12\x1b\n" +
 	"\tclient_id\x18\x01 \x01(\tR\bclientId\x12\x1b\n" +
 	"\tfrom_tick\x18\x02 \x01(\x04R\bfromTick\"\x98\x01\n" +
@@ -671,33 +684,35 @@ var file_pips_world_v1_world_proto_goTypes = []any{
 	(*v1.Pip)(nil),                 // 10: pips.sim.v1.Pip
 	(*v11.DescribeResponse)(nil),   // 11: pips.workplace.v1.DescribeResponse
 	(*v1.Workplace)(nil),           // 12: pips.sim.v1.Workplace
-	(*v1.WorldDelta)(nil),          // 13: pips.sim.v1.WorldDelta
-	(*v1.Vec2)(nil),                // 14: pips.sim.v1.Vec2
-	(v11.ResourceKind)(0),          // 15: pips.workplace.v1.ResourceKind
+	(*v1.Structure)(nil),           // 13: pips.sim.v1.Structure
+	(*v1.WorldDelta)(nil),          // 14: pips.sim.v1.WorldDelta
+	(*v1.Vec2)(nil),                // 15: pips.sim.v1.Vec2
+	(v11.ResourceKind)(0),          // 16: pips.workplace.v1.ResourceKind
 }
 var file_pips_world_v1_world_proto_depIdxs = []int32{
 	10, // 0: pips.world.v1.JoinWorldResponse.pips:type_name -> pips.sim.v1.Pip
 	11, // 1: pips.world.v1.JoinWorldResponse.workplaces:type_name -> pips.workplace.v1.DescribeResponse
 	12, // 2: pips.world.v1.JoinWorldResponse.buildings:type_name -> pips.sim.v1.Workplace
-	13, // 3: pips.world.v1.StreamWorldResponse.delta:type_name -> pips.sim.v1.WorldDelta
-	11, // 4: pips.world.v1.StreamWorldResponse.changed_workplaces:type_name -> pips.workplace.v1.DescribeResponse
-	14, // 5: pips.world.v1.BuildWorkplaceRequest.position:type_name -> pips.sim.v1.Vec2
-	15, // 6: pips.world.v1.BuyRequest.kind:type_name -> pips.workplace.v1.ResourceKind
-	0,  // 7: pips.world.v1.WorldService.JoinWorld:input_type -> pips.world.v1.JoinWorldRequest
-	2,  // 8: pips.world.v1.WorldService.StreamWorld:input_type -> pips.world.v1.StreamWorldRequest
-	4,  // 9: pips.world.v1.WorldService.BuildWorkplace:input_type -> pips.world.v1.BuildWorkplaceRequest
-	6,  // 10: pips.world.v1.WorldService.AssignWork:input_type -> pips.world.v1.AssignWorkRequest
-	8,  // 11: pips.world.v1.WorldService.Buy:input_type -> pips.world.v1.BuyRequest
-	1,  // 12: pips.world.v1.WorldService.JoinWorld:output_type -> pips.world.v1.JoinWorldResponse
-	3,  // 13: pips.world.v1.WorldService.StreamWorld:output_type -> pips.world.v1.StreamWorldResponse
-	5,  // 14: pips.world.v1.WorldService.BuildWorkplace:output_type -> pips.world.v1.BuildWorkplaceResponse
-	7,  // 15: pips.world.v1.WorldService.AssignWork:output_type -> pips.world.v1.AssignWorkResponse
-	9,  // 16: pips.world.v1.WorldService.Buy:output_type -> pips.world.v1.BuyResponse
-	12, // [12:17] is the sub-list for method output_type
-	7,  // [7:12] is the sub-list for method input_type
-	7,  // [7:7] is the sub-list for extension type_name
-	7,  // [7:7] is the sub-list for extension extendee
-	0,  // [0:7] is the sub-list for field type_name
+	13, // 3: pips.world.v1.JoinWorldResponse.structures:type_name -> pips.sim.v1.Structure
+	14, // 4: pips.world.v1.StreamWorldResponse.delta:type_name -> pips.sim.v1.WorldDelta
+	11, // 5: pips.world.v1.StreamWorldResponse.changed_workplaces:type_name -> pips.workplace.v1.DescribeResponse
+	15, // 6: pips.world.v1.BuildWorkplaceRequest.position:type_name -> pips.sim.v1.Vec2
+	16, // 7: pips.world.v1.BuyRequest.kind:type_name -> pips.workplace.v1.ResourceKind
+	0,  // 8: pips.world.v1.WorldService.JoinWorld:input_type -> pips.world.v1.JoinWorldRequest
+	2,  // 9: pips.world.v1.WorldService.StreamWorld:input_type -> pips.world.v1.StreamWorldRequest
+	4,  // 10: pips.world.v1.WorldService.BuildWorkplace:input_type -> pips.world.v1.BuildWorkplaceRequest
+	6,  // 11: pips.world.v1.WorldService.AssignWork:input_type -> pips.world.v1.AssignWorkRequest
+	8,  // 12: pips.world.v1.WorldService.Buy:input_type -> pips.world.v1.BuyRequest
+	1,  // 13: pips.world.v1.WorldService.JoinWorld:output_type -> pips.world.v1.JoinWorldResponse
+	3,  // 14: pips.world.v1.WorldService.StreamWorld:output_type -> pips.world.v1.StreamWorldResponse
+	5,  // 15: pips.world.v1.WorldService.BuildWorkplace:output_type -> pips.world.v1.BuildWorkplaceResponse
+	7,  // 16: pips.world.v1.WorldService.AssignWork:output_type -> pips.world.v1.AssignWorkResponse
+	9,  // 17: pips.world.v1.WorldService.Buy:output_type -> pips.world.v1.BuyResponse
+	13, // [13:18] is the sub-list for method output_type
+	8,  // [8:13] is the sub-list for method input_type
+	8,  // [8:8] is the sub-list for extension type_name
+	8,  // [8:8] is the sub-list for extension extendee
+	0,  // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_pips_world_v1_world_proto_init() }

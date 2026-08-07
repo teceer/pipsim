@@ -11,6 +11,7 @@ import { createConnectTransport } from "@connectrpc/connect-web";
 
 import type {
 	Pip,
+	Structure,
 	Workplace,
 	WorldDelta,
 } from "../../gen/ts/pips/sim/v1/sim_pb";
@@ -32,6 +33,12 @@ export type JoinResult = {
 	 * there. The renderer draws bodies, so it wants this one.
 	 */
 	buildings: Workplace[];
+	/**
+	 * The services behind the world, drawn as buildings — see ADR 0011. Empty
+	 * when the gateway has no STRUCTURES configured, and empty offline, where
+	 * there is no cluster to diagram.
+	 */
+	structures: Structure[];
 };
 
 export function connect(baseUrl: string): WorldClient {
@@ -57,6 +64,7 @@ export async function join(
 		simSeed: res.simSeed,
 		pips: res.pips,
 		buildings: res.buildings,
+		structures: res.structures,
 	};
 }
 

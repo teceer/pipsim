@@ -15,13 +15,34 @@
  * itself, which keeps the renderer developable without a cluster.
  */
 
-import { Application, Container, Graphics, Text } from "pixi.js";
+import { Application, Container, Graphics, Text, type Texture } from "pixi.js";
 import init, {
 	SimHandle,
 	pip_stride,
 	workplace_stride,
 } from "./sim-wasm/sim_wasm.js";
+import { parseTexture, texturesFromParsed } from "./textures";
 import { type WorldClient, connect, join, streamDeltas } from "./world";
+
+/**
+ * Every `.txt` under `assets/textures/`, inlined at build time. ADR 0009:
+ * these are agent-authored text files, not binary assets, so a build-time
+ * glob is enough — there is no server to list a directory against.
+ */
+const TEXTURE_SOURCES = import.meta.glob("../assets/textures/*.txt", {
+	query: "?raw",
+	import: "default",
+	eager: true,
+}) as Record<string, string>;
+
+/** Rasterizes a shipped texture file, keyed by filename, at `cellPx` per glyph. */
+function loadTexture(fileName: string, cellPx: number): Texture[] {
+	const path = Object.keys(TEXTURE_SOURCES).find((p) =>
+		p.endsWith(`/${fileName}`),
+	);
+	if (!path) throw new Error(`texture not found: ${fileName}`);
+	return texturesFromParsed(parseTexture(TEXTURE_SOURCES[path]), cellPx);
+}
 
 // --- world constants --------------------------------------------------------
 
@@ -100,6 +121,20 @@ type Building = {
 	occupants: number;
 };
 type Buildings = Map<number, Building>;
+
+/**
+ * A service, drawn as a building. Not a Building: it has no capacity and
+ * nobody inside, and conflating the two would mean an occupancy meter that is
+ * permanently empty on half the map. See ADR 0011.
+ */
+type Structure = {
+	kind: string;
+	role: string;
+	x: number;
+	y: number;
+	healthy: boolean;
+};
+type Structures = Map<number, Structure>;
 
 const NEED_FOOD = 1;
 
@@ -184,6 +219,28 @@ function buildingsFromDelta(
 	return out;
 }
 
+function structuresFromDelta(
+	structures: {
+		id: bigint;
+		kind: string;
+		position?: { xMilli: number; yMilli: number };
+		role: string;
+		healthy: boolean;
+	}[],
+): Structures {
+	const out: Structures = new Map();
+	for (const s of structures) {
+		out.set(Number(s.id), {
+			kind: s.kind,
+			role: s.role,
+			x: s.position?.xMilli ?? 0,
+			y: s.position?.yMilli ?? 0,
+			healthy: s.healthy,
+		});
+	}
+	return out;
+}
+
 /** Blue when fed, amber when peckish, red when close to starving. */
 function foodColor(food: number): number {
 	const t = Math.max(0, Math.min(1, food / 1000));
@@ -222,7 +279,7 @@ const isoDepth = (tileX: number, tileY: number) => tileX + tileY;
  * Redrawn each tick rather than tinted, because `occupants` changes and Pixi's
  * Graphics has no cheap way to resize a filled rectangle in place.
  */
-function drawBuilding(g: Graphics, b: Building) {
+function drawBuilding(g: Graphics, b: Building, roofTexture: Texture) {
 	const cx = toTile(b.x);
 	const cy = toTile(b.y);
 	const h = BUILDING_TILES / 2;
@@ -242,7 +299,7 @@ function drawBuilding(g: Graphics, b: Building) {
 	// door: it is exactly the position the core walks pips to.
 	g.poly([roof[3], roof[2], corners[2], corners[3]]).fill({ color: 0x2b3444 });
 	g.poly([roof[2], roof[1], corners[1], corners[2]]).fill({ color: 0x212938 });
-	g.poly(roof).fill({ color: 0x3d4a60 });
+	g.poly(roof).fill({ texture: roofTexture });
 	g.poly(roof).stroke({ color: 0x5b6b86, width: 1 });
 
 	// Occupancy, as a band rising up the left wall.
@@ -262,6 +319,41 @@ function drawBuilding(g: Graphics, b: Building) {
 			corners[3],
 		]).fill({ color: full >= 1 ? 0xfbbf24 : 0x38bdf8, alpha: 0.55 });
 	}
+}
+
+/**
+ * Draws a service as a slab: same isometric footprint as a building, lower and
+ * without a roof texture, so the map reads at a glance as two kinds of thing —
+ * places pips go, and machinery that makes the world work.
+ *
+ * A service that failed its health check is drawn dark and outlined in red.
+ * That is the whole reason health is on the wire: a map that showed the
+ * architecture but not whether it was running would be a diagram, and the
+ * diagram is already in docs/.
+ */
+function drawStructure(g: Graphics, s: Structure) {
+	const cx = toTile(s.x);
+	const cy = toTile(s.y);
+	const h = BUILDING_TILES / 2;
+	const height = BUILDING_HEIGHT_PX * 0.6;
+
+	const corners = [
+		isoProject(cx - h, cy - h),
+		isoProject(cx + h, cy - h),
+		isoProject(cx + h, cy + h),
+		isoProject(cx - h, cy + h),
+	];
+	const top = corners.map((p) => ({ x: p.x, y: p.y - height }));
+
+	const walls = s.healthy ? [0x1f3350, 0x16273d] : [0x2a1a1f, 0x1d1216];
+	const cap = s.healthy ? 0x2c4a72 : 0x33222a;
+	const edge = s.healthy ? 0x60a5fa : 0xdc2626;
+
+	g.clear();
+	g.poly([top[3], top[2], corners[2], corners[3]]).fill({ color: walls[0] });
+	g.poly([top[2], top[1], corners[1], corners[2]]).fill({ color: walls[1] });
+	g.poly(top).fill({ color: cap });
+	g.poly(top).stroke({ color: edge, width: s.healthy ? 1 : 2 });
 }
 
 function drawGrid(parent: Container) {
@@ -284,6 +376,10 @@ function drawGrid(parent: Container) {
 
 async function main() {
 	await init();
+
+	// 4px per glyph: roof.shingle.txt is 8x8, so this lands at 32x32 — the same
+	// scale as ISO_TILE_W, close enough that the shingle rows read at this zoom.
+	const [roofTexture] = loadTexture("roof.shingle.txt", 4);
 
 	const app = new Application();
 	await app.init({ background: "#11131a", resizeTo: window, antialias: true });
@@ -320,6 +416,9 @@ async function main() {
 	let prev: Snapshot = new Map();
 	let curr: Snapshot = new Map();
 	let buildings: Buildings = new Map();
+	// Only ever populated by the served world. Offline there is no cluster to
+	// draw, and inventing one would be the map lying about what is running.
+	let structures: Structures = new Map();
 	let lastTickAt = performance.now();
 	let tickMs = 1000 / FALLBACK_TICK_HZ;
 	let source = "connecting…";
@@ -346,6 +445,7 @@ async function main() {
 		// Draw the map before the first delta arrives, so a slow stream does not
 		// show an empty world with buildings missing.
 		buildings = buildingsFromDelta(joined.buildings);
+		structures = structuresFromDelta(joined.structures);
 
 		// Seeding the local sim with the server's seed is what makes the WASM copy
 		// a prediction of *this* world rather than a different one.
@@ -366,6 +466,9 @@ async function main() {
 				delta.tick,
 				buildingsFromDelta(delta.workplaces),
 			);
+			// Sent in full on every delta, so this tracks a service going down
+			// within a tick of the gateway noticing.
+			structures = structuresFromDelta(delta.structures);
 		}
 	};
 
@@ -428,6 +531,10 @@ async function main() {
 
 	const sprites = new Map<number, Graphics>();
 	const blocks = new Map<number, { body: Graphics; label: Text }>();
+	// Structure ids come from a different space than workplace ids (see ADR
+	// 0011), but they get their own map anyway — one keyed by both would make
+	// an id collision a silently mis-drawn building rather than an error.
+	const slabs = new Map<number, { body: Graphics; label: Text }>();
 
 	app.ticker.add(() => {
 		// How far we are between the last authoritative tick and the next one.
@@ -449,7 +556,7 @@ async function main() {
 				blocks.set(id, block);
 			}
 
-			drawBuilding(block.body, b);
+			drawBuilding(block.body, b, roofTexture);
 			const centre = isoProject(toTile(b.x), toTile(b.y));
 			block.label.position.set(
 				centre.x,
@@ -465,6 +572,42 @@ async function main() {
 			);
 			block.body.zIndex = depth;
 			block.label.zIndex = depth;
+		}
+
+		for (const [id, s] of structures) {
+			let slab = slabs.get(id);
+			if (!slab) {
+				const body = new Graphics();
+				const label = new Text({
+					style: { fill: "#94a3b8", fontFamily: "monospace", fontSize: 10 },
+				});
+				label.anchor.set(0.5, 1);
+				entityLayer.addChild(body, label);
+				slab = { body, label };
+				slabs.set(id, slab);
+			}
+
+			drawStructure(slab.body, s);
+			const centre = isoProject(toTile(s.x), toTile(s.y));
+			slab.label.position.set(
+				centre.x,
+				centre.y -
+					BUILDING_HEIGHT_PX * 0.6 -
+					(BUILDING_TILES * ISO_TILE_H) / 2 -
+					4,
+			);
+			// The role is what makes this a diagram rather than a row of boxes;
+			// a service that is down says so instead, because that is the more
+			// urgent fact.
+			slab.label.text = s.healthy ? `${s.kind}\n${s.role}` : `${s.kind}\nDOWN`;
+			slab.label.style.fill = s.healthy ? "#94a3b8" : "#f87171";
+
+			const depth = isoDepth(
+				toTile(s.x) + BUILDING_TILES / 2,
+				toTile(s.y) + BUILDING_TILES / 2,
+			);
+			slab.body.zIndex = depth;
+			slab.label.zIndex = depth;
 		}
 
 		for (const [id, now] of curr) {

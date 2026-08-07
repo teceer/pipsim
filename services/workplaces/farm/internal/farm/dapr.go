@@ -416,7 +416,7 @@ func (a *ActorHost) Buy(
 // ConsiderOffer answers a queued offer. It goes through an actor like anything
 // else that touches state — the offer arrives on a queue rather than an RPC,
 // but the write it causes is the same write.
-func (a *ActorHost) ConsiderOffer(ctx context.Context, pipID, tick uint64) (bool, string) {
+func (a *ActorHost) ConsiderOffer(ctx context.Context, pipID, tick uint64) (bool, string, uint64) {
 	for _, id := range a.inner.ids() {
 		out := &workplacev1.StartShiftResponse{}
 		err := a.call(ctx, id, "StartShift", &workplacev1.StartShiftRequest{
@@ -428,10 +428,10 @@ func (a *ActorHost) ConsiderOffer(ctx context.Context, pipID, tick uint64) (bool
 		}
 		if out.GetAccepted() {
 			slog.Info("offer accepted", "workplace", id, "pip", pipID, "tick", tick)
-			return true, ""
+			return true, "", id
 		}
 	}
-	return false, "no free positions"
+	return false, "no free positions", 0
 }
 
 // Workers counts through the actors, not through the buildings.

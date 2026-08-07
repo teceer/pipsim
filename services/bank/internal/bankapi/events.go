@@ -31,6 +31,29 @@ func NewKafkaEvents(brokers []string) *KafkaEvents {
 			Topic:                  topicMoney,
 			Balancer:               &kafka.Hash{},
 			AllowAutoTopicCreation: true,
+
+			// Async, because publish() is called from inside Transfer, before it
+			// returns — and the doc comment above promises a lost event will not
+			// fail a transfer that already committed. Synchronously it did
+			// exactly that: WriteMessages blocks until the batch flushes, so
+			// every wage payment waited on the broker and the gateway's deadline
+			// expired first ("payroll transfer failed: deadline_exceeded", with
+			// the money already moved in the ledger).
+			//
+			// The failure mode this trades into is the honest one: an event can
+			// now be dropped after Transfer answered OK, which is what
+			// fire-and-forget means and why the log below is a warning rather
+			// than an error path.
+			Async: true,
+			// With Async the write error can no longer surface at the call site,
+			// so it surfaces here instead. Without this the events would fail in
+			// complete silence.
+			Completion: func(msgs []kafka.Message, err error) {
+				if err != nil {
+					slog.Warn("could not publish money events",
+						"topic", topicMoney, "count", len(msgs), "err", err)
+				}
+			},
 		},
 	}
 }
@@ -52,10 +75,13 @@ func (k *KafkaEvents) publish(ctx context.Context, key string, tick uint64, payl
 		return
 	}
 
+	// With an async writer this only enqueues, so the bound is on finding room
+	// in the buffer, not on reaching the broker. Delivery failures arrive at the
+	// Completion func instead.
 	writeCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
 	defer cancel()
 	if err := k.writer.WriteMessages(writeCtx, kafka.Message{Key: []byte(key), Value: buf}); err != nil {
-		slog.Warn("could not publish money event", "topic", topicMoney, "err", err)
+		slog.Warn("could not enqueue money event", "topic", topicMoney, "err", err)
 	}
 }
 

@@ -82,13 +82,19 @@ func (s *Server) JoinWorld(
 		"client_id", req.Msg.GetClientId(),
 		"tick", snap.Msg.GetTick(),
 		"pips", len(snap.Msg.GetPips()),
-		"buildings", len(snap.Msg.GetWorkplaces()))
+		"buildings", len(snap.Msg.GetWorkplaces()),
+		"structures", len(snap.Msg.GetStructures()))
 
 	return connect.NewResponse(&worldv1.JoinWorldResponse{
 		Tick:    snap.Msg.GetTick(),
 		TickHz:  s.tickHz,
 		SimSeed: s.simSeed,
 		Pips:    snap.Msg.GetPips(),
+		// The services themselves, as buildings. They arrive through the same
+		// snapshot as everything else — the gateway registered them, but
+		// sim-core is what holds them, so there is one source of world state
+		// rather than two. See ADR 0011.
+		Structures: snap.Msg.GetStructures(),
 		// Two views of the same buildings, and the difference is the point:
 		// `Workplaces` is who is on the payroll, `Buildings` is who is in the
 		// room. A pip hired a second ago appears in the first and not the

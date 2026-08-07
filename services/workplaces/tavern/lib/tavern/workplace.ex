@@ -153,13 +153,18 @@ defmodule Tavern.Workplace do
   is not addressed to any particular tavern — this picks one. Buildings are
   tried in order and the first to claim wins; with one building, which is the
   common case, that is exactly what it was before.
+
+  Returns the id of the building that took the offer, because the outcome has
+  to name it: the gateway turns an acceptance into a Hire against that specific
+  workplace. A rejection carries 0 — no building declined it, the host did —
+  and the gateway drops rejections anyway.
   """
   def consider_offer(pip, tick) do
-    Enum.reduce_while(buildings(), {false, "no free seats"}, fn b, acc ->
+    Enum.reduce_while(buildings(), {false, "no free seats", 0}, fn b, acc ->
       case store().claim(b.id, pip, tick) do
         :ok ->
           Logger.info("offer accepted", workplace: b.id, pip: pip, tick: tick)
-          {:halt, {true, ""}}
+          {:halt, {true, "", b.id}}
 
         {:error, reason} ->
           {:cont, put_elem(acc, 1, reason)}

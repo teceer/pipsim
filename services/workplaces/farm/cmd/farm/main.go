@@ -55,7 +55,7 @@ func workplaceSpecs() ([]farm.Spec, error) {
 // health endpoint ask for.
 type workplaceService interface {
 	workplacev1connect.WorkplaceServiceHandler
-	ConsiderOffer(ctx context.Context, pipID, tick uint64) (bool, string)
+	ConsiderOffer(ctx context.Context, pipID, tick uint64) (bool, string, uint64)
 	Workers() int
 }
 
@@ -183,11 +183,12 @@ func main() {
 	//
 	// The queue is keyed by kind rather than by building, so the consumer no
 	// longer names a workplace id — the host picks which of its farms takes the
-	// offer.
+	// offer and reports it back through ConsiderOffer. It was still being handed
+	// specs[0].ID here, which every outcome then carried regardless of who
+	// actually claimed the pip.
 	if amqpURL := os.Getenv("AMQP_URL"); amqpURL != "" {
 		consumer := queue.NewConsumer(
 			amqpURL,
-			specs[0].ID,
 			"farm",
 			svc.ConsiderOffer,
 		)

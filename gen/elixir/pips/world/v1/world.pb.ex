@@ -23,6 +23,7 @@ defmodule Pips.World.V1.JoinWorldResponse do
   field :pips, 4, repeated: true, type: Pips.Sim.V1.Pip
   field :workplaces, 5, repeated: true, type: Pips.Workplace.V1.DescribeResponse
   field :buildings, 6, repeated: true, type: Pips.Sim.V1.Workplace
+  field :structures, 7, repeated: true, type: Pips.Sim.V1.Structure
 end
 
 defmodule Pips.World.V1.StreamWorldRequest do

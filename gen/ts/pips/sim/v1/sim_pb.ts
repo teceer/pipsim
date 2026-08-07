@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file pips/sim/v1/sim.proto.
  */
 export const file_pips_sim_v1_sim: GenFile = /*@__PURE__*/
-  fileDesc("ChVwaXBzL3NpbS92MS9zaW0ucHJvdG8SC3BpcHMuc2ltLnYxIigKBFZlYzISDwoHeF9taWxsaRgBIAEoBRIPCgd5X21pbGxpGAIgASgFItMCCgNQaXASCgoCaWQYASABKAQSDAoEbmFtZRgCIAEoCRIjCghwb3NpdGlvbhgDIAEoCzIRLnBpcHMuc2ltLnYxLlZlYzISKgoIYWN0aXZpdHkYBCABKA4yGC5waXBzLnNpbS52MS5QaXBBY3Rpdml0eRIqCgVuZWVkcxgFIAMoCzIbLnBpcHMuc2ltLnYxLlBpcC5OZWVkc0VudHJ5EiIKFWVtcGxveWVyX3dvcmtwbGFjZV9pZBgGIAEoBEgAiAEBEiAKE2luc2lkZV93b3JrcGxhY2VfaWQYByABKARIAYgBARIPCgdiYWxhbmNlGAggASgDGiwKCk5lZWRzRW50cnkSCwoDa2V5GAEgASgFEg0KBXZhbHVlGAIgASgFOgI4AUIYChZfZW1wbG95ZXJfd29ya3BsYWNlX2lkQhYKFF9pbnNpZGVfd29ya3BsYWNlX2lkIpsBCglXb3JrcGxhY2USCgoCaWQYASABKAQSDAoEa2luZBgCIAEoCRIjCghwb3NpdGlvbhgDIAEoCzIRLnBpcHMuc2ltLnYxLlZlYzISEAoIY2FwYWNpdHkYBCABKA0SEQoJb2NjdXBhbnRzGAUgASgNEioKBXNlbGxzGAYgAygLMhsucGlwcy5zaW0udjEuV29ya3BsYWNlT2ZmZXIiGwoLU3RlcFJlcXVlc3QSDAoEdGljaxgBIAEoBCJbCgxTdGVwUmVzcG9uc2USDAoEdGljaxgBIAEoBBImCgVkZWx0YRgCIAEoCzIXLnBpcHMuc2ltLnYxLldvcmxkRGVsdGESFQoNZG9tYWluX2V2ZW50cxgDIAMoDCKEAQoKV29ybGREZWx0YRIMCgR0aWNrGAEgASgEEiMKBHBpcHMYAiADKAsyFS5waXBzLnNpbS52MS5QaXBEZWx0YRIXCg9yZW1vdmVkX3BpcF9pZHMYAyADKAQSKgoKd29ya3BsYWNlcxgEIAMoCzIWLnBpcHMuc2ltLnYxLldvcmtwbGFjZSKkAgoIUGlwRGVsdGESCgoCaWQYASABKAQSKAoIcG9zaXRpb24YAiABKAsyES5waXBzLnNpbS52MS5WZWMySACIAQESLwoIYWN0aXZpdHkYAyABKA4yGC5waXBzLnNpbS52MS5QaXBBY3Rpdml0eUgBiAEBEi8KBW5lZWRzGAQgAygLMiAucGlwcy5zaW0udjEuUGlwRGVsdGEuTmVlZHNFbnRyeRIgChNpbnNpZGVfd29ya3BsYWNlX2lkGAUgASgESAKIAQEaLAoKTmVlZHNFbnRyeRILCgNrZXkYASABKAUSDQoFdmFsdWUYAiABKAU6AjgBQgsKCV9wb3NpdGlvbkILCglfYWN0aXZpdHlCFgoUX2luc2lkZV93b3JrcGxhY2VfaWQiEQoPU25hcHNob3RSZXF1ZXN0IoABChBTbmFwc2hvdFJlc3BvbnNlEgwKBHRpY2sYASABKAQSHgoEcGlwcxgCIAMoCzIQLnBpcHMuc2ltLnYxLlBpcBISCgpzdGF0ZV9oYXNoGAMgASgMEioKCndvcmtwbGFjZXMYBCADKAsyFi5waXBzLnNpbS52MS5Xb3JrcGxhY2UiJwoSV2F0Y2hEZWx0YXNSZXF1ZXN0EhEKCWZyb21fdGljaxgBIAEoBCI9ChNXYXRjaERlbHRhc1Jlc3BvbnNlEiYKBWRlbHRhGAEgASgLMhcucGlwcy5zaW0udjEuV29ybGREZWx0YSLEAwoTU3VibWl0SW50ZW50UmVxdWVzdBInCgRoaXJlGAEgASgLMhcucGlwcy5zaW0udjEuSGlyZUludGVudEgAEicKBG1vdmUYAiABKAsyFy5waXBzLnNpbS52MS5Nb3ZlSW50ZW50SAASLAoFc3Bhd24YAyABKAsyGy5waXBzLnNpbS52MS5TcGF3blBpcEludGVudEgAEjQKC2FwcGx5X25lZWRzGAQgASgLMh0ucGlwcy5zaW0udjEuQXBwbHlOZWVkc0ludGVudEgAEkIKEnJlZ2lzdGVyX3dvcmtwbGFjZRgFIAEoCzIkLnBpcHMuc2ltLnYxLlJlZ2lzdGVyV29ya3BsYWNlSW50ZW50SAASOgoOZW5kX2VtcGxveW1lbnQYBiABKAsyIC5waXBzLnNpbS52MS5FbmRFbXBsb3ltZW50SW50ZW50SAASLwoIdHJhbnNmZXIYByABKAsyGy5waXBzLnNpbS52MS5UcmFuc2ZlckludGVudEgAEjwKD2NyZWRpdF9iYWxhbmNlcxgIIAEoCzIhLnBpcHMuc2ltLnYxLkNyZWRpdEJhbGFuY2VzSW50ZW50SABCCAoGaW50ZW50IloKFFN1Ym1pdEludGVudFJlc3BvbnNlEhAKCGFjY2VwdGVkGAEgASgIEhgKEHJlamVjdGlvbl9yZWFzb24YAiABKAkSFgoOc2NoZWR1bGVkX3RpY2sYAyABKAQiMgoKSGlyZUludGVudBIOCgZwaXBfaWQYASABKAQSFAoMd29ya3BsYWNlX2lkGAIgASgEIiUKE0VuZEVtcGxveW1lbnRJbnRlbnQSDgoGcGlwX2lkGAEgASgEIqABChdSZWdpc3RlcldvcmtwbGFjZUludGVudBIUCgx3b3JrcGxhY2VfaWQYASABKAQSDAoEa2luZBgCIAEoCRIjCghwb3NpdGlvbhgDIAEoCzIRLnBpcHMuc2ltLnYxLlZlYzISEAoIY2FwYWNpdHkYBCABKA0SKgoFc2VsbHMYBSADKAsyGy5waXBzLnNpbS52MS5Xb3JrcGxhY2VPZmZlciI2Cg5Xb3JrcGxhY2VPZmZlchIVCg1yZXNvdXJjZV9raW5kGAEgASgFEg0KBXByaWNlGAIgASgDIkQKCk1vdmVJbnRlbnQSDgoGcGlwX2lkGAEgASgEEiYKC2Rlc3RpbmF0aW9uGAIgASgLMhEucGlwcy5zaW0udjEuVmVjMiJDCg5TcGF3blBpcEludGVudBIMCgRuYW1lGAEgASgJEiMKCHBvc2l0aW9uGAIgASgLMhEucGlwcy5zaW0udjEuVmVjMiKZAQoQQXBwbHlOZWVkc0ludGVudBIOCgZwaXBfaWQYASABKAQSQgoLbmVlZF9kZWx0YXMYAiADKAsyLS5waXBzLnNpbS52MS5BcHBseU5lZWRzSW50ZW50Lk5lZWREZWx0YXNFbnRyeRoxCg9OZWVkRGVsdGFzRW50cnkSCwoDa2V5GAEgASgFEg0KBXZhbHVlGAIgASgFOgI4ASKiAQoOVHJhbnNmZXJJbnRlbnQSGAoQcGF5ZXJfYWNjb3VudF9pZBgBIAEoCRIYChBwYXllZV9hY2NvdW50X2lkGAIgASgJEg4KBmFtb3VudBgDIAEoAxIVCg1yZXNvdXJjZV9raW5kGAQgASgFEgwKBHRpY2sYBSABKAQSJwoEa2luZBgGIAEoDjIZLnBpcHMuc2ltLnYxLlRyYW5zZmVyS2luZCKjAQoUQ3JlZGl0QmFsYW5jZXNJbnRlbnQSGAoQcGF5ZXJfYWNjb3VudF9pZBgBIAEoCRI5CgdjcmVkaXRzGAIgAygLMigucGlwcy5zaW0udjEuQ3JlZGl0QmFsYW5jZXNJbnRlbnQuQ3JlZGl0EgwKBHRpY2sYAyABKAQaKAoGQ3JlZGl0Eg4KBnBpcF9pZBgBIAEoBBIOCgZhbW91bnQYAiABKAMqSwoETmVlZBIUChBORUVEX1VOU1BFQ0lGSUVEEAASDQoJTkVFRF9GT09EEAESDQoJTkVFRF9SRVNUEAISDwoLTkVFRF9TT0NJQUwQAyrGAQoLUGlwQWN0aXZpdHkSHAoYUElQX0FDVElWSVRZX1VOU1BFQ0lGSUVEEAASFQoRUElQX0FDVElWSVRZX0lETEUQARIYChRQSVBfQUNUSVZJVFlfV0FMS0lORxACEhgKFFBJUF9BQ1RJVklUWV9XT1JLSU5HEAMSFwoTUElQX0FDVElWSVRZX0VBVElORxAEEhkKFVBJUF9BQ1RJVklUWV9TTEVFUElORxAFEhoKFlBJUF9BQ1RJVklUWV9DT01NVVRJTkcQBiqYAQoMVHJhbnNmZXJLaW5kEh0KGVRSQU5TRkVSX0tJTkRfVU5TUEVDSUZJRUQQABIWChJUUkFOU0ZFUl9LSU5EX1dBR0UQARIaChZUUkFOU0ZFUl9LSU5EX1BVUkNIQVNFEAISGgoWVFJBTlNGRVJfS0lORF9JU1NVQU5DRRADEhkKFVRSQU5TRkVSX0tJTkRfRVNDSEVBVBAEMrsCCgpTaW1TZXJ2aWNlEjsKBFN0ZXASGC5waXBzLnNpbS52MS5TdGVwUmVxdWVzdBoZLnBpcHMuc2ltLnYxLlN0ZXBSZXNwb25zZRJHCghTbmFwc2hvdBIcLnBpcHMuc2ltLnYxLlNuYXBzaG90UmVxdWVzdBodLnBpcHMuc2ltLnYxLlNuYXBzaG90UmVzcG9uc2USUgoLV2F0Y2hEZWx0YXMSHy5waXBzLnNpbS52MS5XYXRjaERlbHRhc1JlcXVlc3QaIC5waXBzLnNpbS52MS5XYXRjaERlbHRhc1Jlc3BvbnNlMAESUwoMU3VibWl0SW50ZW50EiAucGlwcy5zaW0udjEuU3VibWl0SW50ZW50UmVxdWVzdBohLnBpcHMuc2ltLnYxLlN1Ym1pdEludGVudFJlc3BvbnNlQpwBCg9jb20ucGlwcy5zaW0udjFCCFNpbVByb3RvUAFaMWdpdGh1Yi5jb20vdGVjZWVyL3BpcHNpbS9nZW4vZ28vcGlwcy9zaW0vdjE7c2ltdjGiAgNQU1iqAgtQaXBzLlNpbS5WMcoCC1BpcHNcU2ltXFYx4gIXUGlwc1xTaW1cVjFcR1BCTWV0YWRhdGHqAg1QaXBzOjpTaW06OlYxYgZwcm90bzM");
+  fileDesc("ChVwaXBzL3NpbS92MS9zaW0ucHJvdG8SC3BpcHMuc2ltLnYxIigKBFZlYzISDwoHeF9taWxsaRgBIAEoBRIPCgd5X21pbGxpGAIgASgFItMCCgNQaXASCgoCaWQYASABKAQSDAoEbmFtZRgCIAEoCRIjCghwb3NpdGlvbhgDIAEoCzIRLnBpcHMuc2ltLnYxLlZlYzISKgoIYWN0aXZpdHkYBCABKA4yGC5waXBzLnNpbS52MS5QaXBBY3Rpdml0eRIqCgVuZWVkcxgFIAMoCzIbLnBpcHMuc2ltLnYxLlBpcC5OZWVkc0VudHJ5EiIKFWVtcGxveWVyX3dvcmtwbGFjZV9pZBgGIAEoBEgAiAEBEiAKE2luc2lkZV93b3JrcGxhY2VfaWQYByABKARIAYgBARIPCgdiYWxhbmNlGAggASgDGiwKCk5lZWRzRW50cnkSCwoDa2V5GAEgASgFEg0KBXZhbHVlGAIgASgFOgI4AUIYChZfZW1wbG95ZXJfd29ya3BsYWNlX2lkQhYKFF9pbnNpZGVfd29ya3BsYWNlX2lkImkKCVN0cnVjdHVyZRIKCgJpZBgBIAEoBBIMCgRraW5kGAIgASgJEiMKCHBvc2l0aW9uGAMgASgLMhEucGlwcy5zaW0udjEuVmVjMhIMCgRyb2xlGAQgASgJEg8KB2hlYWx0aHkYBSABKAgimwEKCVdvcmtwbGFjZRIKCgJpZBgBIAEoBBIMCgRraW5kGAIgASgJEiMKCHBvc2l0aW9uGAMgASgLMhEucGlwcy5zaW0udjEuVmVjMhIQCghjYXBhY2l0eRgEIAEoDRIRCglvY2N1cGFudHMYBSABKA0SKgoFc2VsbHMYBiADKAsyGy5waXBzLnNpbS52MS5Xb3JrcGxhY2VPZmZlciIbCgtTdGVwUmVxdWVzdBIMCgR0aWNrGAEgASgEIlsKDFN0ZXBSZXNwb25zZRIMCgR0aWNrGAEgASgEEiYKBWRlbHRhGAIgASgLMhcucGlwcy5zaW0udjEuV29ybGREZWx0YRIVCg1kb21haW5fZXZlbnRzGAMgAygMIrABCgpXb3JsZERlbHRhEgwKBHRpY2sYASABKAQSIwoEcGlwcxgCIAMoCzIVLnBpcHMuc2ltLnYxLlBpcERlbHRhEhcKD3JlbW92ZWRfcGlwX2lkcxgDIAMoBBIqCgp3b3JrcGxhY2VzGAQgAygLMhYucGlwcy5zaW0udjEuV29ya3BsYWNlEioKCnN0cnVjdHVyZXMYBSADKAsyFi5waXBzLnNpbS52MS5TdHJ1Y3R1cmUipAIKCFBpcERlbHRhEgoKAmlkGAEgASgEEigKCHBvc2l0aW9uGAIgASgLMhEucGlwcy5zaW0udjEuVmVjMkgAiAEBEi8KCGFjdGl2aXR5GAMgASgOMhgucGlwcy5zaW0udjEuUGlwQWN0aXZpdHlIAYgBARIvCgVuZWVkcxgEIAMoCzIgLnBpcHMuc2ltLnYxLlBpcERlbHRhLk5lZWRzRW50cnkSIAoTaW5zaWRlX3dvcmtwbGFjZV9pZBgFIAEoBEgCiAEBGiwKCk5lZWRzRW50cnkSCwoDa2V5GAEgASgFEg0KBXZhbHVlGAIgASgFOgI4AUILCglfcG9zaXRpb25CCwoJX2FjdGl2aXR5QhYKFF9pbnNpZGVfd29ya3BsYWNlX2lkIhEKD1NuYXBzaG90UmVxdWVzdCKsAQoQU25hcHNob3RSZXNwb25zZRIMCgR0aWNrGAEgASgEEh4KBHBpcHMYAiADKAsyEC5waXBzLnNpbS52MS5QaXASEgoKc3RhdGVfaGFzaBgDIAEoDBIqCgp3b3JrcGxhY2VzGAQgAygLMhYucGlwcy5zaW0udjEuV29ya3BsYWNlEioKCnN0cnVjdHVyZXMYBSADKAsyFi5waXBzLnNpbS52MS5TdHJ1Y3R1cmUiJwoSV2F0Y2hEZWx0YXNSZXF1ZXN0EhEKCWZyb21fdGljaxgBIAEoBCI9ChNXYXRjaERlbHRhc1Jlc3BvbnNlEiYKBWRlbHRhGAEgASgLMhcucGlwcy5zaW0udjEuV29ybGREZWx0YSKIBAoTU3VibWl0SW50ZW50UmVxdWVzdBInCgRoaXJlGAEgASgLMhcucGlwcy5zaW0udjEuSGlyZUludGVudEgAEicKBG1vdmUYAiABKAsyFy5waXBzLnNpbS52MS5Nb3ZlSW50ZW50SAASLAoFc3Bhd24YAyABKAsyGy5waXBzLnNpbS52MS5TcGF3blBpcEludGVudEgAEjQKC2FwcGx5X25lZWRzGAQgASgLMh0ucGlwcy5zaW0udjEuQXBwbHlOZWVkc0ludGVudEgAEkIKEnJlZ2lzdGVyX3dvcmtwbGFjZRgFIAEoCzIkLnBpcHMuc2ltLnYxLlJlZ2lzdGVyV29ya3BsYWNlSW50ZW50SAASOgoOZW5kX2VtcGxveW1lbnQYBiABKAsyIC5waXBzLnNpbS52MS5FbmRFbXBsb3ltZW50SW50ZW50SAASLwoIdHJhbnNmZXIYByABKAsyGy5waXBzLnNpbS52MS5UcmFuc2ZlckludGVudEgAEjwKD2NyZWRpdF9iYWxhbmNlcxgIIAEoCzIhLnBpcHMuc2ltLnYxLkNyZWRpdEJhbGFuY2VzSW50ZW50SAASQgoScmVnaXN0ZXJfc3RydWN0dXJlGAkgASgLMiQucGlwcy5zaW0udjEuUmVnaXN0ZXJTdHJ1Y3R1cmVJbnRlbnRIAEIICgZpbnRlbnQiWgoUU3VibWl0SW50ZW50UmVzcG9uc2USEAoIYWNjZXB0ZWQYASABKAgSGAoQcmVqZWN0aW9uX3JlYXNvbhgCIAEoCRIWCg5zY2hlZHVsZWRfdGljaxgDIAEoBCIyCgpIaXJlSW50ZW50Eg4KBnBpcF9pZBgBIAEoBBIUCgx3b3JrcGxhY2VfaWQYAiABKAQiJQoTRW5kRW1wbG95bWVudEludGVudBIOCgZwaXBfaWQYASABKAQioAEKF1JlZ2lzdGVyV29ya3BsYWNlSW50ZW50EhQKDHdvcmtwbGFjZV9pZBgBIAEoBBIMCgRraW5kGAIgASgJEiMKCHBvc2l0aW9uGAMgASgLMhEucGlwcy5zaW0udjEuVmVjMhIQCghjYXBhY2l0eRgEIAEoDRIqCgVzZWxscxgFIAMoCzIbLnBpcHMuc2ltLnYxLldvcmtwbGFjZU9mZmVyIoEBChdSZWdpc3RlclN0cnVjdHVyZUludGVudBIUCgxzdHJ1Y3R1cmVfaWQYASABKAQSDAoEa2luZBgCIAEoCRIjCghwb3NpdGlvbhgDIAEoCzIRLnBpcHMuc2ltLnYxLlZlYzISDAoEcm9sZRgEIAEoCRIPCgdoZWFsdGh5GAUgASgIIjYKDldvcmtwbGFjZU9mZmVyEhUKDXJlc291cmNlX2tpbmQYASABKAUSDQoFcHJpY2UYAiABKAMiRAoKTW92ZUludGVudBIOCgZwaXBfaWQYASABKAQSJgoLZGVzdGluYXRpb24YAiABKAsyES5waXBzLnNpbS52MS5WZWMyIkMKDlNwYXduUGlwSW50ZW50EgwKBG5hbWUYASABKAkSIwoIcG9zaXRpb24YAiABKAsyES5waXBzLnNpbS52MS5WZWMyIpkBChBBcHBseU5lZWRzSW50ZW50Eg4KBnBpcF9pZBgBIAEoBBJCCgtuZWVkX2RlbHRhcxgCIAMoCzItLnBpcHMuc2ltLnYxLkFwcGx5TmVlZHNJbnRlbnQuTmVlZERlbHRhc0VudHJ5GjEKD05lZWREZWx0YXNFbnRyeRILCgNrZXkYASABKAUSDQoFdmFsdWUYAiABKAU6AjgBIqIBCg5UcmFuc2ZlckludGVudBIYChBwYXllcl9hY2NvdW50X2lkGAEgASgJEhgKEHBheWVlX2FjY291bnRfaWQYAiABKAkSDgoGYW1vdW50GAMgASgDEhUKDXJlc291cmNlX2tpbmQYBCABKAUSDAoEdGljaxgFIAEoBBInCgRraW5kGAYgASgOMhkucGlwcy5zaW0udjEuVHJhbnNmZXJLaW5kIqMBChRDcmVkaXRCYWxhbmNlc0ludGVudBIYChBwYXllcl9hY2NvdW50X2lkGAEgASgJEjkKB2NyZWRpdHMYAiADKAsyKC5waXBzLnNpbS52MS5DcmVkaXRCYWxhbmNlc0ludGVudC5DcmVkaXQSDAoEdGljaxgDIAEoBBooCgZDcmVkaXQSDgoGcGlwX2lkGAEgASgEEg4KBmFtb3VudBgCIAEoAypLCgROZWVkEhQKEE5FRURfVU5TUEVDSUZJRUQQABINCglORUVEX0ZPT0QQARINCglORUVEX1JFU1QQAhIPCgtORUVEX1NPQ0lBTBADKsYBCgtQaXBBY3Rpdml0eRIcChhQSVBfQUNUSVZJVFlfVU5TUEVDSUZJRUQQABIVChFQSVBfQUNUSVZJVFlfSURMRRABEhgKFFBJUF9BQ1RJVklUWV9XQUxLSU5HEAISGAoUUElQX0FDVElWSVRZX1dPUktJTkcQAxIXChNQSVBfQUNUSVZJVFlfRUFUSU5HEAQSGQoVUElQX0FDVElWSVRZX1NMRUVQSU5HEAUSGgoWUElQX0FDVElWSVRZX0NPTU1VVElORxAGKpgBCgxUcmFuc2ZlcktpbmQSHQoZVFJBTlNGRVJfS0lORF9VTlNQRUNJRklFRBAAEhYKElRSQU5TRkVSX0tJTkRfV0FHRRABEhoKFlRSQU5TRkVSX0tJTkRfUFVSQ0hBU0UQAhIaChZUUkFOU0ZFUl9LSU5EX0lTU1VBTkNFEAMSGQoVVFJBTlNGRVJfS0lORF9FU0NIRUFUEAQyuwIKClNpbVNlcnZpY2USOwoEU3RlcBIYLnBpcHMuc2ltLnYxLlN0ZXBSZXF1ZXN0GhkucGlwcy5zaW0udjEuU3RlcFJlc3BvbnNlEkcKCFNuYXBzaG90EhwucGlwcy5zaW0udjEuU25hcHNob3RSZXF1ZXN0Gh0ucGlwcy5zaW0udjEuU25hcHNob3RSZXNwb25zZRJSCgtXYXRjaERlbHRhcxIfLnBpcHMuc2ltLnYxLldhdGNoRGVsdGFzUmVxdWVzdBogLnBpcHMuc2ltLnYxLldhdGNoRGVsdGFzUmVzcG9uc2UwARJTCgxTdWJtaXRJbnRlbnQSIC5waXBzLnNpbS52MS5TdWJtaXRJbnRlbnRSZXF1ZXN0GiEucGlwcy5zaW0udjEuU3VibWl0SW50ZW50UmVzcG9uc2VCnAEKD2NvbS5waXBzLnNpbS52MUIIU2ltUHJvdG9QAVoxZ2l0aHViLmNvbS90ZWNlZXIvcGlwc2ltL2dlbi9nby9waXBzL3NpbS92MTtzaW12MaICA1BTWKoCC1BpcHMuU2ltLlYxygILUGlwc1xTaW1cVjHiAhdQaXBzXFNpbVxWMVxHUEJNZXRhZGF0YeoCDVBpcHM6OlNpbTo6VjFiBnByb3RvMw");
 
 /**
  * @generated from message pips.sim.v1.Vec2
@@ -105,7 +105,61 @@ export const PipSchema: GenMessage<Pip> = /*@__PURE__*/
  * bodies fit inside, and how many are in there now. `capacity` is a copy of the
  * workplace's own `max_workers` — the gateway registers it, so the number keeps
  * one owner and the core only enforces it.
+ * A thing that stands in the world without employing anyone.
  *
+ * Every service in the cluster gets one, so the map doubles as a diagram of
+ * what is deployed: the bank, broadcast, the gateway itself. A Workplace is the
+ * special case of a structure that also has a payroll, and stayed its own
+ * message rather than growing a flag — the two are told apart by every consumer
+ * on the map, and one of them has capacity, occupancy, prices and a hiring
+ * contract that make no sense for the other.
+ *
+ * See ADR 0011.
+ *
+ * @generated from message pips.sim.v1.Structure
+ */
+export type Structure = Message<"pips.sim.v1.Structure"> & {
+  /**
+   * @generated from field: uint64 id = 1;
+   */
+  id: bigint;
+
+  /**
+   * The service this stands for: "bank", "broadcast", "world-gateway".
+   *
+   * @generated from field: string kind = 2;
+   */
+  kind: string;
+
+  /**
+   * @generated from field: pips.sim.v1.Vec2 position = 3;
+   */
+  position?: Vec2 | undefined;
+
+  /**
+   * Shown under the label — "double-entry ledger", "Phoenix channels".
+   *
+   * @generated from field: string role = 4;
+   */
+  role: string;
+
+  /**
+   * Whether the service answered its last health check. The map is meant to be
+   * a live diagram, so a service that is down should look like it.
+   *
+   * @generated from field: bool healthy = 5;
+   */
+  healthy: boolean;
+};
+
+/**
+ * Describes the message pips.sim.v1.Structure.
+ * Use `create(StructureSchema)` to create a new message.
+ */
+export const StructureSchema: GenMessage<Structure> = /*@__PURE__*/
+  messageDesc(file_pips_sim_v1_sim, 2);
+
+/**
  * @generated from message pips.sim.v1.Workplace
  */
 export type Workplace = Message<"pips.sim.v1.Workplace"> & {
@@ -149,7 +203,7 @@ export type Workplace = Message<"pips.sim.v1.Workplace"> & {
  * Use `create(WorkplaceSchema)` to create a new message.
  */
 export const WorkplaceSchema: GenMessage<Workplace> = /*@__PURE__*/
-  messageDesc(file_pips_sim_v1_sim, 2);
+  messageDesc(file_pips_sim_v1_sim, 3);
 
 /**
  * @generated from message pips.sim.v1.StepRequest
@@ -169,7 +223,7 @@ export type StepRequest = Message<"pips.sim.v1.StepRequest"> & {
  * Use `create(StepRequestSchema)` to create a new message.
  */
 export const StepRequestSchema: GenMessage<StepRequest> = /*@__PURE__*/
-  messageDesc(file_pips_sim_v1_sim, 3);
+  messageDesc(file_pips_sim_v1_sim, 4);
 
 /**
  * @generated from message pips.sim.v1.StepResponse
@@ -199,7 +253,7 @@ export type StepResponse = Message<"pips.sim.v1.StepResponse"> & {
  * Use `create(StepResponseSchema)` to create a new message.
  */
 export const StepResponseSchema: GenMessage<StepResponse> = /*@__PURE__*/
-  messageDesc(file_pips_sim_v1_sim, 4);
+  messageDesc(file_pips_sim_v1_sim, 5);
 
 /**
  * @generated from message pips.sim.v1.WorldDelta
@@ -228,6 +282,15 @@ export type WorldDelta = Message<"pips.sim.v1.WorldDelta"> & {
    * @generated from field: repeated pips.sim.v1.Workplace workplaces = 4;
    */
   workplaces: Workplace[];
+
+  /**
+   * Services on the map, in full for the same reason. `healthy` flips when one
+   * stops answering, and a client that missed that delta would keep drawing a
+   * dead service as live.
+   *
+   * @generated from field: repeated pips.sim.v1.Structure structures = 5;
+   */
+  structures: Structure[];
 };
 
 /**
@@ -235,7 +298,7 @@ export type WorldDelta = Message<"pips.sim.v1.WorldDelta"> & {
  * Use `create(WorldDeltaSchema)` to create a new message.
  */
 export const WorldDeltaSchema: GenMessage<WorldDelta> = /*@__PURE__*/
-  messageDesc(file_pips_sim_v1_sim, 5);
+  messageDesc(file_pips_sim_v1_sim, 6);
 
 /**
  * @generated from message pips.sim.v1.PipDelta
@@ -275,7 +338,7 @@ export type PipDelta = Message<"pips.sim.v1.PipDelta"> & {
  * Use `create(PipDeltaSchema)` to create a new message.
  */
 export const PipDeltaSchema: GenMessage<PipDelta> = /*@__PURE__*/
-  messageDesc(file_pips_sim_v1_sim, 6);
+  messageDesc(file_pips_sim_v1_sim, 7);
 
 /**
  * @generated from message pips.sim.v1.SnapshotRequest
@@ -288,7 +351,7 @@ export type SnapshotRequest = Message<"pips.sim.v1.SnapshotRequest"> & {
  * Use `create(SnapshotRequestSchema)` to create a new message.
  */
 export const SnapshotRequestSchema: GenMessage<SnapshotRequest> = /*@__PURE__*/
-  messageDesc(file_pips_sim_v1_sim, 7);
+  messageDesc(file_pips_sim_v1_sim, 8);
 
 /**
  * @generated from message pips.sim.v1.SnapshotResponse
@@ -315,6 +378,11 @@ export type SnapshotResponse = Message<"pips.sim.v1.SnapshotResponse"> & {
    * @generated from field: repeated pips.sim.v1.Workplace workplaces = 4;
    */
   workplaces: Workplace[];
+
+  /**
+   * @generated from field: repeated pips.sim.v1.Structure structures = 5;
+   */
+  structures: Structure[];
 };
 
 /**
@@ -322,7 +390,7 @@ export type SnapshotResponse = Message<"pips.sim.v1.SnapshotResponse"> & {
  * Use `create(SnapshotResponseSchema)` to create a new message.
  */
 export const SnapshotResponseSchema: GenMessage<SnapshotResponse> = /*@__PURE__*/
-  messageDesc(file_pips_sim_v1_sim, 8);
+  messageDesc(file_pips_sim_v1_sim, 9);
 
 /**
  * @generated from message pips.sim.v1.WatchDeltasRequest
@@ -341,7 +409,7 @@ export type WatchDeltasRequest = Message<"pips.sim.v1.WatchDeltasRequest"> & {
  * Use `create(WatchDeltasRequestSchema)` to create a new message.
  */
 export const WatchDeltasRequestSchema: GenMessage<WatchDeltasRequest> = /*@__PURE__*/
-  messageDesc(file_pips_sim_v1_sim, 9);
+  messageDesc(file_pips_sim_v1_sim, 10);
 
 /**
  * A thin envelope around WorldDelta rather than streaming the delta directly.
@@ -363,7 +431,7 @@ export type WatchDeltasResponse = Message<"pips.sim.v1.WatchDeltasResponse"> & {
  * Use `create(WatchDeltasResponseSchema)` to create a new message.
  */
 export const WatchDeltasResponseSchema: GenMessage<WatchDeltasResponse> = /*@__PURE__*/
-  messageDesc(file_pips_sim_v1_sim, 10);
+  messageDesc(file_pips_sim_v1_sim, 11);
 
 /**
  * @generated from message pips.sim.v1.SubmitIntentRequest
@@ -420,6 +488,12 @@ export type SubmitIntentRequest = Message<"pips.sim.v1.SubmitIntentRequest"> & {
      */
     value: CreditBalancesIntent;
     case: "creditBalances";
+  } | {
+    /**
+     * @generated from field: pips.sim.v1.RegisterStructureIntent register_structure = 9;
+     */
+    value: RegisterStructureIntent;
+    case: "registerStructure";
   } | { case: undefined; value?: undefined };
 };
 
@@ -428,7 +502,7 @@ export type SubmitIntentRequest = Message<"pips.sim.v1.SubmitIntentRequest"> & {
  * Use `create(SubmitIntentRequestSchema)` to create a new message.
  */
 export const SubmitIntentRequestSchema: GenMessage<SubmitIntentRequest> = /*@__PURE__*/
-  messageDesc(file_pips_sim_v1_sim, 11);
+  messageDesc(file_pips_sim_v1_sim, 12);
 
 /**
  * @generated from message pips.sim.v1.SubmitIntentResponse
@@ -457,7 +531,7 @@ export type SubmitIntentResponse = Message<"pips.sim.v1.SubmitIntentResponse"> &
  * Use `create(SubmitIntentResponseSchema)` to create a new message.
  */
 export const SubmitIntentResponseSchema: GenMessage<SubmitIntentResponse> = /*@__PURE__*/
-  messageDesc(file_pips_sim_v1_sim, 12);
+  messageDesc(file_pips_sim_v1_sim, 13);
 
 /**
  * Records that a workplace has taken a pip on.
@@ -484,7 +558,7 @@ export type HireIntent = Message<"pips.sim.v1.HireIntent"> & {
  * Use `create(HireIntentSchema)` to create a new message.
  */
 export const HireIntentSchema: GenMessage<HireIntent> = /*@__PURE__*/
-  messageDesc(file_pips_sim_v1_sim, 13);
+  messageDesc(file_pips_sim_v1_sim, 14);
 
 /**
  * The pip no longer works there. Frees its place in the building.
@@ -503,7 +577,7 @@ export type EndEmploymentIntent = Message<"pips.sim.v1.EndEmploymentIntent"> & {
  * Use `create(EndEmploymentIntentSchema)` to create a new message.
  */
 export const EndEmploymentIntentSchema: GenMessage<EndEmploymentIntent> = /*@__PURE__*/
-  messageDesc(file_pips_sim_v1_sim, 14);
+  messageDesc(file_pips_sim_v1_sim, 15);
 
 /**
  * Puts a building on the map, or updates one already there.
@@ -552,7 +626,52 @@ export type RegisterWorkplaceIntent = Message<"pips.sim.v1.RegisterWorkplaceInte
  * Use `create(RegisterWorkplaceIntentSchema)` to create a new message.
  */
 export const RegisterWorkplaceIntentSchema: GenMessage<RegisterWorkplaceIntent> = /*@__PURE__*/
-  messageDesc(file_pips_sim_v1_sim, 15);
+  messageDesc(file_pips_sim_v1_sim, 16);
+
+/**
+ * Puts a service on the map, or updates the one already there.
+ *
+ * Registration is the gateway's job, not the service's: the gateway is already
+ * the only thing that knows where every other service lives, so a bank does not
+ * have to implement anything to be drawn. Idempotent like
+ * RegisterWorkplaceIntent — it is re-sent on a loop as health is polled, and
+ * `healthy` is the field that actually changes.
+ *
+ * @generated from message pips.sim.v1.RegisterStructureIntent
+ */
+export type RegisterStructureIntent = Message<"pips.sim.v1.RegisterStructureIntent"> & {
+  /**
+   * @generated from field: uint64 structure_id = 1;
+   */
+  structureId: bigint;
+
+  /**
+   * @generated from field: string kind = 2;
+   */
+  kind: string;
+
+  /**
+   * @generated from field: pips.sim.v1.Vec2 position = 3;
+   */
+  position?: Vec2 | undefined;
+
+  /**
+   * @generated from field: string role = 4;
+   */
+  role: string;
+
+  /**
+   * @generated from field: bool healthy = 5;
+   */
+  healthy: boolean;
+};
+
+/**
+ * Describes the message pips.sim.v1.RegisterStructureIntent.
+ * Use `create(RegisterStructureIntentSchema)` to create a new message.
+ */
+export const RegisterStructureIntentSchema: GenMessage<RegisterStructureIntent> = /*@__PURE__*/
+  messageDesc(file_pips_sim_v1_sim, 17);
 
 /**
  * Mirrors pips.workplace.v1.Offer. A second declaration rather than an import
@@ -580,7 +699,7 @@ export type WorkplaceOffer = Message<"pips.sim.v1.WorkplaceOffer"> & {
  * Use `create(WorkplaceOfferSchema)` to create a new message.
  */
 export const WorkplaceOfferSchema: GenMessage<WorkplaceOffer> = /*@__PURE__*/
-  messageDesc(file_pips_sim_v1_sim, 16);
+  messageDesc(file_pips_sim_v1_sim, 18);
 
 /**
  * @generated from message pips.sim.v1.MoveIntent
@@ -602,7 +721,7 @@ export type MoveIntent = Message<"pips.sim.v1.MoveIntent"> & {
  * Use `create(MoveIntentSchema)` to create a new message.
  */
 export const MoveIntentSchema: GenMessage<MoveIntent> = /*@__PURE__*/
-  messageDesc(file_pips_sim_v1_sim, 17);
+  messageDesc(file_pips_sim_v1_sim, 19);
 
 /**
  * @generated from message pips.sim.v1.SpawnPipIntent
@@ -624,7 +743,7 @@ export type SpawnPipIntent = Message<"pips.sim.v1.SpawnPipIntent"> & {
  * Use `create(SpawnPipIntentSchema)` to create a new message.
  */
 export const SpawnPipIntentSchema: GenMessage<SpawnPipIntent> = /*@__PURE__*/
-  messageDesc(file_pips_sim_v1_sim, 18);
+  messageDesc(file_pips_sim_v1_sim, 20);
 
 /**
  * The effect of work on a pip, handed back by a workplace.
@@ -654,7 +773,7 @@ export type ApplyNeedsIntent = Message<"pips.sim.v1.ApplyNeedsIntent"> & {
  * Use `create(ApplyNeedsIntentSchema)` to create a new message.
  */
 export const ApplyNeedsIntentSchema: GenMessage<ApplyNeedsIntent> = /*@__PURE__*/
-  messageDesc(file_pips_sim_v1_sim, 19);
+  messageDesc(file_pips_sim_v1_sim, 21);
 
 /**
  * Moves money between two accounts the core knows about — a pip, a
@@ -718,7 +837,7 @@ export type TransferIntent = Message<"pips.sim.v1.TransferIntent"> & {
  * Use `create(TransferIntentSchema)` to create a new message.
  */
 export const TransferIntentSchema: GenMessage<TransferIntent> = /*@__PURE__*/
-  messageDesc(file_pips_sim_v1_sim, 20);
+  messageDesc(file_pips_sim_v1_sim, 22);
 
 /**
  * Payroll, batched. A workplace's shift population is paid in one intent
@@ -749,7 +868,7 @@ export type CreditBalancesIntent = Message<"pips.sim.v1.CreditBalancesIntent"> &
  * Use `create(CreditBalancesIntentSchema)` to create a new message.
  */
 export const CreditBalancesIntentSchema: GenMessage<CreditBalancesIntent> = /*@__PURE__*/
-  messageDesc(file_pips_sim_v1_sim, 21);
+  messageDesc(file_pips_sim_v1_sim, 23);
 
 /**
  * @generated from message pips.sim.v1.CreditBalancesIntent.Credit
@@ -771,7 +890,7 @@ export type CreditBalancesIntent_Credit = Message<"pips.sim.v1.CreditBalancesInt
  * Use `create(CreditBalancesIntent_CreditSchema)` to create a new message.
  */
 export const CreditBalancesIntent_CreditSchema: GenMessage<CreditBalancesIntent_Credit> = /*@__PURE__*/
-  messageDesc(file_pips_sim_v1_sim, 21, 0);
+  messageDesc(file_pips_sim_v1_sim, 23, 0);
 
 /**
  * @generated from enum pips.sim.v1.Need

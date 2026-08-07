@@ -62,6 +62,7 @@ nix develop          # or install the toolchains listed in flake.nix
 
 make dev             # everything locally via docker compose, no Kubernetes
 make test            # every service's tests, no cluster required
+make reset           # start the world over, ledger and event log included
 ```
 
 The cluster is for integration testing, not for iterating on code:

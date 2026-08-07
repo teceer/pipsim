@@ -18,8 +18,10 @@ defmodule Tavern.Offers do
   alias Pips.Work.V1.{HireOutcome, WorkOffer}
 
   @exchange "pipsim.work"
+  @dlx "pipsim.work.dlx"
   @queue "pipsim.work.tavern"
   @outcomes "pipsim.work.hired"
+  @offer_key "offer.tavern"
 
   # Matches the farm. A consumer holding more unacked offers than it has seats
   # is just delaying rejections that another replica could have answered.
@@ -71,6 +73,7 @@ defmodule Tavern.Offers do
   defp connect(url) do
     with {:ok, conn} <- AMQP.Connection.open(url),
          {:ok, chan} <- AMQP.Channel.open(conn),
+         :ok <- declare(chan),
          :ok <- AMQP.Basic.qos(chan, prefetch_count: @prefetch),
          {:ok, _} <- AMQP.Basic.consume(chan, @queue) do
       Process.monitor(conn.pid)
@@ -78,13 +81,45 @@ defmodule Tavern.Offers do
     end
   end
 
+  # The tavern owns the queue it consumes, and declares it on every connection.
+  #
+  # Before this, the topology existed only in Terraform layer 20, so the tavern
+  # could not start against a broker nobody had provisioned — `make dev` brings
+  # up a bare RabbitMQ and the consume failed with NOT_FOUND, which took the
+  # whole application down through the supervisor. That contradicted the rule
+  # that every service runs without a cluster.
+  #
+  # AMQP declarations are idempotent for identical arguments and a channel error
+  # otherwise, so this is a no-op against a broker layer 20 already configured —
+  # provided the settings below stay in step with it.
+  defp declare(chan) do
+    with :ok <- AMQP.Exchange.declare(chan, @exchange, :topic, durable: true),
+         # The queue names this as its dead-letter target, and a DLX that does
+         # not exist means dead letters are dropped in silence.
+         :ok <- AMQP.Exchange.declare(chan, @dlx, :fanout, durable: true),
+         {:ok, _} <-
+           AMQP.Queue.declare(chan, @queue,
+             durable: true,
+             arguments: [{"x-dead-letter-exchange", :longstr, @dlx}]
+           ) do
+      AMQP.Queue.bind(chan, @queue, @exchange, routing_key: @offer_key)
+    end
+  end
+
   defp handle_offer(chan, payload, tag) do
     offer = Protobuf.decode(payload, WorkOffer)
-    {accepted, reason} = Tavern.Workplace.consider_offer(offer.pip_id, offer.tick)
+    {accepted, reason, workplace_id} = Tavern.Workplace.consider_offer(offer.pip_id, offer.tick)
 
+    # The id comes from whichever building claimed the offer, not from
+    # configuration. `Application.fetch_env!(:tavern, :workplace_id)` stood here
+    # and no longer resolved to anything: a tavern process hosts many buildings
+    # since ADR 0005, so that key was dropped. It raised on every accepted
+    # offer, the rescue below rejected the message, and no pip was ever hired
+    # through this queue — invisible until now, because the service could not
+    # start against a broker without the queue in the first place.
     outcome = %HireOutcome{
       pip_id: offer.pip_id,
-      workplace_id: Application.fetch_env!(:tavern, :workplace_id),
+      workplace_id: workplace_id,
       accepted: accepted,
       reason: reason,
       trace_id: offer.trace_id
@@ -100,7 +135,10 @@ defmodule Tavern.Offers do
       AMQP.Basic.reject(chan, tag, requeue: false)
   end
 
-  # The outcomes queue is bound to this key by Terraform layer 20.
+  # The gateway consumes the outcomes queue, so the gateway is what binds it to
+  # this key. Publishing to a topic exchange with no matching binding is not an
+  # error — if no gateway is running, the outcome is dropped, which is what
+  # should happen to an answer nobody is waiting for.
   defp outcome_key, do: "hired"
 
   @doc false

@@ -23,9 +23,13 @@ import (
 )
 
 const (
-	exchange   = "pipsim.work"
-	hiredKey   = "hired"
-	offerQueue = "pipsim.work.farm"
+	exchange = "pipsim.work"
+	dlx      = "pipsim.work.dlx"
+	hiredKey = "hired"
+	// The routing key the gateway publishes offers under — see
+	// services/world-gateway/internal/economy: offerPrefix = "offer.".
+	offerKeyPrefix = "offer."
+	offerQueue     = "pipsim.work.farm"
 
 	// More than one offer in flight per replica, but not many. A large prefetch
 	// would let one replica hoard offers it has no capacity for while another
@@ -36,17 +40,20 @@ const (
 // Decider is the workplace's own logic. Returning false with a reason is a
 // normal outcome, not an error: a full farm declining an offer is the system
 // working.
-type Decider func(ctx context.Context, pipID, tick uint64) (accepted bool, reason string)
+//
+// The id it returns is the building that took the offer, and the consumer has
+// no other way to know it — the host picks in rotation, so the answer differs
+// per offer and cannot come from configuration.
+type Decider func(ctx context.Context, pipID, tick uint64) (accepted bool, reason string, workplaceID uint64)
 
 type Consumer struct {
-	url         string
-	workplaceID uint64
-	kind        string
-	decide      Decider
+	url    string
+	kind   string
+	decide Decider
 }
 
-func NewConsumer(url string, workplaceID uint64, kind string, decide Decider) *Consumer {
-	return &Consumer{url: url, workplaceID: workplaceID, kind: kind, decide: decide}
+func NewConsumer(url, kind string, decide Decider) *Consumer {
+	return &Consumer{url: url, kind: kind, decide: decide}
 }
 
 // Run consumes until the context is cancelled, reconnecting on failure.
@@ -65,6 +72,44 @@ func (c *Consumer) Run(ctx context.Context) {
 	}
 }
 
+// declare builds the topology this consumer needs, on every connection.
+//
+// A workplace owns its offer queue: nobody else consumes it, and requiring
+// `terraform apply` before the service can start contradicts the rule that
+// every service is testable without a cluster. Compose has no equivalent of
+// layer 20, which is exactly how this surfaced — the queue simply was not there
+// and the farm retried against a broker that would never grow one.
+//
+// The declarations are idempotent by AMQP's own definition, so running this
+// against a broker Terraform already provisioned is a no-op. The catch is that
+// idempotence holds only for *identical* arguments — a mismatch is a channel
+// error, not a silent adjustment. Everything below therefore restates layer
+// 20's settings exactly; if you change one, change both, and know that the
+// broker will tell you loudly if you miss.
+//
+// The gateway declares pipsim.work.hired for the same reason, on its side.
+func declare(ch *amqp.Channel, kind string) error {
+	if err := ch.ExchangeDeclare(exchange, "topic", true, false, false, false, nil); err != nil {
+		return err
+	}
+
+	// Declared here rather than assumed: a queue may name a dead-letter
+	// exchange that does not exist, and the broker accepts that without
+	// complaint — it just drops what it cannot dead-letter. The whole point of
+	// the DLX is that an undecodable offer is noticed.
+	if err := ch.ExchangeDeclare(dlx, "fanout", true, false, false, false, nil); err != nil {
+		return err
+	}
+
+	if _, err := ch.QueueDeclare(offerQueue, true, false, false, false, amqp.Table{
+		"x-dead-letter-exchange": dlx,
+	}); err != nil {
+		return err
+	}
+
+	return ch.QueueBind(offerQueue, offerKeyPrefix+kind, exchange, false, nil)
+}
+
 func (c *Consumer) session(ctx context.Context) error {
 	conn, err := amqp.Dial(c.url)
 	if err != nil {
@@ -77,6 +122,10 @@ func (c *Consumer) session(ctx context.Context) error {
 		return err
 	}
 	defer ch.Close()
+
+	if err := declare(ch, c.kind); err != nil {
+		return err
+	}
 
 	if err := ch.Qos(prefetch, 0, false); err != nil {
 		return err
@@ -118,11 +167,11 @@ func (c *Consumer) handle(ctx context.Context, ch *amqp.Channel, d amqp.Delivery
 		return
 	}
 
-	accepted, reason := c.decide(ctx, offer.GetPipId(), offer.GetTick())
+	accepted, reason, workplaceID := c.decide(ctx, offer.GetPipId(), offer.GetTick())
 
 	outcome, err := proto.Marshal(&workv1.HireOutcome{
 		PipId:         offer.GetPipId(),
-		WorkplaceId:   c.workplaceID,
+		WorkplaceId:   workplaceID,
 		WorkplaceKind: c.kind,
 		Accepted:      accepted,
 		Reason:        reason,

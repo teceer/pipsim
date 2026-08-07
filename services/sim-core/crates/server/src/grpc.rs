@@ -112,6 +112,21 @@ fn workplaces(world: &World) -> Vec<pb::Workplace> {
         .collect()
 }
 
+fn structures(world: &World) -> Vec<pb::Structure> {
+    (0..world.structure_ids.len())
+        .map(|i| pb::Structure {
+            id: world.structure_ids[i],
+            kind: world.structure_kinds[i].clone(),
+            position: Some(pb::Vec2 {
+                x_milli: world.structure_positions[i].x,
+                y_milli: world.structure_positions[i].y,
+            }),
+            role: world.structure_roles[i].clone(),
+            healthy: world.structure_healthy[i],
+        })
+        .collect()
+}
+
 /// The inverse of `resource_kind`, for putting a price back on the wire.
 fn resource_kind_code(kind: ResourceKind) -> i32 {
     match kind {
@@ -161,6 +176,7 @@ pub fn full_delta(world: &World) -> pb::WorldDelta {
         pips,
         removed_pip_ids: Vec::new(),
         workplaces: workplaces(world),
+        structures: structures(world),
     }
 }
 
@@ -208,6 +224,7 @@ impl SimService for SimServiceImpl {
             tick: w.tick,
             pips,
             workplaces: workplaces(&w),
+            structures: structures(&w),
             // The client compares this against its own prediction to notice
             // that it has drifted far enough to need a resync.
             state_hash: w.state_hash().to_be_bytes().to_vec(),
@@ -293,6 +310,19 @@ impl SimService for SimServiceImpl {
                     .iter()
                     .filter_map(|o| resource_kind(o.resource_kind).map(|k| (k, o.price)))
                     .collect(),
+            },
+            pb::submit_intent_request::Intent::RegisterStructure(r) => Intent::RegisterStructure {
+                id: r.structure_id,
+                kind: r.kind,
+                position: r
+                    .position
+                    .map(|p| Vec2 {
+                        x: p.x_milli,
+                        y: p.y_milli,
+                    })
+                    .unwrap_or(Vec2::ZERO),
+                role: r.role,
+                healthy: r.healthy,
             },
             pb::submit_intent_request::Intent::EndEmployment(e) => {
                 Intent::EndEmployment { pip: e.pip_id }

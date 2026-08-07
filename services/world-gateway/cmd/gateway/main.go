@@ -319,6 +319,16 @@ func main() {
 		slog.Info("economy disabled; WORKPLACE_ADDRS and AMQP_URL are both required")
 	}
 
+	// Services on the map. Independent of the economy: the diagram is worth
+	// having even on a gateway with no workplaces reachable — arguably most of
+	// all then, because a dark building is the answer to "why is nothing
+	// happening". See ADR 0011.
+	if structures := gateway.ParseStructures(env("STRUCTURES", "")); len(structures) > 0 {
+		ctx, cancelStructures := context.WithCancel(context.Background())
+		defer cancelStructures()
+		go gateway.NewStructureRegistrar(simClient, structures).Run(ctx)
+	}
+
 	mux := http.NewServeMux()
 	mux.Handle(worldv1connect.NewWorldServiceHandler(svc, gotel.WithInterceptor(otelInterceptor)))
 

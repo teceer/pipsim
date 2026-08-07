@@ -219,6 +219,18 @@ pub enum Intent {
         position: Vec2,
         capacity: u32,
     },
+    /// Puts a service on the map, or updates the one already there.
+    ///
+    /// Inert: nothing in the tick loop reads a structure. It exists so the map
+    /// can show what is deployed, and so that a pip can one day walk to the
+    /// bank rather than being paid by an invisible hand. See ADR 0011.
+    RegisterStructure {
+        id: StructureId,
+        kind: String,
+        position: Vec2,
+        role: String,
+        healthy: bool,
+    },
     /// The pip is no longer employed there. Frees its place in the building.
     EndEmployment {
         pip: PipId,
@@ -255,6 +267,11 @@ pub enum Intent {
 
 pub type PipId = u64;
 pub type WorkplaceId = u64;
+/// Ids live in their own space, not shared with workplaces: a structure is
+/// registered by the gateway from configuration, a workplace by what a service
+/// reports about itself, and nothing on the map addresses one expecting the
+/// other.
+pub type StructureId = u64;
 
 /// A bank account, namespaced by holder kind exactly like
 /// `pips.bank.v1.Account.id` — `"pip:412"` and `"workplace:3"` cannot
@@ -377,6 +394,23 @@ pub struct World {
     /// What each workplace sells, and at what price. Registered from the
     /// service's own `Describe`, never invented here.
     pub workplace_sells: Vec<Vec<(ResourceKind, i64)>>,
+    // Structures: services that stand in the world without employing anyone —
+    // the bank, broadcast, the gateway itself. Same structure-of-arrays
+    // treatment again, and deliberately separate from the workplace arrays: a
+    // structure has no capacity, no occupancy and no payroll, so folding it in
+    // would mean five arrays that are meaningless for half their entries.
+    //
+    // They do not affect the simulation. They are here rather than in the
+    // renderer because position is world state and a pip can walk to a place in
+    // the world — which is where this is heading. See ADR 0011.
+    pub structure_ids: Vec<StructureId>,
+    pub structure_kinds: Vec<String>,
+    pub structure_positions: Vec<Vec2>,
+    pub structure_roles: Vec<String>,
+    /// Whether the service behind it answered its last health check. Observed
+    /// by the gateway and recorded here, the same way capacity is.
+    pub structure_healthy: Vec<bool>,
+
     /// The treasury's own balance. Negative by design: issuance is a transfer
     /// from the treasury, and money supply stays closed only because that
     /// negative and everyone else's positive balances sum to zero.
@@ -407,6 +441,11 @@ impl World {
             workplace_occupants: Vec::new(),
             workplace_balances: Vec::new(),
             workplace_sells: Vec::new(),
+            structure_ids: Vec::new(),
+            structure_kinds: Vec::new(),
+            structure_positions: Vec::new(),
+            structure_roles: Vec::new(),
+            structure_healthy: Vec::new(),
             treasury_balance: 0,
             next_pip_id: 1,
         }
@@ -428,6 +467,10 @@ impl World {
 
     pub fn workplace_index(&self, workplace: WorkplaceId) -> Option<usize> {
         self.workplace_ids.iter().position(|&id| id == workplace)
+    }
+
+    pub fn structure_index(&self, structure: StructureId) -> Option<usize> {
+        self.structure_ids.iter().position(|&id| id == structure)
     }
 
     fn balance_of(&self, account: AccountId) -> Option<i64> {
@@ -664,6 +707,36 @@ impl World {
                             position: *position,
                             capacity: *capacity,
                         });
+                    }
+                }
+                Intent::RegisterStructure {
+                    id,
+                    kind,
+                    position,
+                    role,
+                    healthy,
+                } => {
+                    // Upsert, like a workplace, but re-sent for a different
+                    // reason: the gateway polls health, so `healthy` is the
+                    // field that actually changes between two identical
+                    // registrations.
+                    //
+                    // No domain event. A workplace being built changes the
+                    // world; a service being deployed changes the picture of
+                    // it, and putting that in the fact log would mean the
+                    // replay of a world depended on which services happened to
+                    // be up while it ran.
+                    if let Some(si) = self.structure_index(*id) {
+                        self.structure_kinds[si] = kind.clone();
+                        self.structure_positions[si] = *position;
+                        self.structure_roles[si] = role.clone();
+                        self.structure_healthy[si] = *healthy;
+                    } else {
+                        self.structure_ids.push(*id);
+                        self.structure_kinds.push(kind.clone());
+                        self.structure_positions.push(*position);
+                        self.structure_roles.push(role.clone());
+                        self.structure_healthy.push(*healthy);
                     }
                 }
                 Intent::ApplyNeeds {
@@ -1106,6 +1179,14 @@ impl World {
             mix(self.workplace_occupants[i] as u64);
             mix(self.workplace_balances[i] as u64);
         }
+        // Structures are deliberately absent, and this is not an oversight.
+        //
+        // The hash answers "did two runs of the simulation diverge". A
+        // structure is not simulation: `healthy` flips because a container was
+        // restarted, and the client's WASM core registers no structures at all.
+        // Mixing either in would make the browser look divergent from the
+        // server on a world that matches perfectly, and `make parity` would
+        // fail for a reason that has nothing to do with the core.
         mix(self.treasury_balance as u64);
         h
     }
@@ -1667,6 +1748,60 @@ mod tests {
                 ..
             }
         )));
+    }
+
+    // --- structures -----------------------------------------------------
+
+    fn deploy(id: StructureId, healthy: bool) -> Intent {
+        Intent::RegisterStructure {
+            id,
+            kind: "bank".into(),
+            position: Vec2 { x: 3_000, y: 4_000 },
+            role: "double-entry ledger".into(),
+            healthy,
+        }
+    }
+
+    /// Health is the field that changes, so re-registering has to update it in
+    /// place — the gateway re-sends this on every poll.
+    #[test]
+    fn registering_a_structure_twice_updates_health_without_a_second_building() {
+        let mut w = World::new(31);
+        w.step(&[deploy(1, true)]);
+        assert_eq!(w.structure_ids.len(), 1);
+        assert!(w.structure_healthy[0]);
+
+        w.step(&[deploy(1, false)]);
+        assert_eq!(w.structure_ids.len(), 1, "a re-register built a second one");
+        assert!(!w.structure_healthy[0], "health did not follow the intent");
+    }
+
+    /// A structure is scenery. If it ever starts moving pips or money, it has
+    /// stopped being one, and this test is the tripwire.
+    #[test]
+    fn a_structure_does_not_touch_the_simulation() {
+        let mut with = World::new(77);
+        with.step(&spawn(20));
+        let mut without = World::new(77);
+        without.step(&spawn(20));
+
+        for t in 0..300 {
+            let extra = if t == 10 {
+                vec![deploy(1, true)]
+            } else {
+                vec![]
+            };
+            with.step(&extra);
+            without.step(&[]);
+        }
+
+        assert_eq!(
+            with.state_hash(),
+            without.state_hash(),
+            "registering a structure changed the simulation"
+        );
+        assert_eq!(with.structure_ids.len(), 1);
+        assert_eq!(without.structure_ids.len(), 0);
     }
 
     // --- money ----------------------------------------------------------

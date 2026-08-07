@@ -1,0 +1,17 @@
+# The roof fill for drawBuilding(), replacing the flat #3d4a60 with a shingled
+# texture. Colors are picked to sit inside the existing building palette
+# (see main.ts: 0x3d4a60 base, 0x2b3444/0x212938 walls, 0x5b6b86 stroke).
+palette
+  . #3d4a60
+  o #2f3a4c
+  H #5b6b86
+
+grid
+  HHHHHHHH
+  H......o
+  o......o
+  oooooooo
+  o......o
+  o......o
+  oooooooo
+  o......o
