@@ -1,3 +1,5 @@
+[![Watch a one-minute video tour of pipsim](https://gitdiagram.com/video-badge.svg)](https://gitdiagram.com/teceer/pipsim/video)
+
 # pipsim
 
 An open-source simulation of *pips* — little people who walk to work, get hungry,
